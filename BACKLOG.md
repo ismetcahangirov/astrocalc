@@ -37,6 +37,15 @@ and the related issue/PR numbers.
   house section. 21 new unit tests (68 total green), including ground-truth
   checks against `astronomy-engine`'s own rotation matrices and a Svalbard
   polar-fallback case.
+- Aspect calculation + configurable orbs — #15 (calc-engine layer done; backend
+  admin config in progress). `packages/calc-engine`: new `computeAspects()` that
+  finds the five major aspects for every body pair, reporting aspect type, exact
+  degree difference, orb (deviation), and applying/separating status; orbs are
+  configurable per aspect type over a documented `DEFAULT_ORBS`. Added signed
+  longitudinal `speed` to planetary positions to drive applying/separating. 18
+  new unit tests (86 total green). Backend: added the `aspect_orb_config`
+  Postgres table (the shared, admin-editable, Redis-cached orb store). Remaining:
+  the backend repository/cache/service/route wiring for the admin orb endpoint.
 - Implemented Google OAuth (mobile + backend) — #2. Backend: `apps/backend`
   Express + TS scaffold with `POST /auth/google` that verifies the Google ID
   token (`aud`/`iss`/`exp`/`email_verified`) via `google-auth-library`,
