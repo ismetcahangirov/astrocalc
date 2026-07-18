@@ -6,6 +6,16 @@ and the related issue/PR numbers.
 
 ## 2026-07-18
 
+- Implemented Google OAuth (mobile + backend) — #2. Backend: `apps/backend`
+  Express + TS scaffold with `POST /auth/google` that verifies the Google ID
+  token (`aud`/`iss`/`exp`/`email_verified`) via `google-auth-library`,
+  find-or-creates the user + profile (with email-based account linking), opens
+  a session, and issues JWT access+refresh tokens; Drizzle schema for
+  users/profiles/sessions; 20 unit/integration tests (Vitest + Supertest).
+  Mobile: `apps/mobile` Expo scaffold with a Google Sign-In button
+  (`@react-native-google-signin/google-signin`, `expo-auth-session` fallback),
+  token exchange with the backend, SecureStore token storage, and clear error
+  display on the login screen.
 - Set up GitHub project structure: 15 labels, 8 milestones (M0–M7) per the
   AstroCalc master spec.
 - Piloted the Epic → Sub-issue rollout for two epics (translated to
