@@ -18,6 +18,7 @@ export {
 } from './planetary-positions';
 export {
   computeHouses,
+  findHouseNumber,
   DEFAULT_HOUSE_SYSTEM,
   type HouseSystem,
   type HouseCusp,
@@ -35,3 +36,15 @@ export {
   type OrbConfig,
   type AspectsOptions,
 } from './aspects';
+export {
+  SUPPORTED_LOCALES,
+  FALLBACK_LOCALE,
+  INTERPRETED_BODIES,
+  planetSignSubjectKey,
+  planetHouseSubjectKey,
+  aspectSubjectKey,
+  listInterpretationSubjects,
+  type InterpretationLocale,
+  type InterpretationCategory,
+  type InterpretationSubject,
+} from './interpretations';

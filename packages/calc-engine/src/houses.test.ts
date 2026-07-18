@@ -1,7 +1,13 @@
 import * as Astronomy from 'astronomy-engine';
 import { describe, expect, it } from 'vitest';
 import { CalcEngineError } from './errors';
-import { DEFAULT_HOUSE_SYSTEM, type HousesResult, computeHouses } from './houses';
+import {
+  DEFAULT_HOUSE_SYSTEM,
+  type HouseCusp,
+  type HousesResult,
+  computeHouses,
+  findHouseNumber,
+} from './houses';
 import type { GeoCoordinates } from './types';
 
 /** A representative mid-latitude birth (near Philadelphia, USA). */
@@ -248,5 +254,43 @@ describe('computeHouses', () => {
         expect((error as CalcEngineError).code).toBe('unsupported');
       }
     });
+  });
+});
+
+describe('findHouseNumber', () => {
+  /** Whole Sign cusps starting at 15° Aries, i.e. house 1 spans [15, 45). */
+  const cusps: HouseCusp[] = Array.from({ length: 12 }, (_, i) => {
+    const longitude = (15 + i * 30) % 360;
+    return { house: i + 1, longitude, sign: 'Aries', degree: 0 };
+  });
+
+  it('places a longitude in the house whose arc contains it', () => {
+    expect(findHouseNumber(cusps, 20)).toBe(1); // just inside house 1
+    expect(findHouseNumber(cusps, 44)).toBe(1); // just before house 2's cusp
+    expect(findHouseNumber(cusps, 46)).toBe(2); // just inside house 2
+  });
+
+  it('treats a longitude exactly on a cusp as belonging to the house it opens', () => {
+    expect(findHouseNumber(cusps, 45)).toBe(2);
+    expect(findHouseNumber(cusps, 15)).toBe(1);
+  });
+
+  it('wraps correctly across the 360°/0° seam (house 12 back to house 1)', () => {
+    expect(findHouseNumber(cusps, 0)).toBe(12); // house 12 spans [345, 15)
+    expect(findHouseNumber(cusps, 10)).toBe(12);
+    expect(findHouseNumber(cusps, 350)).toBe(12);
+  });
+
+  it('is independent of the input array order', () => {
+    const shuffled = [...cusps].reverse();
+    expect(findHouseNumber(shuffled, 100)).toBe(findHouseNumber(cusps, 100));
+  });
+
+  it('rejects a cusp list that is not exactly 12 entries', () => {
+    expect(() => findHouseNumber(cusps.slice(0, 11), 0)).toThrowError(CalcEngineError);
+  });
+
+  it('rejects a non-finite longitude', () => {
+    expect(() => findHouseNumber(cusps, Number.NaN)).toThrowError(CalcEngineError);
   });
 });

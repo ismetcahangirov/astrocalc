@@ -50,6 +50,9 @@ const envSchema = z.object({
     .int()
     .nonnegative()
     .default(60 * 60 * 24 * 180),
+  // Natal-chart interpretation text (#18). An admin edit invalidates the
+  // specific cache entry, so a generous TTL is safe here.
+  INTERPRETATION_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24),
   // --- Account deletion & GDPR data export (#9) ---
   // Public base URL of this API, used to build the single-use download link in
   // notifications and the QStash worker webhook target. Required for QStash.

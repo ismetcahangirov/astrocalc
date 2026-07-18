@@ -331,6 +331,39 @@ function toCusps(longitudes: number[]): HouseCusp[] {
 }
 
 /**
+ * Which of the twelve houses a given ecliptic longitude falls in, given a set
+ * of {@link HouseCusp}s (typically {@link HousesResult.cusps}). A longitude
+ * exactly on a cusp belongs to the house that cusp opens (matching the usual
+ * astrological convention), and the wrap-around from house 12 back to house 1
+ * across 360°/0° is handled correctly.
+ *
+ * @throws {CalcEngineError}
+ *   `invalid_input` if `cusps` does not contain exactly 12 entries or
+ *   `longitude` is not a finite number.
+ */
+export function findHouseNumber(cusps: HouseCusp[], longitude: number): number {
+  if (cusps.length !== 12) {
+    throw new CalcEngineError('invalid_input', `expected exactly 12 house cusps, got ${cusps.length}`);
+  }
+  if (!Number.isFinite(longitude)) {
+    throw new CalcEngineError('invalid_input', `longitude must be a finite number, got ${longitude}`);
+  }
+
+  const sorted = [...cusps].sort((a, b) => a.house - b.house);
+  const target = normalizeDegrees(longitude);
+  for (let i = 0; i < 12; i++) {
+    const start = normalizeDegrees(sorted[i]!.longitude);
+    const end = normalizeDegrees(sorted[(i + 1) % 12]!.longitude);
+    const span = normalizeDegrees(end - start) || FULL_CIRCLE;
+    const offset = normalizeDegrees(target - start);
+    if (offset < span) return sorted[i]!.house;
+  }
+  // Unreachable for a well-formed 12-cusp set (the arcs above always cover the
+  // full circle), but keeps the function total rather than possibly undefined.
+  return sorted[11]!.house;
+}
+
+/**
  * Compute the house cusps, Ascendant and Midheaven for a birth moment and place.
  *
  * Placidus (the default) and Koch are quadrant systems that are mathematically
