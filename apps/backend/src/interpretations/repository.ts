@@ -45,7 +45,10 @@ export class InMemoryInterpretationRepository implements InterpretationRepositor
     return [...this.rows.values()];
   }
 
-  async upsert(key: InterpretationKey, input: InterpretationTextInput): Promise<InterpretationText> {
+  async upsert(
+    key: InterpretationKey,
+    input: InterpretationTextInput,
+  ): Promise<InterpretationText> {
     const row: InterpretationText = {
       ...key,
       content: input.content,

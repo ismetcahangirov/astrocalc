@@ -35,7 +35,9 @@ function makeApp() {
 describe('GET /interpretations/:category/:subjectKey', () => {
   it('returns 401 without a bearer token', async () => {
     const { app } = makeApp();
-    const res = await request(app).get('/interpretations/planet-sign/sun-Aries').query({ locale: 'en' });
+    const res = await request(app)
+      .get('/interpretations/planet-sign/sun-Aries')
+      .query({ locale: 'en' });
     expect(res.status).toBe(401);
   });
 
@@ -83,7 +85,9 @@ describe('GET /interpretations/:category/:subjectKey', () => {
 describe('POST /interpretations/batch', () => {
   it('requires auth', async () => {
     const { app } = makeApp();
-    const res = await request(app).post('/interpretations/batch').send({ locale: 'en', subjects: [] });
+    const res = await request(app)
+      .post('/interpretations/batch')
+      .send({ locale: 'en', subjects: [] });
     expect(res.status).toBe(401);
   });
 

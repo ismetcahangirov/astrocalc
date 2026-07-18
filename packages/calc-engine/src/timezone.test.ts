@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CalcEngineError } from './errors';
 import type { GeoCoordinates } from './types';
-import { findTimeZones, localTimeToUtc, resolveBirthInstant, type LocalDateTime } from './timezone';
+import { localTimeToUtc, type LocalDateTime } from './timezone';
+import { findTimeZones, resolveBirthInstant } from './timezone-lookup';
 
 /** Well-known places, as WGS84 decimal-degree coordinates. */
 const PLACES = {

@@ -7,11 +7,16 @@ import { requireAuth } from '../auth/authMiddleware';
 import type { TokenService } from '../auth/tokens';
 
 const categorySchema = z.enum(['planet-sign', 'planet-house', 'aspect']);
-const localeSchema = z.enum(SUPPORTED_LOCALES as unknown as [InterpretationLocale, ...InterpretationLocale[]]);
+const localeSchema = z.enum(
+  SUPPORTED_LOCALES as unknown as [InterpretationLocale, ...InterpretationLocale[]],
+);
 
 const querySchema = z.object({ locale: localeSchema });
 
-const subjectSchema = z.object({ category: categorySchema, subjectKey: z.string().min(1).max(100) });
+const subjectSchema = z.object({
+  category: categorySchema,
+  subjectKey: z.string().min(1).max(100),
+});
 
 const batchSchema = z.object({
   locale: localeSchema,
@@ -118,7 +123,9 @@ export function createInterpretationRouter(
         query.data.locale,
       );
       if (!result) {
-        res.status(404).json({ error: { code: 'not_found', message: 'No interpretation text found' } });
+        res
+          .status(404)
+          .json({ error: { code: 'not_found', message: 'No interpretation text found' } });
         return;
       }
       res.status(200).json(result);

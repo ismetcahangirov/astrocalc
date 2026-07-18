@@ -6,6 +6,19 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Offline calculation support (mobile) — #20 (core logic done; needs the
+  `/natal-chart` backend endpoint to exercise end-to-end). Split
+  `packages/calc-engine` into a React-Native-safe main entry (pure JS —
+  `astronomy-engine` + `luxon` only) and a Node-only `/node` subpath
+  carrying the `geo-tz`-backed timezone lookup (needs `fs`, can't run in
+  RN). Added `computeNatalChart()` combining planetary positions, houses,
+  and aspects into one result. `apps/mobile`: `natalChartService`
+  orchestrates online/offline chart retrieval — backend chart (+ Pro
+  interpretation) when reachable, on-device computation via the identical
+  algorithm when offline (never showing Pro interpretation offline),
+  queuing the offline result to sync once connectivity returns. Remaining:
+  the backend `/natal-chart` + `/natal-chart/sync` routes this client
+  calls don't exist yet.
 - Chart result caching (performance) — #19. `apps/backend`: new `chart`
   module — `hashChartCacheKey()` (a stable SHA-256 fingerprint of
   birthDate/birthTime/lat/lng/houseSystem/orbConfig, per the issue's technical
