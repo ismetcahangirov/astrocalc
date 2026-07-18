@@ -16,6 +16,7 @@ import {
   RedisNominatimRateLimiter,
   type NominatimRateLimiter,
 } from './geocoding/nominatimRateLimiter';
+import { NoopChartCacheInvalidator } from './profile/chartCacheInvalidator';
 import { InMemoryRevocationStore, type RevocationStore } from './auth/revocationStore';
 import { RedisRevocationStore } from './auth/redisRevocationStore';
 import { errorHandler } from './auth/errorHandler';
@@ -85,7 +86,9 @@ export function createApp(env: Env): Express {
     res.json({ status: 'ok' });
   });
 
-  const profileService = createProfileService({ repo });
+  // `cache` defaults to a no-op until EPIC 3 / #19 (chart result caching)
+  // exists — passed explicitly here as the documented swap-in point.
+  const profileService = createProfileService({ repo, cache: new NoopChartCacheInvalidator() });
 
   // Account deletion & GDPR data export (#9). The inline-queue fallback needs
   // `processExport`, and the service needs the queue — resolve the cycle with a

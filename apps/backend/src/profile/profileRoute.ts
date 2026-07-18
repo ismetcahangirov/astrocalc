@@ -7,6 +7,7 @@ import type { TokenService } from '../auth/tokens';
 
 const patchSchema = z.object({
   displayName: z.string().min(1).max(200).nullable().optional(),
+  avatarUrl: z.string().url().max(2048).nullable().optional(),
   locale: z.string().min(2).max(10).nullable().optional(),
   birthDate: z
     .string()
@@ -34,15 +35,24 @@ function serialize(profile: Awaited<ReturnType<ProfileService['getProfile']>>) {
 }
 
 /**
- * Profile routes, used by the onboarding flow and (later) the profile-edit
- * screen (#7):
+ * Profile routes, shared by the onboarding flow (#6) and the profile-edit
+ * screen (#7) — both send the same PATCH shape, just at different times:
  *   GET   /profile  (bearer)          -> current user's profile
  *   PATCH /profile  (bearer) { ... }  -> partial update; each onboarding step
- *                                        calls this with just its own fields.
+ *                                        calls this with just its own fields,
+ *                                        and the edit screen calls it with
+ *                                        whichever fields the user changed.
  *                                        `completeOnboarding: true` marks the
  *                                        flow finished (normally, or via
  *                                        "I'll finish this later") and is what
  *                                        unlocks the main app.
+ *
+ * Changing any birth-relevant field (birthDate/birthTime/birthTimeKnown/
+ * birthPlace*) invalidates that user's cached natal chart/matrix via
+ * `ProfileService`'s cache invalidator — see `profileService.ts`. That cache
+ * itself is EPIC 3 / #19 (chart result caching), not yet built; the
+ * invalidator is a no-op until #19 lands, but the call site is already wired
+ * so #19 only has to implement the port, not find every caller.
  */
 export function createProfileRouter(service: ProfileService, tokenService: TokenService): Router {
   const router = Router();

@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGoogleAuth } from '../auth/useGoogleAuth';
+import { useTranslation } from '../i18n/LocaleContext';
 
 /**
  * Login screen — Section 2 design system (dark + gold). Renders the Google
@@ -8,12 +9,13 @@ import { useGoogleAuth } from '../auth/useGoogleAuth';
  */
 export function LoginScreen() {
   const { loading, error, signIn } = useGoogleAuth();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>AstroCalc</Text>
-        <Text style={styles.subtitle}>Sign in to save your charts and readings</Text>
+        <Text style={styles.title}>{t('login.title')}</Text>
+        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
       </View>
 
       <Pressable
@@ -26,7 +28,7 @@ export function LoginScreen() {
         {loading ? (
           <ActivityIndicator color="#1a1206" />
         ) : (
-          <Text style={styles.buttonText}>Continue with Google</Text>
+          <Text style={styles.buttonText}>{t('login.continueWithGoogle')}</Text>
         )}
       </Pressable>
 
