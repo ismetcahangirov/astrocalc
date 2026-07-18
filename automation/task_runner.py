@@ -202,7 +202,7 @@ def fetch_candidate_issues(limit, milestone=None, label=None, only_issue=None, i
     if only_issue is not None:
         return eligible
     eligible.sort(key=sort_key)
-    return eligible[:limit]
+    return eligible if limit is None else eligible[:limit]
 
 
 def run_claude(prompt, model, tools=None, disallowed_tools=None,
@@ -461,7 +461,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="plan (boss decision) only, don't touch git or execute")
     parser.add_argument("--local-only", action="store_true", help="stop after the local commit -- no test/review gate, no push, no PR, no merge")
     parser.add_argument("--issue", type=int, default=None, help="run a specific issue number, ignoring the done/in-progress filter")
-    parser.add_argument("--limit", type=int, default=1, help="max number of issues to process this run (default 1)")
+    parser.add_argument("--limit", type=int, default=1, help="max number of issues to process this run (default 1, ignored if --all is set)")
+    parser.add_argument("--all", action="store_true", help="process every eligible candidate issue, not just --limit of them")
     parser.add_argument("--milestone", default=None, help="filter candidate issues by milestone title")
     parser.add_argument("--label", default=None, help="filter candidate issues by label")
     parser.add_argument("--include-needs-research", action="store_true", help="also auto-pick issues labeled needs-research/needs-design (normally skipped in batch mode -- they usually need a human decision)")
@@ -470,7 +471,8 @@ def main():
     parser.add_argument("--yes", action="store_true", help="skip the confirmation prompt")
     args = parser.parse_args()
 
-    issues = fetch_candidate_issues(args.limit, args.milestone, args.label, args.issue, args.include_needs_research)
+    effective_limit = None if args.all else args.limit
+    issues = fetch_candidate_issues(effective_limit, args.milestone, args.label, args.issue, args.include_needs_research)
 
     if args.list or not issues:
         if not issues:
