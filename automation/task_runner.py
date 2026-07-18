@@ -121,7 +121,55 @@ def branch_type_for(labels):
     return "feat"
 
 
-def fetch_candidate_issues(limit, milestone=None, label=None, only_issue=None):
+# --- prioritization -----------------------------------------------------
+# Heuristic, not a real dependency graph: we don't reliably resolve which
+# other issue a prose "## Dependencies" reference points to. What we DO do:
+# earlier milestones first, explicit priority labels first, issues that
+# declare no dependencies bumped up (more likely ready to start right now),
+# then oldest-first as a stable tiebreaker (lower issue numbers were
+# generally filed as more foundational sub-issues within their epic).
+
+MILESTONE_RANK_RE = re.compile(r"^M(\d+)")
+PRIORITY_RANK = {"p0": 0, "p1": 1, "p2": 2}
+JUDGMENT_LABELS = {"needs-research", "needs-design"}  # needs a human call, not great for unattended auto-pick
+
+
+def milestone_rank(issue):
+    ms = issue.get("milestone")
+    if not ms:
+        return 99
+    match = MILESTONE_RANK_RE.match(ms.get("title", ""))
+    return int(match.group(1)) if match else 99
+
+
+def priority_rank(labels):
+    for name in labels:
+        if name in PRIORITY_RANK:
+            return PRIORITY_RANK[name]
+    return 9
+
+
+def has_no_dependencies(body):
+    if not body:
+        return False
+    match = re.search(r"##\s*Dependencies\s*\n+(.+?)(\n##|\Z)", body, re.DOTALL | re.IGNORECASE)
+    if not match:
+        return False
+    text = match.group(1).strip().lower()
+    return text.startswith("none") or text.startswith("yoxdur")
+
+
+def sort_key(issue):
+    labels = [l["name"] for l in issue.get("labels", [])]
+    return (
+        milestone_rank(issue),
+        priority_rank(labels),
+        0 if has_no_dependencies(issue.get("body")) else 1,
+        issue["number"],
+    )
+
+
+def fetch_candidate_issues(limit, milestone=None, label=None, only_issue=None, include_judgment=False):
     cmd = [
         "gh", "issue", "list", "--state", "open",
         "--json", "number,title,body,labels,milestone",
@@ -135,7 +183,7 @@ def fetch_candidate_issues(limit, milestone=None, label=None, only_issue=None):
     issues = json.loads(result.stdout)
 
     state = load_state()
-    candidates = []
+    eligible = []
     for issue in issues:
         labels = [l["name"] for l in issue.get("labels", [])]
         if only_issue is not None:
@@ -144,13 +192,17 @@ def fetch_candidate_issues(limit, milestone=None, label=None, only_issue=None):
         else:
             if "epic" in labels:
                 continue  # epics are containers, not directly actionable
+            if not include_judgment and (JUDGMENT_LABELS & set(labels)):
+                continue  # needs a human decision -- skip in auto batch mode
             done_states = {"done", "in_progress", "merged"}
             if str(issue["number"]) in state and state[str(issue["number"])].get("status") in done_states:
                 continue
-        candidates.append(issue)
-        if only_issue is None and len(candidates) >= limit:
-            break
-    return candidates
+        eligible.append(issue)
+
+    if only_issue is not None:
+        return eligible
+    eligible.sort(key=sort_key)
+    return eligible[:limit]
 
 
 def run_claude(prompt, model, tools=None, disallowed_tools=None,
@@ -412,12 +464,13 @@ def main():
     parser.add_argument("--limit", type=int, default=1, help="max number of issues to process this run (default 1)")
     parser.add_argument("--milestone", default=None, help="filter candidate issues by milestone title")
     parser.add_argument("--label", default=None, help="filter candidate issues by label")
+    parser.add_argument("--include-needs-research", action="store_true", help="also auto-pick issues labeled needs-research/needs-design (normally skipped in batch mode -- they usually need a human decision)")
     parser.add_argument("--max-budget-usd", type=float, default=3.0, help="per-task spend cap passed to claude -p (default 3.0)")
     parser.add_argument("--timeout", type=int, default=1200, help="per-task timeout in seconds (default 1200 = 20 min)")
     parser.add_argument("--yes", action="store_true", help="skip the confirmation prompt")
     args = parser.parse_args()
 
-    issues = fetch_candidate_issues(args.limit, args.milestone, args.label, args.issue)
+    issues = fetch_candidate_issues(args.limit, args.milestone, args.label, args.issue, args.include_needs_research)
 
     if args.list or not issues:
         if not issues:
