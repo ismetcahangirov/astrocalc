@@ -79,3 +79,16 @@ and the related issue/PR numbers.
   security posture) and `CONTRIBUTING.md` (workflow, commit convention,
   PR checklist) — #24. Spun out three follow-ups rather than blocking on
   them: local dev setup guide, license decision, lint/formatting tooling.
+- Implemented the profile creation/edit screen — #7. Backend: `PATCH
+  /profile` now also accepts `avatarUrl` (was missing from the onboarding
+  pass); `profileService` gained a `ChartCacheInvalidator` port that fires
+  when a saved patch actually changes a birth-relevant field
+  (birthDate/birthTime/birthTimeKnown/birthPlace*), defaulting to a no-op
+  until EPIC 3's chart-caching sub-issue (#19) exists to implement it.
+  Mobile: a dark/gold `ProfileScreen` (`app/profile.tsx`) lets the user
+  re-edit every onboarding field, warns when a save will recompute their
+  chart, and a minimal `LocaleProvider` (en/az) makes language changes apply
+  immediately across the UI — ahead of #18's interpretation-text i18n.
+  Note: #6 (onboarding flow) and #19 (chart caching) are still unbuilt, so
+  this screen isn't reachable from a signed-in home screen yet and the cache
+  invalidation call is a documented no-op pending #19.

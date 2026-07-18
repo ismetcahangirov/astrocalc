@@ -65,9 +65,10 @@ export interface Profile {
   onboardingCompletedAt: Date | null;
 }
 
-/** Fields the onboarding flow may update, one step (or all) at a time. */
+/** Fields the onboarding flow (and later the profile-edit screen, #7) may update, one step (or all) at a time. */
 export interface ProfileUpdateInput {
   displayName?: string | null;
+  avatarUrl?: string | null;
   locale?: string | null;
   birthDate?: string | null;
   birthTime?: string | null;
