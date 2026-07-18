@@ -15,3 +15,7 @@ and the related issue/PR numbers.
   - Remaining 13 epics from the master spec still to be rolled out.
 - Added `CLAUDE.md` and this `BACKLOG.md`, documenting the GitHub workflow
   convention (pull `main` → branch per task → labeled PR) — #22.
+- Wrote a full `README.md` (overview, features, tech stack, roadmap,
+  security posture) and `CONTRIBUTING.md` (workflow, commit convention,
+  PR checklist) — #24. Spun out three follow-ups rather than blocking on
+  them: local dev setup guide, license decision, lint/formatting tooling.
