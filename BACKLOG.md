@@ -17,7 +17,15 @@ and the related issue/PR numbers.
   extension, pre-1900 Paris Local Mean Time, Moscow's 2011/2014 non-DST offset
   changes, southern-hemisphere inverted DST (Sydney), Indiana's late DST
   adoption, ambiguous/non-existent DST-boundary local times, and validation.
-
+- Planetary position calculation (astronomy-engine integration) — #13.
+  `packages/calc-engine`: new `computePlanetaryPositions()` — apparent
+  geocentric tropical ecliptic longitude, sign/degree, signed longitudinal
+  speed, and retrograde status for the Sun, Moon, Mercury–Pluto, both lunar
+  nodes (true or mean model), and optional Chiron (opt-in two-body Kepler
+  propagation from JPL osculating elements, approximate). 22 new unit tests
+  (47 total green), including accuracy checks against JPL Horizons reference
+  values (every body within ±1 arcminute) and independent cross-checks
+  against `astronomy-engine`'s own node-search/frame machinery.
 - Implemented Google OAuth (mobile + backend) — #2. Backend: `apps/backend`
   Express + TS scaffold with `POST /auth/google` that verifies the Google ID
   token (`aud`/`iss`/`exp`/`email_verified`) via `google-auth-library`,
