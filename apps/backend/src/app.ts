@@ -15,6 +15,10 @@ import { errorHandler } from './auth/errorHandler';
 import { createTokenService } from './auth/tokens';
 import { DrizzleUserRepository } from './db/drizzleUserRepository';
 import { DrizzleAccountRepository } from './db/drizzleAccountRepository';
+import { DrizzleInterpretationRepository } from './db/drizzleInterpretationRepository';
+import { InMemoryInterpretationCache, RedisInterpretationCache, type InterpretationCache } from './interpretations/cache';
+import { createInterpretationService } from './interpretations/interpretationService';
+import { createInterpretationRouter } from './interpretations/interpretationRoute';
 import { createAccountService, type AccountService } from './account/accountService';
 import { createAccountRouter } from './account/accountRoute';
 import { InMemoryObjectStorage, type ObjectStorage } from './account/objectStorage';
@@ -163,6 +167,19 @@ export function createApp(env: Env): Express {
     }),
   );
 
+  // Multilingual natal-chart interpretation text (#18), admin-editable (EPIC 10).
+  const interpretationService = createInterpretationService({
+    repo: new DrizzleInterpretationRepository(db),
+    cache: buildInterpretationCache(redis),
+    config: { cacheTtlSeconds: env.INTERPRETATION_CACHE_TTL_SECONDS },
+  });
+  app.use(
+    '/interpretations',
+    createInterpretationRouter(interpretationService, tokenService, {
+      adminApiToken: env.ADMIN_API_TOKEN,
+    }),
+  );
+
   // Terminal error handler — must be registered last.
   app.use(errorHandler);
 
@@ -296,6 +313,21 @@ function buildWhatsAppSender(env: Env): WhatsAppSender {
       'delivered via WhatsApp (using a fake sender). Set them in production.',
   );
   return new FakeWhatsAppSender();
+}
+
+/**
+ * Use the shared Upstash Redis cache for interpretation text when configured;
+ * otherwise a per-process in-memory fallback (local dev/tests only — an
+ * admin edit on one instance would not invalidate another instance's cache).
+ */
+function buildInterpretationCache(redis: RedisClient | null): InterpretationCache {
+  if (redis) return new RedisInterpretationCache(redis);
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[interpretations] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory interpretation cache. ' +
+      "Admin edits will NOT invalidate other instances' caches.",
+  );
+  return new InMemoryInterpretationCache();
 }
 
 /**

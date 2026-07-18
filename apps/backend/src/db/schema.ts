@@ -3,6 +3,7 @@ import {
   date,
   doublePrecision,
   pgTable,
+  primaryKey,
   text,
   time,
   timestamp,
@@ -134,8 +135,35 @@ export const aspectOrbConfig = pgTable('aspect_orb_config', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Multilingual natal-chart interpretation text (#18): one row per
+ * (category, subjectKey, locale) — e.g. `('planet-sign', 'sun-Aries', 'en')`.
+ * `subjectKey` values are built by `@astrocalc/calc-engine`'s
+ * `planetSignSubjectKey`/`planetHouseSubjectKey`/`aspectSubjectKey`, and the
+ * full required set is enumerated by its `listInterpretationSubjects()` — the
+ * single source of truth both the seed script and the admin-panel
+ * completeness check (EPIC 10) are driven from. This is the admin-editable
+ * store the technical notes call for in place of static per-locale JSON,
+ * given the large text volume; reads are cached in Redis.
+ */
+export const interpretationTexts = pgTable(
+  'interpretation_texts',
+  {
+    category: text('category').notNull(),
+    subjectKey: text('subject_key').notNull(),
+    locale: text('locale').notNull(),
+    content: text('content').notNull(),
+    // Admin user who last changed this value, for the audit trail. Nullable so
+    // the initial seed can exist without attributing it to a person.
+    updatedBy: uuid('updated_by'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.category, table.subjectKey, table.locale] })],
+);
+
 export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
 export type AccountDeletionRow = typeof accountDeletions.$inferSelect;
 export type DataExportJobRow = typeof dataExportJobs.$inferSelect;
+export type InterpretationTextRow = typeof interpretationTexts.$inferSelect;

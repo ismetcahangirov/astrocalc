@@ -26,6 +26,23 @@ and the related issue/PR numbers.
   service/route yet in this repo (not part of EPIC 3's rolled-out sub-issues)
   for `getOrComputeChart()` to actually be called from — it's ready for
   whichever future issue adds that endpoint.
+- Multilingual interpretation text infrastructure — #18 (storage/service/API
+  layer done; bulk seed content and mobile i18next wiring remain). New
+  `packages/calc-engine` `interpretations` module: locale/category types, the
+  ten interpreted planets, canonical subject-key builders for
+  planet-sign/planet-house/aspect combinations, and
+  `listInterpretationSubjects()` — the single source of truth for the full
+  465-combination matrix. Added `findHouseNumber()` to `houses.ts` (which
+  house a longitude falls in, wrap-safe). Backend: new `interpretation_texts`
+  Postgres table (composite PK category+subjectKey+locale, admin-audit
+  columns), a repository/cache/service layered the same way as the geocoding
+  module (Redis-cached, in-memory fallback), and `/interpretations` routes —
+  authenticated single/batch reads with automatic English fallback, plus
+  admin-token-gated upsert and a completeness ("missing") audit endpoint for
+  the EPIC 10 admin panel. 34 new backend tests + 9 new calc-engine tests.
+  Remaining: the original-content generator/seed script to populate all 465
+  combinations × 4 languages, and the mobile `natal-chart.json` i18next
+  namespace + API client.
 
 ## 2026-07-18
 
