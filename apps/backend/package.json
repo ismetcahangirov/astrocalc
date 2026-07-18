@@ -16,6 +16,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@astrocalc/calc-engine": "*",
     "@neondatabase/serverless": "^0.10.4",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",

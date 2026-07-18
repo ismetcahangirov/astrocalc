@@ -11,6 +11,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@astrocalc/calc-engine": "*",
     "@react-native-google-signin/google-signin": "^13.1.0",
     "expo": "~52.0.0",
     "expo-auth-session": "~6.0.0",
