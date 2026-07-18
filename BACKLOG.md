@@ -4,6 +4,29 @@ Reverse-chronological log of completed work on AstroCalc. Add an entry here
 whenever a task is finished (merged or ready for review) — what was done,
 and the related issue/PR numbers.
 
+## 2026-07-19
+
+- Chart result caching (performance) — #19. `apps/backend`: new `chart`
+  module — `hashChartCacheKey()` (a stable SHA-256 fingerprint of
+  birthDate/birthTime/lat/lng/houseSystem/orbConfig, per the issue's technical
+  notes), the `ChartResultCache` interface + `getOrComputeChart()` helper (the
+  entry point the future chart-computation endpoint will call), an in-memory
+  implementation for tests/local dev, and `RedisChartResultCache` — an Upstash
+  Redis implementation that namespaces cached entries under a per-user
+  "generation" counter so `invalidate(userId)` is a single `INCR` rather than
+  an unbounded key scan, with a configurable long TTL (`CHART_CACHE_TTL_SECONDS`,
+  default 180 days) reclaiming orphaned entries left behind by invalidation.
+  `ChartResultCache` implements the `ChartCacheInvalidator` port #7 already
+  wired into `profileService` — `app.ts` now passes a real
+  `RedisChartResultCache`/`InMemoryChartResultCache` instead of the
+  documented `NoopChartCacheInvalidator` stand-in, so editing a birth-relevant
+  profile field actually invalidates that user's cached chart. 17 new unit
+  tests, including one asserting a cache hit is ≥10x faster than the original
+  (simulated) computation. Remaining: there is no chart-computation
+  service/route yet in this repo (not part of EPIC 3's rolled-out sub-issues)
+  for `getOrComputeChart()` to actually be called from — it's ready for
+  whichever future issue adds that endpoint.
+
 ## 2026-07-18
 
 - Historical timezone accuracy (geo-tz + luxon) — #16. `packages/calc-engine`:

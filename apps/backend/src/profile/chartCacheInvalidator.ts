@@ -2,18 +2,16 @@ import type { ProfileUpdateInput } from '../auth/types';
 
 /**
  * Port onto the calc-engine's chart/matrix result cache (EPIC 3, #19 —
- * "Chart result caching"). That cache doesn't exist yet, so
- * {@link NoopChartCacheInvalidator} is the only implementation for now; once
- * #19 lands, its cache should implement this interface and be passed in as
- * `ProfileServiceDeps.cache` so `profileService.ts`'s call site doesn't need
- * to change.
+ * "Chart result caching"). `ChartResultCache` (see `chart/chartResultCache.ts`)
+ * implements this interface directly, so it can be passed in as
+ * `ProfileServiceDeps.cache` without `profileService.ts`'s call site changing.
  */
 export interface ChartCacheInvalidator {
   /** Drop any cached natal chart/matrix computed from this user's old birth data. */
   invalidate(userId: string): Promise<void>;
 }
 
-/** Default until #19 exists — there is no cache yet, so there is nothing to drop. */
+/** Test/default stand-in for callers that don't care about cache invalidation. */
 export class NoopChartCacheInvalidator implements ChartCacheInvalidator {
   async invalidate(): Promise<void> {
     // Intentionally empty.
