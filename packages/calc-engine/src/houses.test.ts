@@ -1,14 +1,8 @@
 import * as Astronomy from 'astronomy-engine';
 import { describe, expect, it } from 'vitest';
 import { CalcEngineError } from './errors';
-import {
-  DEFAULT_HOUSE_SYSTEM,
-  type HousesResult,
-  computeHouses,
-} from './houses';
+import { DEFAULT_HOUSE_SYSTEM, type HousesResult, computeHouses } from './houses';
 import type { GeoCoordinates } from './types';
-
-const DEG = Math.PI / 180;
 
 /** A representative mid-latitude birth (near Philadelphia, USA). */
 const BIRTH = '1990-05-15T13:45:00Z';
@@ -49,7 +43,10 @@ function rightAscension(iso: string, lonDeg: number): number {
 function altitude(iso: string, place: GeoCoordinates, lonDeg: number): number {
   const time = Astronomy.MakeTime(new Date(iso));
   const observer = new Astronomy.Observer(place.latitude, place.longitude, 0);
-  const hor = Astronomy.RotateVector(Astronomy.Rotation_EQD_HOR(time, observer), eqdVector(iso, lonDeg));
+  const hor = Astronomy.RotateVector(
+    Astronomy.Rotation_EQD_HOR(time, observer),
+    eqdVector(iso, lonDeg),
+  );
   return Astronomy.SphereFromVector(hor).lat;
 }
 
@@ -65,7 +62,9 @@ describe('computeHouses', () => {
 
     it('puts the Midheaven on the meridian (its RA equals the RAMC)', () => {
       const ramc = ramcDegrees(BIRTH, PLACE.longitude);
-      expect(separation(rightAscension(BIRTH, result.midheaven.longitude), ramc)).toBeLessThan(1e-6);
+      expect(separation(rightAscension(BIRTH, result.midheaven.longitude), ramc)).toBeLessThan(
+        1e-6,
+      );
     });
 
     it('puts the Ascendant on the eastern horizon (altitude 0, rising)', () => {
@@ -108,7 +107,10 @@ describe('computeHouses', () => {
 
     it('places opposite cusps exactly 180° apart', () => {
       for (let h = 0; h < 6; h++) {
-        expect(separation(result.cusps[h]!.longitude, result.cusps[h + 6]!.longitude)).toBeCloseTo(180, 9);
+        expect(separation(result.cusps[h]!.longitude, result.cusps[h + 6]!.longitude)).toBeCloseTo(
+          180,
+          9,
+        );
       }
     });
 
@@ -140,13 +142,17 @@ describe('computeHouses', () => {
 
     it('Placidus and Koch give identical cusps', () => {
       for (let h = 0; h < 12; h++) {
-        expect(separation(placidus.cusps[h]!.longitude, koch.cusps[h]!.longitude)).toBeLessThan(1e-4);
+        expect(separation(placidus.cusps[h]!.longitude, koch.cusps[h]!.longitude)).toBeLessThan(
+          1e-4,
+        );
       }
     });
 
     it('cusp 11 has right ascension RAMC + 30°', () => {
       const ramc = ramcDegrees(equatorBirth, 0);
-      expect(separation(rightAscension(equatorBirth, placidus.cusps[10]!.longitude), ramc + 30)).toBeLessThan(1e-4);
+      expect(
+        separation(rightAscension(equatorBirth, placidus.cusps[10]!.longitude), ramc + 30),
+      ).toBeLessThan(1e-4);
     });
   });
 
@@ -228,7 +234,9 @@ describe('computeHouses', () => {
     });
 
     it('rejects non-finite coordinates', () => {
-      expect(() => computeHouses(BIRTH, { latitude: Number.NaN, longitude: 0 })).toThrowError(CalcEngineError);
+      expect(() => computeHouses(BIRTH, { latitude: Number.NaN, longitude: 0 })).toThrowError(
+        CalcEngineError,
+      );
     });
 
     it('rejects the geographic poles, where no house system is defined', () => {

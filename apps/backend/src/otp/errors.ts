@@ -10,9 +10,14 @@ import { AuthError } from '../auth/errors';
 /** Resend attempted while the cooldown window is still open. */
 export class OtpCooldownError extends AuthError {
   constructor(public readonly retryAfterSeconds: number) {
-    super('otp_cooldown', `Please wait ${retryAfterSeconds}s before requesting another code.`, 429, {
-      retryAfterSeconds,
-    });
+    super(
+      'otp_cooldown',
+      `Please wait ${retryAfterSeconds}s before requesting another code.`,
+      429,
+      {
+        retryAfterSeconds,
+      },
+    );
     this.name = 'OtpCooldownError';
   }
 }
@@ -70,9 +75,14 @@ export class OtpAccountLockedError extends AuthError {
 /** Per-phone-number hourly cap on OTP requests exceeded (independent of the short resend cooldown). */
 export class OtpPhoneRateLimitError extends AuthError {
   constructor(public readonly retryAfterSeconds: number) {
-    super('otp_rate_limited', 'Too many codes requested for this number. Please try again later.', 429, {
-      retryAfterSeconds,
-    });
+    super(
+      'otp_rate_limited',
+      'Too many codes requested for this number. Please try again later.',
+      429,
+      {
+        retryAfterSeconds,
+      },
+    );
     this.name = 'OtpPhoneRateLimitError';
   }
 }
@@ -80,9 +90,14 @@ export class OtpPhoneRateLimitError extends AuthError {
 /** Per-IP hourly cap on OTP requests exceeded — likely SMS/WhatsApp-bombing or scripted abuse. */
 export class OtpIpRateLimitError extends AuthError {
   constructor(public readonly retryAfterSeconds: number) {
-    super('otp_ip_rate_limited', 'Too many verification codes requested. Please try again later.', 429, {
-      retryAfterSeconds,
-    });
+    super(
+      'otp_ip_rate_limited',
+      'Too many verification codes requested. Please try again later.',
+      429,
+      {
+        retryAfterSeconds,
+      },
+    );
     this.name = 'OtpIpRateLimitError';
   }
 }
@@ -93,7 +108,9 @@ export class OtpIpRateLimitError extends AuthError {
  */
 export class WhatsAppQuotaExceededError extends AuthError {
   public readonly alternative = 'google' as const;
-  constructor(message = 'WhatsApp verification is temporarily unavailable. Please continue with Google.') {
+  constructor(
+    message = 'WhatsApp verification is temporarily unavailable. Please continue with Google.',
+  ) {
     super('whatsapp_quota_exceeded', message, 503, { alternative: 'google', channel: 'whatsapp' });
     this.name = 'WhatsAppQuotaExceededError';
   }

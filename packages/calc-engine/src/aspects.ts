@@ -6,12 +6,7 @@ import type { CelestialBody } from './planetary-positions';
  * bodies that classical Western astrology treats as significant. Each has an
  * exact separation angle (see {@link ASPECT_ANGLES}).
  */
-export type AspectType =
-  | 'conjunction'
-  | 'sextile'
-  | 'square'
-  | 'trine'
-  | 'opposition';
+export type AspectType = 'conjunction' | 'sextile' | 'square' | 'trine' | 'opposition';
 
 /** Exact separation angle (degrees) of each major aspect. */
 export const ASPECT_ANGLES: Readonly<Record<AspectType, number>> = {
@@ -171,7 +166,11 @@ function resolveOrbs(overrides: OrbConfig = {}): Record<AspectType, number> {
 }
 
 /** Validate a body's longitude/speed and return it with longitude normalized. */
-function validateBody(input: AspectBody): { body: CelestialBody; longitude: number; speed?: number } {
+function validateBody(input: AspectBody): {
+  body: CelestialBody;
+  longitude: number;
+  speed?: number;
+} {
   if (!Number.isFinite(input.longitude)) {
     throw new CalcEngineError(
       'invalid_input',
@@ -202,8 +201,10 @@ function isApplying(
   if (a.speed === undefined || b.speed === undefined) return null;
   const deviationNow = Math.abs(angularSeparation(a.longitude, b.longitude) - angle);
   const deviationNext = Math.abs(
-    angularSeparation(a.longitude + a.speed * APPLYING_STEP_DAYS, b.longitude + b.speed * APPLYING_STEP_DAYS) -
-      angle,
+    angularSeparation(
+      a.longitude + a.speed * APPLYING_STEP_DAYS,
+      b.longitude + b.speed * APPLYING_STEP_DAYS,
+    ) - angle,
   );
   return deviationNext < deviationNow;
 }

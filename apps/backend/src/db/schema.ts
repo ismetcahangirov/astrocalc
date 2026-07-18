@@ -1,4 +1,13 @@
-import { boolean, date, doublePrecision, pgTable, text, time, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  date,
+  doublePrecision,
+  pgTable,
+  text,
+  time,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 /**
  * Core identity. A user may authenticate via Google (googleId set) and/or other

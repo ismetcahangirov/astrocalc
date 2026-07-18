@@ -9,9 +9,20 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { ApiError, getProfile, updateProfile, type Profile, type ProfileUpdateInput } from '../api/profileApi';
+import {
+  ApiError,
+  getProfile,
+  updateProfile,
+  type Profile,
+  type ProfileUpdateInput,
+} from '../api/profileApi';
 import { useTranslation } from '../i18n/LocaleContext';
-import { isSupportedLocale, SUPPORTED_LOCALES, type Locale, type TranslationKey } from '../i18n/translations';
+import {
+  isSupportedLocale,
+  SUPPORTED_LOCALES,
+  type Locale,
+  type TranslationKey,
+} from '../i18n/translations';
 
 const BIRTH_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BIRTH_TIME_RE = /^\d{2}:\d{2}$/;
@@ -71,7 +82,8 @@ function toPatch(form: FormState): ProfileUpdateInput {
     birthPlaceName: form.birthPlaceName.trim() === '' ? null : form.birthPlaceName.trim(),
     birthPlaceLat: num(form.birthPlaceLat),
     birthPlaceLng: num(form.birthPlaceLng),
-    birthPlaceTimezone: form.birthPlaceTimezone.trim() === '' ? null : form.birthPlaceTimezone.trim(),
+    birthPlaceTimezone:
+      form.birthPlaceTimezone.trim() === '' ? null : form.birthPlaceTimezone.trim(),
   };
 }
 
@@ -83,7 +95,11 @@ function validate(form: FormState, t: (key: TranslationKey) => string): string |
   if (form.birthDate.trim() !== '' && !BIRTH_DATE_RE.test(form.birthDate.trim())) {
     return t('profile.birthDate.invalid');
   }
-  if (form.birthTimeKnown && form.birthTime.trim() !== '' && !BIRTH_TIME_RE.test(form.birthTime.trim())) {
+  if (
+    form.birthTimeKnown &&
+    form.birthTime.trim() !== '' &&
+    !BIRTH_TIME_RE.test(form.birthTime.trim())
+  ) {
     return t('profile.birthTime.invalid');
   }
   return null;
@@ -190,8 +206,12 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{isNewProfile ? t('profile.titleCreate') : t('profile.titleEdit')}</Text>
-      <Text style={styles.subtitle}>{isNewProfile ? t('profile.subtitleCreate') : t('profile.subtitleEdit')}</Text>
+      <Text style={styles.title}>
+        {isNewProfile ? t('profile.titleCreate') : t('profile.titleEdit')}
+      </Text>
+      <Text style={styles.subtitle}>
+        {isNewProfile ? t('profile.subtitleCreate') : t('profile.subtitleEdit')}
+      </Text>
 
       <Field label={t('profile.name.label')}>
         <TextInput
@@ -225,7 +245,9 @@ export function ProfileScreen() {
               onPress={() => onSelectLocale(code)}
               style={[styles.chip, form.locale === code && styles.chipSelected]}
             >
-              <Text style={[styles.chipText, form.locale === code && styles.chipTextSelected]}>{label}</Text>
+              <Text style={[styles.chipText, form.locale === code && styles.chipTextSelected]}>
+                {label}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -299,7 +321,9 @@ export function ProfileScreen() {
         />
       </Field>
 
-      {changedBirthData ? <Text style={styles.notice}>{t('profile.birthDataChangedNotice')}</Text> : null}
+      {changedBirthData ? (
+        <Text style={styles.notice}>{t('profile.birthDataChangedNotice')}</Text>
+      ) : null}
       {saveError ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {saveError}
@@ -312,9 +336,17 @@ export function ProfileScreen() {
         accessibilityState={{ disabled: saving }}
         disabled={saving}
         onPress={onSave}
-        style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed, saving && styles.saveButtonDisabled]}
+        style={({ pressed }) => [
+          styles.saveButton,
+          pressed && styles.saveButtonPressed,
+          saving && styles.saveButtonDisabled,
+        ]}
       >
-        {saving ? <ActivityIndicator color="#1a1206" /> : <Text style={styles.saveButtonText}>{t('profile.save')}</Text>}
+        {saving ? (
+          <ActivityIndicator color="#1a1206" />
+        ) : (
+          <Text style={styles.saveButtonText}>{t('profile.save')}</Text>
+        )}
       </Pressable>
     </ScrollView>
   );
@@ -336,11 +368,24 @@ const MUTED = '#6E6A80';
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   content: { padding: 24, paddingBottom: 48 },
-  centered: { flex: 1, backgroundColor: BG, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  centered: {
+    flex: 1,
+    backgroundColor: BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
   title: { color: GOLD, fontSize: 28, fontWeight: '700', letterSpacing: 0.5 },
   subtitle: { color: '#B9B4C7', fontSize: 14, marginTop: 6, marginBottom: 28 },
   field: { marginBottom: 20 },
-  label: { color: '#B9B4C7', fontSize: 13, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  label: {
+    color: '#B9B4C7',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   input: {
     backgroundColor: '#181329',
     borderRadius: 12,

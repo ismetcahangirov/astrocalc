@@ -4,9 +4,17 @@ import { InMemoryGeocodeCache } from './geocodeCache';
 import { InMemoryNominatimRateLimiter } from './nominatimRateLimiter';
 import type { NominatimResult } from './types';
 
-const config = { cacheTtlSeconds: 3600, localLimit: 10, remoteLimit: 10, minLocalResultsBeforeRemote: 1 };
+const config = {
+  cacheTtlSeconds: 3600,
+  localLimit: 10,
+  remoteLimit: 10,
+  minLocalResultsBeforeRemote: 1,
+};
 
-function build(nominatimResults: NominatimResult[] = [], nominatimImpl?: () => Promise<NominatimResult[]>) {
+function build(
+  nominatimResults: NominatimResult[] = [],
+  nominatimImpl?: () => Promise<NominatimResult[]>,
+) {
   const search = vi.fn(nominatimImpl ?? (async () => nominatimResults));
   const cache = new InMemoryGeocodeCache();
   const rateLimiter = new InMemoryNominatimRateLimiter({ sleep: async () => undefined });

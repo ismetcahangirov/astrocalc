@@ -32,7 +32,7 @@ export function searchAzCities(rawQuery: string, limit = 10): PlaceResult[] {
   const query = normalizeAzSearchKey(rawQuery);
   if (!query) return [];
 
-  const matches: Array<{ city: AzCity; rank: number }> = [];
+  const matches: { city: AzCity; rank: number }[] = [];
   for (const city of AZ_CITIES) {
     const rank = bestRank(query, city);
     if (rank !== null) matches.push({ city, rank });

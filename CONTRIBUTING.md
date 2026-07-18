@@ -99,11 +99,39 @@ Before requesting review / merging:
 
 ## Code Style
 
-Not yet established — no code exists in this repo yet. Lint/formatting
-tooling (ESLint/Prettier or equivalent) will be added once the monorepo is
-scaffolded; this section will be filled in at that point. Until then,
-match the conventions of whatever package you're adding to and keep the
-diff minimal.
+Lint/formatting tooling is set up at the repo root and applies to every
+workspace (`apps/*`, `packages/calc-engine`) — no per-package config needed.
+
+- **ESLint** (flat config, `eslint.config.js`) — `@eslint/js` recommended
+  rules plus `typescript-eslint`'s `strict` and `stylistic` rule sets.
+  TypeScript strict-mode lint rules are enabled repo-wide, matching the
+  [Tech Stack](./README.md#tech-stack) decision to run mobile/backend in
+  TypeScript strict mode.
+- **Prettier** (`.prettierrc.json`) — owns formatting; `eslint-config-prettier`
+  disables any ESLint stylistic rule that would fight it. Config: single
+  quotes, semicolons, trailing commas, 100-char print width. Markdown prose
+  files (`*.md`) are excluded from Prettier — see `.prettierignore` — so
+  hand-wrapped docs like this one aren't auto-reflowed.
+- **TypeScript** (`tsconfig.base.json`) — `strict: true` plus
+  `noUncheckedIndexedAccess`, `noImplicitOverride`, and
+  `exactOptionalPropertyTypes`. Each package's `tsconfig.json` should
+  `"extends": "<path-to-root>/tsconfig.base.json"`.
+
+Commands (run from the repo root):
+
+```
+npm install           # one-time, installs the shared lint/format tooling
+npm run lint           # ESLint, no autofix
+npm run lint:fix       # ESLint with --fix
+npm run format         # Prettier --write
+npm run format:check   # Prettier --check (what CI runs)
+```
+
+CI runs `npm run lint` and `npm run format:check` on every push to `main`
+and every PR (`.github/workflows/lint.yml`) — a red check blocks merge.
+There's no pre-commit hook yet; running `npm run lint` and
+`npm run format:check` locally before opening a PR is the current
+expectation.
 
 ## Local Development Setup
 

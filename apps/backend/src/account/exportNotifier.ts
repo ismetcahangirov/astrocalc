@@ -17,7 +17,6 @@ export interface ExportNotifier {
 /** Logs the notification. The link itself is never logged (it is a capability). */
 export class LogExportNotifier implements ExportNotifier {
   async notifyReady(notification: ExportReadyNotification): Promise<void> {
-    // eslint-disable-next-line no-console
     console.info(
       `[export] bundle ready for user ${notification.userId}; link valid until ` +
         `${notification.expiresAt.toISOString()}`,

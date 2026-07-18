@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+coverage
+.expo
+.next
+.automation
+package-lock.json
+
+# Hand-authored prose docs — not auto-formatted (Prettier's markdown table/
+# list reflow fights the existing hand-wrapped style). Code style tooling
+# governs apps/*, packages/calc-engine, and repo config, not doc prose.
+*.md

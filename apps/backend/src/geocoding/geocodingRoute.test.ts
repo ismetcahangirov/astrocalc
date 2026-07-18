@@ -31,13 +31,24 @@ describe('GET /geocoding/search', () => {
 
   it('returns 400 when q is missing', async () => {
     const app = makeApp({ search: async () => [] });
-    const res = await request(app).get('/geocoding/search').set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(app)
+      .get('/geocoding/search')
+      .set('Authorization', `Bearer ${accessToken}`);
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('invalid_request');
   });
 
   it('returns 200 with the service results', async () => {
-    const results = [{ id: 'baku', name: 'Bakı', region: 'Bakı şəhəri', lat: 40.4, lng: 49.9, source: 'az-local' as const }];
+    const results = [
+      {
+        id: 'baku',
+        name: 'Bakı',
+        region: 'Bakı şəhəri',
+        lat: 40.4,
+        lng: 49.9,
+        source: 'az-local' as const,
+      },
+    ];
     const app = makeApp({ search: async () => results });
 
     const res = await request(app)

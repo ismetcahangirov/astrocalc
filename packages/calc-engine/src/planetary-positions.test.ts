@@ -24,7 +24,7 @@ const HORIZONS_LONGITUDE: Partial<Record<CelestialBody, number>> = {
   venus: 242.6122975,
   mars: 267.3083422,
   jupiter: 35.5823812,
-  saturn: 333.2435330,
+  saturn: 333.243533,
   uranus: 49.3839119,
   neptune: 355.0761521,
   pluto: 299.3576621,

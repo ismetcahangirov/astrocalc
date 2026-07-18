@@ -40,7 +40,9 @@ export function createSlidingWindowRateLimiter(
       return {
         success: result.success,
         remaining: result.remaining,
-        retryAfterSeconds: result.success ? 0 : Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
+        retryAfterSeconds: result.success
+          ? 0
+          : Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)),
       };
     },
   };
@@ -71,7 +73,10 @@ export class InMemoryRateLimiter implements RateLimiter {
 
     if (timestamps.length >= this.limitCount) {
       this.hits.set(identifier, timestamps);
-      const retryAfterSeconds = Math.max(1, Math.ceil((timestamps[0]! + this.windowMs - now) / 1000));
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((timestamps[0]! + this.windowMs - now) / 1000),
+      );
       return { success: false, remaining: 0, retryAfterSeconds };
     }
 

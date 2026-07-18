@@ -1,12 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from './client';
-import {
-  accountDeletions,
-  dataExportJobs,
-  profiles,
-  users,
-  type DataExportJobRow,
-} from './schema';
+import { accountDeletions, dataExportJobs, profiles, users, type DataExportJobRow } from './schema';
 import type { AccountRepository } from '../account/repository';
 import type {
   AccountDeletionRecord,

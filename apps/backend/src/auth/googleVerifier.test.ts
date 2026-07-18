@@ -8,8 +8,8 @@ const CLIENT_ID = 'web-client-id.apps.googleusercontent.com';
 function fakeClient(
   payload: Partial<GoogleTokenPayload> | undefined,
   opts: { throwErr?: Error } = {},
-): { client: GoogleTicketVerifier; calls: Array<{ idToken: string; audience: string | string[] }> } {
-  const calls: Array<{ idToken: string; audience: string | string[] }> = [];
+): { client: GoogleTicketVerifier; calls: { idToken: string; audience: string | string[] }[] } {
+  const calls: { idToken: string; audience: string | string[] }[] = [];
   const client: GoogleTicketVerifier = {
     async verifyIdToken(o) {
       calls.push(o);

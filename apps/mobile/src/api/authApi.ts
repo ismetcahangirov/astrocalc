@@ -43,13 +43,14 @@ export async function signInWithGoogle(idToken: string): Promise<SignInResponse>
   }
 
   const data = (await res.json().catch(() => null)) as
-    | (SignInResponse & { error?: never })
-    | { error: { code: string; message: string } }
-    | null;
+    (SignInResponse & { error?: never }) | { error: { code: string; message: string } } | null;
 
   if (!res.ok || !data || 'error' in data) {
     const err = data && 'error' in data ? data.error : null;
-    throw new ApiError(err?.code ?? 'unknown_error', err?.message ?? 'Sign-in failed. Please try again.');
+    throw new ApiError(
+      err?.code ?? 'unknown_error',
+      err?.message ?? 'Sign-in failed. Please try again.',
+    );
   }
 
   return data;

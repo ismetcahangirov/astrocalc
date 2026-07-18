@@ -38,12 +38,7 @@ export interface ChartHouseCusp {
 }
 
 /** The major aspect types the wheel can draw, matching the calc-engine. */
-export type ChartAspectType =
-  | 'conjunction'
-  | 'sextile'
-  | 'square'
-  | 'trine'
-  | 'opposition';
+export type ChartAspectType = 'conjunction' | 'sextile' | 'square' | 'trine' | 'opposition';
 
 /** An aspect between two bodies, referenced by their `body` ids. */
 export interface ChartAspect {
@@ -385,7 +380,11 @@ export function computeWheelLayout(input: WheelInput): WheelLayout {
         angular: cusp.house === 1 || cusp.house === 10,
         outer: pointOnCircle(center, radii.zodiacInner, angle),
         inner: pointOnCircle(center, radii.houseHub, angle),
-        label: pointOnCircle(center, radii.houseHub + (radii.planetRing - radii.houseHub) * 0.35, labelAngle),
+        label: pointOnCircle(
+          center,
+          radii.houseHub + (radii.planetRing - radii.houseHub) * 0.35,
+          labelAngle,
+        ),
       });
     }
   }

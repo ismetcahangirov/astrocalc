@@ -43,7 +43,11 @@ export function createOtpRouter(deps: OtpRouterDeps): Router {
       const ip = req.ip ?? 'unknown';
       const rate = await ipRequestLimiter.limit(ip);
       if (!rate.success) {
-        await alerter.anomalousActivity({ kind: 'otp_ip_rate_limited', identifier: ip, at: new Date() });
+        await alerter.anomalousActivity({
+          kind: 'otp_ip_rate_limited',
+          identifier: ip,
+          at: new Date(),
+        });
         throw new OtpIpRateLimitError(rate.retryAfterSeconds);
       }
 

@@ -12,7 +12,10 @@ function jsonResponse(body: unknown, ok = true, status = 200): Response {
 describe('createNominatimClient.search', () => {
   it('sends a required User-Agent header and the expected query params', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse([]));
-    const client = createNominatimClient({ userAgent: 'AstroCalc/1.0 (test@example.com)', fetchImpl });
+    const client = createNominatimClient({
+      userAgent: 'AstroCalc/1.0 (test@example.com)',
+      fetchImpl,
+    });
 
     await client.search('Şəki', 5);
 
@@ -30,7 +33,13 @@ describe('createNominatimClient.search', () => {
   it('maps Nominatim entries to PlaceResult-shaped records', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       jsonResponse([
-        { place_id: 123, lat: '41.19', lon: '47.17', display_name: 'Shaki, Azerbaijan', name: 'Shaki' },
+        {
+          place_id: 123,
+          lat: '41.19',
+          lon: '47.17',
+          display_name: 'Shaki, Azerbaijan',
+          name: 'Shaki',
+        },
       ]),
     );
     const client = createNominatimClient({ userAgent: 'test', fetchImpl });
@@ -43,9 +52,11 @@ describe('createNominatimClient.search', () => {
   });
 
   it('falls back to the first display_name segment when name is missing', async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(
-      jsonResponse([{ place_id: 1, lat: '1', lon: '2', display_name: 'Foo, Bar, Baz' }]),
-    );
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse([{ place_id: 1, lat: '1', lon: '2', display_name: 'Foo, Bar, Baz' }]),
+      );
     const client = createNominatimClient({ userAgent: 'test', fetchImpl });
 
     const [result] = await client.search('foo', 1);

@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CalcEngineError } from './errors';
-import {
-  type Aspect,
-  type AspectBody,
-  computeAspects,
-  DEFAULT_ORBS,
-} from './aspects';
+import { type Aspect, type AspectBody, computeAspects, DEFAULT_ORBS } from './aspects';
 import { computePlanetaryPositions } from './planetary-positions';
 
 /** Grab the (single) aspect between two named bodies, or fail. */
@@ -20,7 +15,7 @@ function between(aspects: Aspect[], a: string, b: string): Aspect {
 describe('computeAspects', () => {
   describe('aspect type and exact degree difference', () => {
     it('recognises each major aspect at its exact angle', () => {
-      const cases: Array<[number, string, number]> = [
+      const cases: [number, string, number][] = [
         [0, 'conjunction', 0],
         [60, 'sextile', 60],
         [90, 'square', 90],
@@ -71,15 +66,19 @@ describe('computeAspects', () => {
   describe('orb configuration', () => {
     it('uses the documented default orb per aspect type', () => {
       // 7.5° from conjunction: inside the 8° default, so it is an aspect.
-      expect(computeAspects([
-        { body: 'sun', longitude: 0 },
-        { body: 'mercury', longitude: 7.5 },
-      ])).toHaveLength(1);
+      expect(
+        computeAspects([
+          { body: 'sun', longitude: 0 },
+          { body: 'mercury', longitude: 7.5 },
+        ]),
+      ).toHaveLength(1);
       // 6.5° from sextile: outside the 6° default sextile orb, so it is not.
-      expect(computeAspects([
-        { body: 'sun', longitude: 0 },
-        { body: 'mercury', longitude: 66.5 },
-      ])).toHaveLength(0);
+      expect(
+        computeAspects([
+          { body: 'sun', longitude: 0 },
+          { body: 'mercury', longitude: 66.5 },
+        ]),
+      ).toHaveLength(0);
     });
 
     it('honours a per-aspect-type orb override from the (admin) configuration', () => {

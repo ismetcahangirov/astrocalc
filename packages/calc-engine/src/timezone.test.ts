@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CalcEngineError } from './errors';
 import type { GeoCoordinates } from './types';
-import {
-  findTimeZones,
-  localTimeToUtc,
-  resolveBirthInstant,
-  type LocalDateTime,
-} from './timezone';
+import { findTimeZones, localTimeToUtc, resolveBirthInstant, type LocalDateTime } from './timezone';
 
 /** Well-known places, as WGS84 decimal-degree coordinates. */
 const PLACES = {
@@ -32,9 +27,7 @@ describe('findTimeZones', () => {
 
   it('resolves an Indiana point to its own historical zone, not New York', () => {
     // Pre-1970 divergence: Indiana zones only survive with the "all" dataset.
-    expect(findTimeZones(PLACES.indianapolis)).toEqual([
-      'America/Indiana/Indianapolis',
-    ]);
+    expect(findTimeZones(PLACES.indianapolis)).toEqual(['America/Indiana/Indianapolis']);
   });
 
   it('returns a nautical Etc/GMT zone for a point in the open ocean', () => {
@@ -44,9 +37,7 @@ describe('findTimeZones', () => {
   });
 
   it('throws invalid_input when latitude is out of range', () => {
-    expect(() => findTimeZones({ latitude: 91, longitude: 0 })).toThrowError(
-      CalcEngineError,
-    );
+    expect(() => findTimeZones({ latitude: 91, longitude: 0 })).toThrowError(CalcEngineError);
     try {
       findTimeZones({ latitude: 0, longitude: 200 });
     } catch (error) {
@@ -56,9 +47,9 @@ describe('findTimeZones', () => {
   });
 
   it('throws invalid_input when a coordinate is not a finite number', () => {
-    expect(() =>
-      findTimeZones({ latitude: Number.NaN, longitude: 0 }),
-    ).toThrowError(CalcEngineError);
+    expect(() => findTimeZones({ latitude: Number.NaN, longitude: 0 })).toThrowError(
+      CalcEngineError,
+    );
   });
 });
 
@@ -75,10 +66,7 @@ describe('localTimeToUtc', () => {
 
   it('throws invalid_input for an impossible calendar date', () => {
     try {
-      localTimeToUtc(
-        { year: 2000, month: 13, day: 1, hour: 12 },
-        'America/New_York',
-      );
+      localTimeToUtc({ year: 2000, month: 13, day: 1, hour: 12 }, 'America/New_York');
       throw new Error('expected localTimeToUtc to throw');
     } catch (error) {
       expect(error).toBeInstanceOf(CalcEngineError);
@@ -88,18 +76,12 @@ describe('localTimeToUtc', () => {
 
   it('throws invalid_input when a component is not a finite number', () => {
     expect(() =>
-      localTimeToUtc(
-        { year: 2000, month: 1, day: 1, hour: Number.NaN },
-        'America/New_York',
-      ),
+      localTimeToUtc({ year: 2000, month: 1, day: 1, hour: Number.NaN }, 'America/New_York'),
     ).toThrowError(CalcEngineError);
   });
 
   it('defaults an omitted hour/minute/second to midnight', () => {
-    const result = localTimeToUtc(
-      { year: 2020, month: 6, day: 1 },
-      'America/New_York',
-    );
+    const result = localTimeToUtc({ year: 2020, month: 6, day: 1 }, 'America/New_York');
     // 2020-06-01 00:00 EDT (-4) => 04:00 UTC.
     expect(result.utc).toBe('2020-06-01T04:00:00.000Z');
   });
@@ -134,10 +116,7 @@ describe('historical & geographic conversion scenarios', () => {
   it('applies pre-1900 Local Mean Time in Paris (before 1891)', () => {
     // Paris kept Local Mean Time (+00:09:21) until 1891; luxon carries the
     // sub-minute offset, so midnight local is 23:50:39 UT the previous day.
-    const result = localTimeToUtc(
-      { year: 1850, month: 1, day: 1, hour: 0 },
-      'Europe/Paris',
-    );
+    const result = localTimeToUtc({ year: 1850, month: 1, day: 1, hour: 0 }, 'Europe/Paris');
     expect(result.utc).toBe('1849-12-31T23:50:39.000Z');
     // A genuine LMT offset — not a standardised whole-hour zone.
     expect(result.offsetMinutes).toBeGreaterThan(0);
@@ -148,18 +127,9 @@ describe('historical & geographic conversion scenarios', () => {
   it('tracks Moscow standard-time changes that are not DST (2011 & 2014)', () => {
     // Moscow winter offset was +3, then +4 after Russia abolished winter time
     // in 2011, then back to +3 after the 2014 reversal — none of it DST.
-    const winter2010 = localTimeToUtc(
-      { year: 2010, month: 1, day: 15, hour: 12 },
-      'Europe/Moscow',
-    );
-    const winter2012 = localTimeToUtc(
-      { year: 2012, month: 1, day: 15, hour: 12 },
-      'Europe/Moscow',
-    );
-    const winter2015 = localTimeToUtc(
-      { year: 2015, month: 1, day: 15, hour: 12 },
-      'Europe/Moscow',
-    );
+    const winter2010 = localTimeToUtc({ year: 2010, month: 1, day: 15, hour: 12 }, 'Europe/Moscow');
+    const winter2012 = localTimeToUtc({ year: 2012, month: 1, day: 15, hour: 12 }, 'Europe/Moscow');
+    const winter2015 = localTimeToUtc({ year: 2015, month: 1, day: 15, hour: 12 }, 'Europe/Moscow');
 
     expect(winter2010.offsetMinutes).toBe(180);
     expect(winter2012.offsetMinutes).toBe(240);
@@ -169,14 +139,8 @@ describe('historical & geographic conversion scenarios', () => {
   it('inverts DST in the southern hemisphere (Sydney)', () => {
     // January is summer (AEDT, +11) and July is winter (AEST, +10) — the
     // reverse of the northern hemisphere.
-    const january = localTimeToUtc(
-      { year: 1990, month: 1, day: 15, hour: 12 },
-      'Australia/Sydney',
-    );
-    const july = localTimeToUtc(
-      { year: 1990, month: 7, day: 15, hour: 12 },
-      'Australia/Sydney',
-    );
+    const january = localTimeToUtc({ year: 1990, month: 1, day: 15, hour: 12 }, 'Australia/Sydney');
+    const july = localTimeToUtc({ year: 1990, month: 7, day: 15, hour: 12 }, 'Australia/Sydney');
 
     expect(january.offsetMinutes).toBe(660); // +11, summer DST
     expect(january.isDST).toBe(true);
@@ -203,10 +167,7 @@ describe('historical & geographic conversion scenarios', () => {
 
 describe('resolveBirthInstant', () => {
   it('resolves coordinates and local time to a UT instant end-to-end', () => {
-    const result = resolveBirthInstant(
-      { year: 2007, month: 3, day: 15, hour: 12 },
-      PLACES.newYork,
-    );
+    const result = resolveBirthInstant({ year: 2007, month: 3, day: 15, hour: 12 }, PLACES.newYork);
     expect(result.zone).toBe('America/New_York');
     expect(result.candidateZones).toEqual(['America/New_York']);
     expect(result.utc).toBe('2007-03-15T16:00:00.000Z');
@@ -224,10 +185,7 @@ describe('resolveBirthInstant', () => {
   });
 
   it('feeds an ISO UT string that a UT parser round-trips to the same instant', () => {
-    const result = resolveBirthInstant(
-      { year: 2007, month: 3, day: 15, hour: 12 },
-      PLACES.newYork,
-    );
+    const result = resolveBirthInstant({ year: 2007, month: 3, day: 15, hour: 12 }, PLACES.newYork);
     // The downstream calc modules consume result.utc as an ISO 8601 UT string.
     expect(new Date(result.utc).toISOString()).toBe(result.utc);
   });
