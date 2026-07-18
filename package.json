@@ -1,0 +1,13 @@
+{
+  "name": "astrocalc",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AstroCalc monorepo — apps (backend, mobile) and shared packages (calc-engine).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

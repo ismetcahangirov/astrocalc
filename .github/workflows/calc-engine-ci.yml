@@ -1,0 +1,30 @@
+name: calc-engine CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/calc-engine/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/calc-engine-ci.yml'
+  pull_request:
+    paths:
+      - 'packages/calc-engine/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/calc-engine-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck -w packages/calc-engine
+      - run: npm run test -w packages/calc-engine
+      - run: npm run build -w packages/calc-engine
