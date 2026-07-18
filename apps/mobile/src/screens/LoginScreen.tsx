@@ -23,7 +23,11 @@ export function LoginScreen() {
         accessibilityState={{ disabled: loading }}
         disabled={loading}
         onPress={signIn}
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, loading && styles.buttonDisabled]}
+        style={({ pressed }) => [
+          styles.button,
+          pressed && styles.buttonPressed,
+          loading && styles.buttonDisabled,
+        ]}
       >
         {loading ? (
           <ActivityIndicator color="#1a1206" />

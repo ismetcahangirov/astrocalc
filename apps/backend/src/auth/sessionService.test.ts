@@ -71,7 +71,9 @@ describe('createSessionService.refresh', () => {
     await expect(service.refresh(a.refreshToken)).rejects.toBeInstanceOf(TokenReuseError);
 
     // now every session of user-1 is dead: the just-rotated A token AND session B
-    await expect(service.refresh(aRotated.refreshToken)).rejects.toBeInstanceOf(SessionRevokedError);
+    await expect(service.refresh(aRotated.refreshToken)).rejects.toBeInstanceOf(
+      SessionRevokedError,
+    );
     await expect(service.refresh(b.refreshToken)).rejects.toBeInstanceOf(SessionRevokedError);
   });
 

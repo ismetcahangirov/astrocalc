@@ -90,10 +90,7 @@ export function findTimeZones(coordinates: GeoCoordinates): string[] {
     throw new CalcEngineError('invalid_input', `latitude out of range [-90, 90]: ${latitude}`);
   }
   if (longitude < -180 || longitude > 180) {
-    throw new CalcEngineError(
-      'invalid_input',
-      `longitude out of range [-180, 180]: ${longitude}`,
-    );
+    throw new CalcEngineError('invalid_input', `longitude out of range [-180, 180]: ${longitude}`);
   }
 
   const zones = find(latitude, longitude);

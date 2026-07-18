@@ -35,7 +35,6 @@ export interface AdminAlerter {
 export function createLoggingAdminAlerter(): AdminAlerter {
   return {
     async quotaExhausted(alert: QuotaAlert): Promise<void> {
-      // eslint-disable-next-line no-console
       console.warn(
         JSON.stringify({
           type: 'admin_alert',
@@ -48,7 +47,6 @@ export function createLoggingAdminAlerter(): AdminAlerter {
     },
 
     async anomalousActivity(alert: AnomalyAlert): Promise<void> {
-      // eslint-disable-next-line no-console
       console.warn(
         JSON.stringify({
           type: 'admin_alert',

@@ -133,7 +133,10 @@ function parseUt(utDateTime: string): Astronomy.AstroTime {
 function validatePlace(place: GeoCoordinates): { latitude: number; longitude: number } {
   const { latitude, longitude } = place ?? {};
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    throw new CalcEngineError('invalid_input', 'birth place latitude/longitude must be finite numbers');
+    throw new CalcEngineError(
+      'invalid_input',
+      'birth place latitude/longitude must be finite numbers',
+    );
   }
   // At the geographic poles the horizon coincides with the equator and the
   // Ascendant/Midheaven are undefined for every house system, Whole Sign
@@ -243,9 +246,7 @@ function placidusCusp(
     const arg = nocturnal ? product : -product;
     if (Math.abs(arg) > 1) return null;
     const semiArc = Math.acos(arg) / DEG;
-    const next = nocturnal
-      ? ramcDeg + HALF_CIRCLE - f * semiArc
-      : ramcDeg + f * semiArc;
+    const next = nocturnal ? ramcDeg + HALF_CIRCLE - f * semiArc : ramcDeg + f * semiArc;
     if (Math.abs(next - alpha) < 1e-9) {
       alpha = next;
       break;

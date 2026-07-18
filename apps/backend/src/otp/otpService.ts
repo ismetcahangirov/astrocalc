@@ -67,7 +67,8 @@ export interface OtpService {
  * a Google fallback.
  */
 export function createOtpService(deps: OtpServiceDeps): OtpService {
-  const { store, sender, repo, tokenService, alerter, phoneRequestLimiter, hashSecret, config } = deps;
+  const { store, sender, repo, tokenService, alerter, phoneRequestLimiter, hashSecret, config } =
+    deps;
   const now = deps.now ?? Date.now;
 
   return {
@@ -98,7 +99,11 @@ export function createOtpService(deps: OtpServiceDeps): OtpService {
         await sender.sendOtp({ to: phone, code });
       } catch (err) {
         if (err instanceof WhatsAppQuotaExceededError) {
-          await alerter.quotaExhausted({ channel: 'whatsapp', at: new Date(now()), detail: err.message });
+          await alerter.quotaExhausted({
+            channel: 'whatsapp',
+            at: new Date(now()),
+            detail: err.message,
+          });
         }
         throw err;
       }

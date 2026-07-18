@@ -26,7 +26,12 @@ export function hashOtpCode(secret: string, phone: string, code: string): string
  * the HMAC and compares digests with `timingSafeEqual` to avoid leaking match
  * progress through timing.
  */
-export function verifyOtpHash(secret: string, phone: string, code: string, expectedHash: string): boolean {
+export function verifyOtpHash(
+  secret: string,
+  phone: string,
+  code: string,
+  expectedHash: string,
+): boolean {
   const actual = Buffer.from(hashOtpCode(secret, phone, code), 'hex');
   let expected: Buffer;
   try {

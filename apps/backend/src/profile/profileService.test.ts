@@ -52,7 +52,11 @@ describe('createProfileService.updateProfile — chart cache invalidation', () =
     const userId = await createUser(repo);
 
     await service.updateProfile(userId, { birthTime: '10:30' });
-    await service.updateProfile(userId, { birthPlaceName: 'Baku, Azerbaijan', birthPlaceLat: 40.4, birthPlaceLng: 49.8 });
+    await service.updateProfile(userId, {
+      birthPlaceName: 'Baku, Azerbaijan',
+      birthPlaceLat: 40.4,
+      birthPlaceLng: 49.8,
+    });
     await service.updateProfile(userId, { birthTimeKnown: true });
 
     expect(invalidated).toEqual([userId, userId, userId]);
@@ -88,8 +92,10 @@ describe('createProfileService.updateProfile — chart cache invalidation', () =
     const service = createProfileService({ repo });
     const userId = await createUser(repo);
 
-    await expect(service.updateProfile(userId, { birthDate: '1990-05-12' })).resolves.toMatchObject({
-      birthDate: '1990-05-12',
-    });
+    await expect(service.updateProfile(userId, { birthDate: '1990-05-12' })).resolves.toMatchObject(
+      {
+        birthDate: '1990-05-12',
+      },
+    );
   });
 });

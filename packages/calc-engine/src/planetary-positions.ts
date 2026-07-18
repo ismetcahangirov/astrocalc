@@ -123,7 +123,7 @@ const LIGHT_SECONDS_PER_AU = 499.004783836;
 const RETRO_STEP_DAYS = 1 / 24;
 
 /** Astronomy Engine bodies whose apparent geocentric longitude we report directly. */
-const PLANETS: ReadonlyArray<{ body: CelestialBody; aeBody: Astronomy.Body }> = [
+const PLANETS: readonly { body: CelestialBody; aeBody: Astronomy.Body }[] = [
   { body: 'sun', aeBody: Astronomy.Body.Sun },
   { body: 'moon', aeBody: Astronomy.Body.Moon },
   { body: 'mercury', aeBody: Astronomy.Body.Mercury },
@@ -223,8 +223,7 @@ function trueNodeLongitude(time: Astronomy.AstroTime): number {
  */
 function meanNodeLongitude(time: Astronomy.AstroTime): number {
   const t = time.tt / 36525;
-  const omega =
-    125.04452 - 1934.136261 * t + 0.0020708 * t * t + (t * t * t) / 450000;
+  const omega = 125.04452 - 1934.136261 * t + 0.0020708 * t * t + (t * t * t) / 450000;
   return normalizeDegrees(omega);
 }
 
@@ -316,11 +315,7 @@ function longitudinalSpeed(
 }
 
 /** Build a {@link PlanetPosition} from a raw longitude and signed speed. */
-function toPosition(
-  body: CelestialBody,
-  longitude: number,
-  speed: number,
-): PlanetPosition {
+function toPosition(body: CelestialBody, longitude: number, speed: number): PlanetPosition {
   const normalized = normalizeDegrees(longitude);
   const signIndex = Math.floor(normalized / DEGREES_PER_SIGN);
   return {

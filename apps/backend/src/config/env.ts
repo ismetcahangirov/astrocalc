@@ -9,7 +9,12 @@ const envSchema = z.object({
   GOOGLE_CLIENT_IDS: z
     .string()
     .min(1, 'GOOGLE_CLIENT_IDS is required')
-    .transform((raw) => raw.split(',').map((s) => s.trim()).filter(Boolean)),
+    .transform((raw) =>
+      raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
   JWT_ACCESS_SECRET: z.string().min(16, 'JWT_ACCESS_SECRET must be at least 16 chars'),
   JWT_REFRESH_SECRET: z.string().min(16, 'JWT_REFRESH_SECRET must be at least 16 chars'),
   JWT_ACCESS_TTL: z.string().default('15m'),
@@ -31,7 +36,11 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default('AstroCalc/0.1 (+https://astrocalc.app; contact: support@astrocalc.app)'),
-  GEOCODE_CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 30),
+  GEOCODE_CACHE_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60 * 24 * 30),
   // --- Account deletion & GDPR data export (#9) ---
   // Public base URL of this API, used to build the single-use download link in
   // notifications and the QStash worker webhook target. Required for QStash.
@@ -76,13 +85,25 @@ const envSchema = z.object({
   OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
   OTP_CODE_LENGTH: z.coerce.number().int().positive().default(6),
   // How long a phone is locked out of OTP login after tripping OTP_MAX_ATTEMPTS.
-  OTP_LOCKOUT_SECONDS: z.coerce.number().int().positive().default(15 * 60),
+  OTP_LOCKOUT_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15 * 60),
   // Per-phone-number request cap (independent of OTP_RESEND_COOLDOWN_SECONDS).
   OTP_PHONE_REQUEST_LIMIT: z.coerce.number().int().positive().default(3),
-  OTP_PHONE_REQUEST_WINDOW_SECONDS: z.coerce.number().int().positive().default(60 * 60),
+  OTP_PHONE_REQUEST_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60),
   // Per-source-IP request cap — stops one attacker spraying codes at many numbers.
   OTP_IP_REQUEST_LIMIT: z.coerce.number().int().positive().default(10),
-  OTP_IP_REQUEST_WINDOW_SECONDS: z.coerce.number().int().positive().default(60 * 60),
+  OTP_IP_REQUEST_WINDOW_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60),
 });
 
 export type Env = z.infer<typeof envSchema>;

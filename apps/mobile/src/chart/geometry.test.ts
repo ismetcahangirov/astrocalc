@@ -91,7 +91,9 @@ describe('spreadAngles (planet de-collision)', () => {
 
   it('always yields at least minGap between every adjacent pair', () => {
     const input = [10, 11, 12, 13, 200, 201];
-    const out = spreadAngles(input, 9).slice().sort((a, b) => a - b);
+    const out = spreadAngles(input, 9)
+      .slice()
+      .sort((a, b) => a - b);
     for (let i = 1; i < out.length; i++) {
       expect(out[i]! - out[i - 1]!).toBeGreaterThanOrEqual(9 - 1e-9);
     }

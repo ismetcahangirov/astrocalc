@@ -13,7 +13,10 @@ const querySchema = z.object({ q: z.string().trim().min(1).max(200) });
  * An empty `results` array is a normal, successful response — it's the
  * client's cue to fall back to manual lat/lng entry.
  */
-export function createGeocodingRouter(service: GeocodingService, tokenService: TokenService): Router {
+export function createGeocodingRouter(
+  service: GeocodingService,
+  tokenService: TokenService,
+): Router {
   const router = Router();
   const auth = requireAuth(tokenService);
 

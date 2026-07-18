@@ -42,7 +42,8 @@ export interface GeocodingService {
  */
 export function createGeocodingService(deps: GeocodingServiceDeps): GeocodingService {
   const { nominatim, cache, rateLimiter, config } = deps;
-  const onRemoteError = deps.onRemoteError ?? ((err) => console.warn('[geocoding] Nominatim lookup failed:', err)); // eslint-disable-line no-console
+  const onRemoteError =
+    deps.onRemoteError ?? ((err) => console.warn('[geocoding] Nominatim lookup failed:', err));
 
   return {
     async search(rawQuery: string): Promise<PlaceResult[]> {

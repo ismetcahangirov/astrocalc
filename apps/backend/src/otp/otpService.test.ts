@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createOtpService, type OtpServiceConfig } from './otpService';
 import { InMemoryOtpStore } from './otpStore';
 import { FakeWhatsAppSender } from './whatsappSender';
@@ -7,13 +7,11 @@ import { createTokenService } from '../auth/tokens';
 import { RecordingAdminAlerter } from './adminAlerter';
 import { InMemoryRateLimiter } from '../security/rateLimiter';
 import {
-  OtpAccountLockedError,
   OtpCooldownError,
   OtpExpiredError,
   OtpInvalidCodeError,
   OtpMaxAttemptsError,
   OtpNotFoundError,
-  OtpPhoneRateLimitError,
   WhatsAppQuotaExceededError,
 } from './errors';
 import { InvalidRequestError } from '../auth/errors';
@@ -163,7 +161,9 @@ describe('otpService.verifyOtp', () => {
 
   it('rejects verification when no code was requested', async () => {
     const { service } = build();
-    await expect(service.verifyOtp('+15551234567', '123456')).rejects.toBeInstanceOf(OtpNotFoundError);
+    await expect(service.verifyOtp('+15551234567', '123456')).rejects.toBeInstanceOf(
+      OtpNotFoundError,
+    );
   });
 
   it('rejects an expired code after the TTL and clears it', async () => {
@@ -194,7 +194,9 @@ describe('otpService.verifyOtp', () => {
       await service.verifyOtp('+15551234567', '000000').catch(() => {});
     }
     // 5th wrong attempt trips the max-attempts lockout.
-    await expect(service.verifyOtp('+15551234567', '000000')).rejects.toBeInstanceOf(OtpMaxAttemptsError);
+    await expect(service.verifyOtp('+15551234567', '000000')).rejects.toBeInstanceOf(
+      OtpMaxAttemptsError,
+    );
     expect(await store.getChallenge('+15551234567')).toBeNull();
   });
 });

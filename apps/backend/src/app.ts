@@ -7,15 +7,6 @@ import { createSessionRouter } from './auth/sessionRoute';
 import { createSessionService } from './auth/sessionService';
 import { createProfileRouter } from './profile/profileRoute';
 import { createProfileService } from './profile/profileService';
-import { createGeocodingRouter } from './geocoding/geocodingRoute';
-import { createGeocodingService } from './geocoding/geocodingService';
-import { createNominatimClient } from './geocoding/nominatimClient';
-import { InMemoryGeocodeCache, RedisGeocodeCache, type GeocodeCache } from './geocoding/geocodeCache';
-import {
-  InMemoryNominatimRateLimiter,
-  RedisNominatimRateLimiter,
-  type NominatimRateLimiter,
-} from './geocoding/nominatimRateLimiter';
 import { NoopChartCacheInvalidator } from './profile/chartCacheInvalidator';
 import { InMemoryRevocationStore, type RevocationStore } from './auth/revocationStore';
 import { RedisRevocationStore } from './auth/redisRevocationStore';
@@ -34,9 +25,17 @@ import { InMemoryOtpStore, type OtpStore } from './otp/otpStore';
 import { RedisOtpStore } from './otp/redisOtpStore';
 import { createOtpService } from './otp/otpService';
 import { createOtpRouter } from './otp/otpRoute';
-import { FakeWhatsAppSender, createMetaWhatsAppSender, type WhatsAppSender } from './otp/whatsappSender';
+import {
+  FakeWhatsAppSender,
+  createMetaWhatsAppSender,
+  type WhatsAppSender,
+} from './otp/whatsappSender';
 import { createLoggingAdminAlerter } from './otp/adminAlerter';
-import { createSlidingWindowRateLimiter, InMemoryRateLimiter, type RateLimiter } from './security/rateLimiter';
+import {
+  createSlidingWindowRateLimiter,
+  InMemoryRateLimiter,
+  type RateLimiter,
+} from './security/rateLimiter';
 import { createDb } from './db/client';
 import { createRedis } from './redis/client';
 import type { RedisClient } from './redis/client';
@@ -94,6 +93,9 @@ export function createApp(env: Env): Express {
   // `processExport`, and the service needs the queue — resolve the cycle with a
   // late-bound reference captured by the processor closure.
   const accountRepo = new DrizzleAccountRepository(db);
+  // Must stay `let`: declared ahead of the exportQueue closure that captures
+  // it by reference, then assigned once the circular dependency is resolved.
+  // eslint-disable-next-line prefer-const
   let accountService: AccountService;
   const exportQueue = buildExportQueue(env, (jobId) => accountService.processExport(jobId));
   accountService = createAccountService({
@@ -178,7 +180,7 @@ function buildObjectStorage(env: Env): ObjectStorage {
       endpoint: env.R2_ENDPOINT,
     });
   }
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[account] R2_* not fully set — using in-memory export storage. ' +
       'Data-export bundles will NOT persist or be shared across instances.',
@@ -198,7 +200,7 @@ function buildExportQueue(env: Env, process: (jobId: string) => Promise<void>): 
       workerSecret: env.DATA_EXPORT_WORKER_TOKEN,
     });
   }
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[account] QSTASH_TOKEN/DATA_EXPORT_WORKER_TOKEN/PUBLIC_API_URL not all set — ' +
       'processing data-export jobs inline (no async retries).',
@@ -224,7 +226,7 @@ function buildRedisClient(env: Env): RedisClient | null {
  */
 function buildRevocationStore(redis: RedisClient | null): RevocationStore {
   if (redis) return new RedisRevocationStore(redis);
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[auth] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory revocation store. ' +
       'Refresh-token revocation will NOT persist or be shared across instances.',
@@ -239,7 +241,7 @@ function buildRevocationStore(redis: RedisClient | null): RevocationStore {
  */
 function buildOtpStore(redis: RedisClient | null): OtpStore {
   if (redis) return new RedisOtpStore(redis);
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[otp] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory OTP store. ' +
       'Challenges, cooldowns and lockouts will NOT persist or be shared across instances.',
@@ -263,7 +265,7 @@ function buildWhatsAppSender(env: Env): WhatsAppSender {
       apiVersion: env.WHATSAPP_API_VERSION,
     });
   }
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[otp] WHATSAPP_PHONE_NUMBER_ID/WHATSAPP_ACCESS_TOKEN not set — OTP codes will NOT be ' +
       'delivered via WhatsApp (using a fake sender). Set them in production.',

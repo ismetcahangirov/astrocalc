@@ -49,13 +49,14 @@ async function authedFetch(path: string, init: RequestInit): Promise<Response> {
 
 async function parseProfileResponse(res: Response): Promise<Profile> {
   const data = (await res.json().catch(() => null)) as
-    | (Profile & { error?: never })
-    | { error: { code: string; message: string } }
-    | null;
+    (Profile & { error?: never }) | { error: { code: string; message: string } } | null;
 
   if (!res.ok || !data || 'error' in data) {
     const err = data && 'error' in data ? data.error : null;
-    throw new ApiError(err?.code ?? 'unknown_error', err?.message ?? 'Something went wrong. Please try again.');
+    throw new ApiError(
+      err?.code ?? 'unknown_error',
+      err?.message ?? 'Something went wrong. Please try again.',
+    );
   }
 
   return data;

@@ -14,7 +14,11 @@ describe('InMemoryNominatimRateLimiter', () => {
   it('does not delay a later acquire once enough time has passed', async () => {
     const sleep = vi.fn(async () => undefined);
     let clock = 0;
-    const limiter = new InMemoryNominatimRateLimiter({ minIntervalMs: 1000, now: () => clock, sleep });
+    const limiter = new InMemoryNominatimRateLimiter({
+      minIntervalMs: 1000,
+      now: () => clock,
+      sleep,
+    });
 
     await limiter.acquire();
     clock = 5000; // well past the 1s window
@@ -51,7 +55,11 @@ describe('RedisNominatimRateLimiter', () => {
 
   it('retries until another instance releases the lock', async () => {
     const redis = {
-      set: vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValueOnce('OK'),
+      set: vi
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce('OK'),
     };
     const sleep = vi.fn(async () => undefined);
     const limiter = new RedisNominatimRateLimiter(redis as never, { sleep, now: () => 0 });

@@ -64,7 +64,10 @@ export function createTokenService(config: TokenServiceConfig): TokenService {
     });
   }
 
-  function decode(kind: TokenKind, token: string): DecodedClaims & { sub: string; iat?: number; jti?: string } {
+  function decode(
+    kind: TokenKind,
+    token: string,
+  ): DecodedClaims & { sub: string; iat?: number; jti?: string } {
     const secret = kind === 'access' ? config.accessSecret : config.refreshSecret;
     let decoded: unknown;
     try {
@@ -79,7 +82,13 @@ export function createTokenService(config: TokenServiceConfig): TokenService {
     if (claims.type !== kind || !claims.sub || !claims.sessionId) {
       throw new AuthError('token_invalid', `Invalid ${kind} token`, 401);
     }
-    return { ...claims, type: kind, userId: claims.sub, sessionId: claims.sessionId, sub: claims.sub };
+    return {
+      ...claims,
+      type: kind,
+      userId: claims.sub,
+      sessionId: claims.sessionId,
+      sub: claims.sub,
+    };
   }
 
   return {
