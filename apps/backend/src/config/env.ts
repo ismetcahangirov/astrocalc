@@ -41,6 +41,15 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(60 * 60 * 24 * 30),
+  // Natal-chart/matrix result cache (#19). Per the issue's technical notes, a
+  // long TTL is the default so entries orphaned by invalidation (see
+  // `RedisChartResultCache`) eventually self-clean; set to `0` for no TTL
+  // (explicit invalidation only — cached results never expire on their own).
+  CHART_CACHE_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(60 * 60 * 24 * 180),
   // --- Account deletion & GDPR data export (#9) ---
   // Public base URL of this API, used to build the single-use download link in
   // notifications and the QStash worker webhook target. Required for QStash.

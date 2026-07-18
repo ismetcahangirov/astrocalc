@@ -7,7 +7,8 @@ import { createSessionRouter } from './auth/sessionRoute';
 import { createSessionService } from './auth/sessionService';
 import { createProfileRouter } from './profile/profileRoute';
 import { createProfileService } from './profile/profileService';
-import { NoopChartCacheInvalidator } from './profile/chartCacheInvalidator';
+import { InMemoryChartResultCache, type ChartResultCache } from './chart/chartResultCache';
+import { RedisChartResultCache } from './chart/redisChartResultCache';
 import { InMemoryRevocationStore, type RevocationStore } from './auth/revocationStore';
 import { RedisRevocationStore } from './auth/redisRevocationStore';
 import { errorHandler } from './auth/errorHandler';
@@ -85,9 +86,12 @@ export function createApp(env: Env): Express {
     res.json({ status: 'ok' });
   });
 
-  // `cache` defaults to a no-op until EPIC 3 / #19 (chart result caching)
-  // exists — passed explicitly here as the documented swap-in point.
-  const profileService = createProfileService({ repo, cache: new NoopChartCacheInvalidator() });
+  // Natal-chart/matrix result cache (#19) — shared Upstash Redis when
+  // configured, otherwise a per-process in-memory fallback. Also implements
+  // `ChartCacheInvalidator`, so it doubles as `profileService`'s invalidation
+  // port: a birth-data edit drops every chart cached for that user.
+  const chartCache = buildChartResultCache(redis, env);
+  const profileService = createProfileService({ repo, cache: chartCache });
 
   // Account deletion & GDPR data export (#9). The inline-queue fallback needs
   // `processExport`, and the service needs the queue — resolve the cycle with a
@@ -247,6 +251,27 @@ function buildOtpStore(redis: RedisClient | null): OtpStore {
       'Challenges, cooldowns and lockouts will NOT persist or be shared across instances.',
   );
   return new InMemoryOtpStore();
+}
+
+/**
+ * Use the shared Upstash Redis chart-result cache when configured; otherwise a
+ * per-process in-memory fallback (local dev/tests only — cached charts would
+ * NOT be shared across instances or survive a restart, defeating the point of
+ * #19, hence the warning).
+ */
+function buildChartResultCache(redis: RedisClient | null, env: Env): ChartResultCache {
+  if (redis) {
+    return new RedisChartResultCache(
+      redis,
+      env.CHART_CACHE_TTL_SECONDS === 0 ? undefined : env.CHART_CACHE_TTL_SECONDS,
+    );
+  }
+
+  console.warn(
+    '[chart] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory chart result cache. ' +
+      'Cached charts will NOT persist or be shared across instances.',
+  );
+  return new InMemoryChartResultCache();
 }
 
 /**
