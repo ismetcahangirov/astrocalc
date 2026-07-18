@@ -26,6 +26,17 @@ and the related issue/PR numbers.
   (47 total green), including accuracy checks against JPL Horizons reference
   values (every body within ±1 arcminute) and independent cross-checks
   against `astronomy-engine`'s own node-search/frame machinery.
+- House system calculation (Placidus default, polar-latitude fallback) — #14.
+  `packages/calc-engine`: new `computeHouses()` — Ascendant, Midheaven, and
+  twelve numbered cusps for Placidus (default), Whole Sign, and Koch, derived
+  from first principles (RAMC, true obliquity, iterative semi-arc division for
+  Placidus). Inside the polar circles, where Placidus/Koch cusps are
+  mathematically undefined, the result transparently falls back to Whole Sign
+  and explains why (`fallbackApplied`/`fallbackReason`). Requires a full
+  date-time by design, so callers without a known birth time simply omit the
+  house section. 21 new unit tests (68 total green), including ground-truth
+  checks against `astronomy-engine`'s own rotation matrices and a Svalbard
+  polar-fallback case.
 - Implemented Google OAuth (mobile + backend) — #2. Backend: `apps/backend`
   Express + TS scaffold with `POST /auth/google` that verifies the Google ID
   token (`aud`/`iss`/`exp`/`email_verified`) via `google-auth-library`,

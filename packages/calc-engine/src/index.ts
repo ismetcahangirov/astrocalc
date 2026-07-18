@@ -16,3 +16,12 @@ export {
   type LunarNodeModel,
   type PlanetaryPositionsOptions,
 } from './planetary-positions';
+export {
+  computeHouses,
+  DEFAULT_HOUSE_SYSTEM,
+  type HouseSystem,
+  type HouseCusp,
+  type HousesOptions,
+  type HousesResult,
+  type EclipticPoint,
+} from './houses';
