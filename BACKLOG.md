@@ -46,6 +46,16 @@ and the related issue/PR numbers.
   new unit tests (86 total green). Backend: added the `aspect_orb_config`
   Postgres table (the shared, admin-editable, Redis-cached orb store). Remaining:
   the backend repository/cache/service/route wiring for the admin orb endpoint.
+- SVG/Skia "wheel" visualization — #17 (geometry/theme foundation only; the
+  Skia rendering component is not part of this work). `apps/mobile/src/chart`:
+  renderer-agnostic `computeWheelLayout()` that turns planet/house/aspect data
+  into flat drawable primitives — zodiac wedges, degree ticks, house-cusp
+  lines, de-collided planet glyphs (a "stellium" spreading algorithm), and
+  aspect chords — plus gold/dark theme tokens and per-aspect-type stroke
+  styles matching the brand. Pure TypeScript (no React Native/Skia import), so
+  it runs under plain Node Vitest. 19 new unit tests. Remaining: the actual
+  `react-native-skia` `<Canvas>` component that draws these primitives, the
+  60fps performance pass, and the retrograde "R" marker rendering.
 - Implemented Google OAuth (mobile + backend) — #2. Backend: `apps/backend`
   Express + TS scaffold with `POST /auth/google` that verifies the Google ID
   token (`aud`/`iss`/`exp`/`email_verified`) via `google-auth-library`,
