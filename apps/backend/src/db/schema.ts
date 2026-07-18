@@ -107,6 +107,24 @@ export const dataExportJobs = pgTable('data_export_jobs', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Admin-configurable orb values for aspect calculation (#15). One row per major
+ * aspect type (`conjunction`, `sextile`, `square`, `trine`, `opposition`);
+ * `orbDegrees` is the allowed deviation from the exact angle. Rows are the
+ * *overrides* — any aspect type without a row falls back to the calc-engine's
+ * documented `DEFAULT_ORBS`. This is the shared configuration the admin panel
+ * (EPIC 10) edits and the natal-chart calculation reads (cached in Redis).
+ */
+export const aspectOrbConfig = pgTable('aspect_orb_config', {
+  // The aspect type, e.g. 'conjunction'. Natural primary key (max five rows).
+  aspectType: text('aspect_type').primaryKey(),
+  orbDegrees: doublePrecision('orb_degrees').notNull(),
+  // Admin user who last changed this value, for the audit trail. Nullable so a
+  // seed/migration default can exist without attributing it to a person.
+  updatedBy: uuid('updated_by'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;

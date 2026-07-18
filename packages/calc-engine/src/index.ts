@@ -25,3 +25,13 @@ export {
   type HousesResult,
   type EclipticPoint,
 } from './houses';
+export {
+  computeAspects,
+  ASPECT_ANGLES,
+  DEFAULT_ORBS,
+  type AspectType,
+  type AspectBody,
+  type Aspect,
+  type OrbConfig,
+  type AspectsOptions,
+} from './aspects';
