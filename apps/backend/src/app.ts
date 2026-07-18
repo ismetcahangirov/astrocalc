@@ -7,13 +7,38 @@ import { createSessionRouter } from './auth/sessionRoute';
 import { createSessionService } from './auth/sessionService';
 import { createProfileRouter } from './profile/profileRoute';
 import { createProfileService } from './profile/profileService';
+import { createGeocodingRouter } from './geocoding/geocodingRoute';
+import { createGeocodingService } from './geocoding/geocodingService';
+import { createNominatimClient } from './geocoding/nominatimClient';
+import { InMemoryGeocodeCache, RedisGeocodeCache, type GeocodeCache } from './geocoding/geocodeCache';
+import {
+  InMemoryNominatimRateLimiter,
+  RedisNominatimRateLimiter,
+  type NominatimRateLimiter,
+} from './geocoding/nominatimRateLimiter';
 import { InMemoryRevocationStore, type RevocationStore } from './auth/revocationStore';
 import { RedisRevocationStore } from './auth/redisRevocationStore';
 import { errorHandler } from './auth/errorHandler';
 import { createTokenService } from './auth/tokens';
 import { DrizzleUserRepository } from './db/drizzleUserRepository';
+import { DrizzleAccountRepository } from './db/drizzleAccountRepository';
+import { createAccountService, type AccountService } from './account/accountService';
+import { createAccountRouter } from './account/accountRoute';
+import { InMemoryObjectStorage, type ObjectStorage } from './account/objectStorage';
+import { R2ObjectStorage } from './account/r2ObjectStorage';
+import { InlineExportQueue, type ExportQueue } from './account/exportQueue';
+import { QStashExportQueue } from './account/qstashExportQueue';
+import { LogExportNotifier } from './account/exportNotifier';
+import { InMemoryOtpStore, type OtpStore } from './otp/otpStore';
+import { RedisOtpStore } from './otp/redisOtpStore';
+import { createOtpService } from './otp/otpService';
+import { createOtpRouter } from './otp/otpRoute';
+import { FakeWhatsAppSender, createMetaWhatsAppSender, type WhatsAppSender } from './otp/whatsappSender';
+import { createLoggingAdminAlerter } from './otp/adminAlerter';
+import { createSlidingWindowRateLimiter, InMemoryRateLimiter, type RateLimiter } from './security/rateLimiter';
 import { createDb } from './db/client';
 import { createRedis } from './redis/client';
+import type { RedisClient } from './redis/client';
 import { parseDurationToSeconds } from './config/duration';
 import type { Env } from './config/env';
 
@@ -41,7 +66,12 @@ export function createApp(env: Env): Express {
 
   const authService = createAuthService({ verifyGoogleToken, repo, tokenService });
 
-  const revocationStore = buildRevocationStore(env);
+  // Shared Upstash Redis client (or null for local dev/tests without it) — reused
+  // by revocation, the OTP store and OTP rate limiters so every instance of the
+  // API enforces the same abuse-protection state (#10).
+  const redis = buildRedisClient(env);
+
+  const revocationStore = buildRevocationStore(redis);
   const sessionService = createSessionService({
     tokenService,
     store: revocationStore,
@@ -57,9 +87,72 @@ export function createApp(env: Env): Express {
 
   const profileService = createProfileService({ repo });
 
+  // Account deletion & GDPR data export (#9). The inline-queue fallback needs
+  // `processExport`, and the service needs the queue — resolve the cycle with a
+  // late-bound reference captured by the processor closure.
+  const accountRepo = new DrizzleAccountRepository(db);
+  let accountService: AccountService;
+  const exportQueue = buildExportQueue(env, (jobId) => accountService.processExport(jobId));
+  accountService = createAccountService({
+    repo: accountRepo,
+    storage: buildObjectStorage(env),
+    queue: exportQueue,
+    notifier: new LogExportNotifier(),
+    sessionService,
+    config: {
+      deletionConfirmationPhrase: env.DELETION_CONFIRMATION_PHRASE,
+      exportTtlSeconds: env.DATA_EXPORT_TTL_HOURS * 60 * 60,
+      publicApiUrl: env.PUBLIC_API_URL ?? `http://localhost:${env.PORT}`,
+      downloadTokenSecret: env.DATA_EXPORT_TOKEN_SECRET ?? env.JWT_REFRESH_SECRET,
+    },
+  });
+
+  // WhatsApp OTP login (#3) + rate-limiting/abuse protection (#10): per-phone
+  // and per-IP request throttling, a temporary account lockout after repeated
+  // failed verification attempts, and admin-panel logging of anomalous activity.
+  const adminAlerter = createLoggingAdminAlerter();
+  const otpService = createOtpService({
+    store: buildOtpStore(redis),
+    sender: buildWhatsAppSender(env),
+    repo,
+    tokenService,
+    alerter: adminAlerter,
+    phoneRequestLimiter: buildRateLimiter(redis, {
+      limit: env.OTP_PHONE_REQUEST_LIMIT,
+      windowSeconds: env.OTP_PHONE_REQUEST_WINDOW_SECONDS,
+      prefix: 'otp-phone-limit',
+    }),
+    hashSecret: env.OTP_HASH_SECRET ?? env.JWT_REFRESH_SECRET,
+    config: {
+      ttlSeconds: env.OTP_TTL_SECONDS,
+      resendCooldownSeconds: env.OTP_RESEND_COOLDOWN_SECONDS,
+      maxAttempts: env.OTP_MAX_ATTEMPTS,
+      codeLength: env.OTP_CODE_LENGTH,
+      lockoutSeconds: env.OTP_LOCKOUT_SECONDS,
+    },
+  });
+
   app.use('/auth', createGoogleAuthRouter(authService));
   app.use('/auth', createSessionRouter(sessionService, { adminApiToken: env.ADMIN_API_TOKEN }));
+  app.use(
+    '/otp',
+    createOtpRouter({
+      otpService,
+      ipRequestLimiter: buildRateLimiter(redis, {
+        limit: env.OTP_IP_REQUEST_LIMIT,
+        windowSeconds: env.OTP_IP_REQUEST_WINDOW_SECONDS,
+        prefix: 'otp-ip-limit',
+      }),
+      alerter: adminAlerter,
+    }),
+  );
   app.use('/profile', createProfileRouter(profileService, tokenService));
+  app.use(
+    '/account',
+    createAccountRouter(accountService, tokenService, {
+      workerToken: env.DATA_EXPORT_WORKER_TOKEN,
+    }),
+  );
 
   // Terminal error handler — must be registered last.
   app.use(errorHandler);
@@ -68,19 +161,122 @@ export function createApp(env: Env): Express {
 }
 
 /**
+ * Use Cloudflare R2 when fully configured; otherwise fall back to a per-process
+ * in-memory store (local dev/tests only — bundles would not survive a restart
+ * or be shared across instances, hence the warning).
+ */
+function buildObjectStorage(env: Env): ObjectStorage {
+  if (env.R2_ACCOUNT_ID && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY && env.R2_BUCKET) {
+    return new R2ObjectStorage({
+      accountId: env.R2_ACCOUNT_ID,
+      accessKeyId: env.R2_ACCESS_KEY_ID,
+      secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+      bucket: env.R2_BUCKET,
+      endpoint: env.R2_ENDPOINT,
+    });
+  }
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[account] R2_* not fully set — using in-memory export storage. ' +
+      'Data-export bundles will NOT persist or be shared across instances.',
+  );
+  return new InMemoryObjectStorage();
+}
+
+/**
+ * Publish export jobs to Upstash QStash (true async + retries) when configured;
+ * otherwise process them inline in-process (fine for local dev — no retries).
+ */
+function buildExportQueue(env: Env, process: (jobId: string) => Promise<void>): ExportQueue {
+  if (env.QSTASH_TOKEN && env.DATA_EXPORT_WORKER_TOKEN && env.PUBLIC_API_URL) {
+    return new QStashExportQueue({
+      token: env.QSTASH_TOKEN,
+      workerUrl: `${env.PUBLIC_API_URL.replace(/\/$/, '')}/account/export/process`,
+      workerSecret: env.DATA_EXPORT_WORKER_TOKEN,
+    });
+  }
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[account] QSTASH_TOKEN/DATA_EXPORT_WORKER_TOKEN/PUBLIC_API_URL not all set — ' +
+      'processing data-export jobs inline (no async retries).',
+  );
+  return new InlineExportQueue(process);
+}
+
+/**
+ * Create the shared Upstash Redis client used by revocation, the OTP store and
+ * OTP rate limiters, or `null` when it isn't configured (local dev/tests).
+ */
+function buildRedisClient(env: Env): RedisClient | null {
+  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
+    return createRedis(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
+  }
+  return null;
+}
+
+/**
  * Use the shared Upstash Redis blacklist when configured; otherwise fall back to
  * a per-process in-memory store (fine for local dev, but revocation would not be
  * shared across instances — hence the loud warning).
  */
-function buildRevocationStore(env: Env): RevocationStore {
-  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    const redis = createRedis(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN);
-    return new RedisRevocationStore(redis);
-  }
+function buildRevocationStore(redis: RedisClient | null): RevocationStore {
+  if (redis) return new RedisRevocationStore(redis);
   // eslint-disable-next-line no-console
   console.warn(
     '[auth] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory revocation store. ' +
       'Refresh-token revocation will NOT persist or be shared across instances.',
   );
   return new InMemoryRevocationStore();
+}
+
+/**
+ * Use Upstash Redis for the OTP store when configured; otherwise an in-memory
+ * fallback (local dev/tests only — challenges, cooldowns and lockouts would
+ * NOT be shared across instances or survive a restart).
+ */
+function buildOtpStore(redis: RedisClient | null): OtpStore {
+  if (redis) return new RedisOtpStore(redis);
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[otp] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory OTP store. ' +
+      'Challenges, cooldowns and lockouts will NOT persist or be shared across instances.',
+  );
+  return new InMemoryOtpStore();
+}
+
+/**
+ * Use the real Meta WhatsApp Cloud API sender when fully configured; otherwise
+ * a fake sender that never actually delivers a message. There is no safe
+ * "logging" fallback here — OTP codes are never logged in plaintext (see
+ * `otpService.ts`) — so local dev/tests exercise the flow via the fake sender.
+ */
+function buildWhatsAppSender(env: Env): WhatsAppSender {
+  if (env.WHATSAPP_PHONE_NUMBER_ID && env.WHATSAPP_ACCESS_TOKEN) {
+    return createMetaWhatsAppSender({
+      phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID,
+      accessToken: env.WHATSAPP_ACCESS_TOKEN,
+      templateName: env.WHATSAPP_TEMPLATE_NAME,
+      templateLocale: env.WHATSAPP_TEMPLATE_LOCALE,
+      apiVersion: env.WHATSAPP_API_VERSION,
+    });
+  }
+  // eslint-disable-next-line no-console
+  console.warn(
+    '[otp] WHATSAPP_PHONE_NUMBER_ID/WHATSAPP_ACCESS_TOKEN not set — OTP codes will NOT be ' +
+      'delivered via WhatsApp (using a fake sender). Set them in production.',
+  );
+  return new FakeWhatsAppSender();
+}
+
+/**
+ * Use an Upstash Redis sliding-window limiter when Redis is configured
+ * (shared across instances); otherwise a per-process in-memory fallback
+ * (local dev/tests only).
+ */
+function buildRateLimiter(
+  redis: RedisClient | null,
+  opts: { limit: number; windowSeconds: number; prefix: string },
+): RateLimiter {
+  if (redis) return createSlidingWindowRateLimiter(redis, opts);
+  return new InMemoryRateLimiter({ limit: opts.limit, windowSeconds: opts.windowSeconds });
 }

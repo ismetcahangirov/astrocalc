@@ -8,7 +8,9 @@ import { AuthError } from './errors';
  */
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof AuthError) {
-    res.status(err.status).json({ error: { code: err.code, message: err.message } });
+    res.status(err.status).json({
+      error: { code: err.code, message: err.message, ...(err.details ?? {}) },
+    });
     return;
   }
 

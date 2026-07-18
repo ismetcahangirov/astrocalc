@@ -58,6 +58,57 @@ export const sessions = pgTable('sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+/**
+ * GDPR account-deletion audit trail (#9). Deliberately does NOT reference
+ * `users` with a foreign key: the record must OUTLIVE the account it describes,
+ * so the deleted user's id is kept as a plain column rather than a cascading
+ * FK. Only the minimum needed to prove *who* deleted *what* and *when* is
+ * stored here — no other personal data is copied into the log.
+ */
+export const accountDeletions = pgTable('account_deletions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // The account that was deleted (plain column — survives the cascade).
+  deletedUserId: uuid('deleted_user_id').notNull(),
+  // Who triggered it: the user themselves or an admin's user id.
+  requestedBy: uuid('requested_by').notNull(),
+  // How it was initiated — 'self' (the user) or 'admin'.
+  actor: text('actor').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Asynchronous GDPR data-export jobs (#9). Requesting an export inserts a
+ * `pending` row and enqueues an Upstash QStash message; the worker gathers the
+ * user's data, uploads a JSON bundle to Cloudflare R2, then marks the job
+ * `ready` with a single-use download token (only its hash is stored) that
+ * expires ~24h later. The FK cascades so a deleted account takes its export
+ * jobs with it.
+ */
+export const dataExportJobs = pgTable('data_export_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  // pending → processing → ready → failed. "Downloaded" is derived from
+  // `downloadedAt` rather than being a status, so single-use is enforced by one
+  // atomic write.
+  status: text('status').notNull().default('pending'),
+  // R2 object key of the uploaded bundle, set once the worker finishes.
+  objectKey: text('object_key'),
+  // HMAC hash of the single-use download token — never the token itself.
+  downloadTokenHash: text('download_token_hash'),
+  // When the download link stops working (~24h after it becomes ready).
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  // Set on the first successful download — the link is single-use.
+  downloadedAt: timestamp('downloaded_at', { withTimezone: true }),
+  // Populated when status = 'failed'.
+  error: text('error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
+export type AccountDeletionRow = typeof accountDeletions.$inferSelect;
+export type DataExportJobRow = typeof dataExportJobs.$inferSelect;
