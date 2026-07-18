@@ -2,6 +2,8 @@ import { config } from '../config';
 import { getAccessToken } from '../auth/tokenStorage';
 import { ApiError } from './authApi';
 
+export { ApiError } from './authApi';
+
 export interface Profile {
   userId: string;
   displayName: string | null;
