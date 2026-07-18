@@ -343,10 +343,16 @@ function toCusps(longitudes: number[]): HouseCusp[] {
  */
 export function findHouseNumber(cusps: HouseCusp[], longitude: number): number {
   if (cusps.length !== 12) {
-    throw new CalcEngineError('invalid_input', `expected exactly 12 house cusps, got ${cusps.length}`);
+    throw new CalcEngineError(
+      'invalid_input',
+      `expected exactly 12 house cusps, got ${cusps.length}`,
+    );
   }
   if (!Number.isFinite(longitude)) {
-    throw new CalcEngineError('invalid_input', `longitude must be a finite number, got ${longitude}`);
+    throw new CalcEngineError(
+      'invalid_input',
+      `longitude must be a finite number, got ${longitude}`,
+    );
   }
 
   const sorted = [...cusps].sort((a, b) => a.house - b.house);

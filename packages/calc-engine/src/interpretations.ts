@@ -38,7 +38,13 @@ const SIGNS: readonly ZodiacSign[] = [
 
 const HOUSES: readonly number[] = Array.from({ length: 12 }, (_, i) => i + 1);
 
-const ASPECT_TYPES: readonly AspectType[] = ['conjunction', 'sextile', 'square', 'trine', 'opposition'];
+const ASPECT_TYPES: readonly AspectType[] = [
+  'conjunction',
+  'sextile',
+  'square',
+  'trine',
+  'opposition',
+];
 
 /**
  * The bodies this feature writes planet-sign/planet-house/aspect
@@ -77,7 +83,10 @@ export function planetSignSubjectKey(body: CelestialBody, sign: ZodiacSign): str
 /** Build the subject key for a "planet in house" combination, e.g. `sun-1`. */
 export function planetHouseSubjectKey(body: CelestialBody, house: number): string {
   if (!Number.isInteger(house) || house < 1 || house > 12) {
-    throw new CalcEngineError('invalid_input', `house must be an integer within [1, 12], got ${house}`);
+    throw new CalcEngineError(
+      'invalid_input',
+      `house must be an integer within [1, 12], got ${house}`,
+    );
   }
   return `${body}-${house}`;
 }
@@ -88,7 +97,11 @@ export function planetHouseSubjectKey(body: CelestialBody, house: number): strin
  * regardless of call order, so "Sun conjunction Moon" and "Moon conjunction
  * Sun" resolve to the same row — an aspect has no inherent direction.
  */
-export function aspectSubjectKey(type: AspectType, bodyA: CelestialBody, bodyB: CelestialBody): string {
+export function aspectSubjectKey(
+  type: AspectType,
+  bodyA: CelestialBody,
+  bodyB: CelestialBody,
+): string {
   const [first, second] = [bodyA, bodyB].sort();
   return `${type}-${first}-${second}`;
 }

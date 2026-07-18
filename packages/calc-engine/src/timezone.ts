@@ -1,7 +1,17 @@
-import { find } from 'geo-tz/all';
 import { DateTime, IANAZone } from 'luxon';
 import { CalcEngineError } from './errors';
-import type { GeoCoordinates } from './types';
+
+/**
+ * Local time → UT conversion, and its supporting types.
+ *
+ * Everything in this module is pure JavaScript that depends only on `luxon`
+ * (which reads the host's Intl/ICU timezone database) — it never touches
+ * `geo-tz`, and therefore never touches Node's `fs`. That is deliberate: this
+ * module is on the React Native bundle's import path (see
+ * `packages/calc-engine/src/index.ts`), so it must stay free of Node-only
+ * dependencies. Coordinate → IANA-zone lookup, which *does* need `geo-tz`,
+ * lives in the Node-only `./timezone-lookup` module instead.
+ */
 
 /**
  * A local ("wall-clock") civil date and time at the place of birth, as it would
@@ -48,59 +58,14 @@ export interface UtcConversion {
   isDST: boolean;
 }
 
-/** The result of resolving a local birth time and place all the way to UT. */
-export interface ResolvedInstant extends UtcConversion {
-  /**
-   * Every IANA zone `geo-tz` returned for the coordinates. Usually one; more
-   * than one only near contested borders. {@link UtcConversion.zone} is the
-   * first of these.
-   */
-  candidateZones: string[];
-}
-
-/** Assert a value is a finite number, or throw `invalid_input`. */
-function requireFinite(value: number, label: string): void {
+/**
+ * Assert a value is a finite number, or throw `invalid_input`. Shared with the
+ * Node-only `./timezone-lookup` module; not part of the package's public API.
+ */
+export function requireFinite(value: number, label: string): void {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new CalcEngineError('invalid_input', `${label} must be a finite number`);
   }
-}
-
-/**
- * Determine the historically-correct IANA timezone(s) for a point on Earth.
- *
- * Uses `geo-tz`'s full ("all") dataset rather than the 1970-consolidated one, so
- * places whose timekeeping diverged before 1970 keep their own zone (e.g.
- * `America/Indiana/Indianapolis` rather than being folded into
- * `America/New_York`) — which matters for historical birth charts.
- *
- * @param coordinates
- *   Birth-place latitude/longitude in decimal degrees (WGS84).
- * @returns
- *   The candidate IANA zone IDs at that point, most-specific first. For points
- *   over open ocean this is a nautical `Etc/GMT±N` zone.
- * @throws {CalcEngineError}
- *   `invalid_input` if a coordinate is non-finite or out of range;
- *   `timezone_not_found` if `geo-tz` returns no zone at all.
- */
-export function findTimeZones(coordinates: GeoCoordinates): string[] {
-  const { latitude, longitude } = coordinates;
-  requireFinite(latitude, 'latitude');
-  requireFinite(longitude, 'longitude');
-  if (latitude < -90 || latitude > 90) {
-    throw new CalcEngineError('invalid_input', `latitude out of range [-90, 90]: ${latitude}`);
-  }
-  if (longitude < -180 || longitude > 180) {
-    throw new CalcEngineError('invalid_input', `longitude out of range [-180, 180]: ${longitude}`);
-  }
-
-  const zones = find(latitude, longitude);
-  if (zones.length === 0) {
-    throw new CalcEngineError(
-      'timezone_not_found',
-      `no IANA timezone found for coordinates ${latitude}, ${longitude}`,
-    );
-  }
-  return zones;
 }
 
 /**
@@ -156,35 +121,4 @@ export function localTimeToUtc(local: LocalDateTime, zone: string): UtcConversio
     offsetName: dt.offsetNameShort,
     isDST: dt.isInDST,
   };
-}
-
-/**
- * Resolve a local birth time and place all the way to a UT instant: look up the
- * historically-correct IANA zone from the coordinates with {@link findTimeZones},
- * then convert with {@link localTimeToUtc}.
- *
- * This is the single entry point every other calc-engine module depends on — an
- * error here (wrong zone, static offset) would corrupt every downstream result —
- * so both the geographic lookup and the historical DST conversion are done from
- * authoritative data (`geo-tz` + the IANA tz database via `luxon`).
- *
- * @param local
- *   The civil birth date and time as read on a local clock.
- * @param coordinates
- *   The birth-place latitude/longitude in decimal degrees (WGS84).
- * @returns
- *   A {@link ResolvedInstant}: the UT instant, the applied offset, the zone
- *   used, and every candidate zone `geo-tz` returned. All fields are plain,
- *   JSON-serialisable values.
- * @throws {CalcEngineError}
- *   Propagates the errors of {@link findTimeZones} and {@link localTimeToUtc}.
- */
-export function resolveBirthInstant(
-  local: LocalDateTime,
-  coordinates: GeoCoordinates,
-): ResolvedInstant {
-  const candidateZones = findTimeZones(coordinates);
-  // findTimeZones guarantees a non-empty array.
-  const conversion = localTimeToUtc(local, candidateZones[0]!);
-  return { ...conversion, candidateZones };
 }

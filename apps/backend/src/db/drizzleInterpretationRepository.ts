@@ -52,12 +52,19 @@ export class DrizzleInterpretationRepository implements InterpretationRepository
     return rows.map(toText);
   }
 
-  async upsert(key: InterpretationKey, input: InterpretationTextInput): Promise<InterpretationText> {
+  async upsert(
+    key: InterpretationKey,
+    input: InterpretationTextInput,
+  ): Promise<InterpretationText> {
     const [row] = await this.db
       .insert(interpretationTexts)
       .values({ ...key, content: input.content, updatedBy: input.updatedBy, updatedAt: new Date() })
       .onConflictDoUpdate({
-        target: [interpretationTexts.category, interpretationTexts.subjectKey, interpretationTexts.locale],
+        target: [
+          interpretationTexts.category,
+          interpretationTexts.subjectKey,
+          interpretationTexts.locale,
+        ],
         set: { content: input.content, updatedBy: input.updatedBy, updatedAt: new Date() },
       })
       .returning();

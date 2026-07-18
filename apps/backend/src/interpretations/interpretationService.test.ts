@@ -4,7 +4,10 @@ import { InMemoryInterpretationCache } from './cache';
 import { createInterpretationService, type InterpretationService } from './interpretationService';
 import { InMemoryInterpretationRepository } from './repository';
 
-function buildService(): { service: InterpretationService; repo: InMemoryInterpretationRepository } {
+function buildService(): {
+  service: InterpretationService;
+  repo: InMemoryInterpretationRepository;
+} {
   const repo = new InMemoryInterpretationRepository();
   const cache = new InMemoryInterpretationCache();
   const service = createInterpretationService({ repo, cache, config: { cacheTtlSeconds: 3600 } });
@@ -15,7 +18,10 @@ describe('createInterpretationService', () => {
   describe('getText', () => {
     it('returns null when no content exists in the requested or fallback locale', async () => {
       const { service } = buildService();
-      const result = await service.getText({ category: 'planet-sign', subjectKey: 'sun-Aries' }, 'tr');
+      const result = await service.getText(
+        { category: 'planet-sign', subjectKey: 'sun-Aries' },
+        'tr',
+      );
       expect(result).toBeNull();
     });
 
@@ -26,7 +32,10 @@ describe('createInterpretationService', () => {
         { content: 'Türkçe metin', updatedBy: null },
       );
 
-      const result = await service.getText({ category: 'planet-sign', subjectKey: 'sun-Aries' }, 'tr');
+      const result = await service.getText(
+        { category: 'planet-sign', subjectKey: 'sun-Aries' },
+        'tr',
+      );
       expect(result).toEqual({
         category: 'planet-sign',
         subjectKey: 'sun-Aries',
@@ -43,7 +52,10 @@ describe('createInterpretationService', () => {
         { content: 'English text', updatedBy: null },
       );
 
-      const result = await service.getText({ category: 'planet-sign', subjectKey: 'sun-Aries' }, 'ru');
+      const result = await service.getText(
+        { category: 'planet-sign', subjectKey: 'sun-Aries' },
+        'ru',
+      );
       expect(result).toEqual({
         category: 'planet-sign',
         subjectKey: 'sun-Aries',
@@ -70,7 +82,10 @@ describe('createInterpretationService', () => {
         { content: 'changed behind the cache', updatedBy: null },
       );
 
-      const result = await service.getText({ category: 'planet-sign', subjectKey: 'sun-Aries' }, 'en');
+      const result = await service.getText(
+        { category: 'planet-sign', subjectKey: 'sun-Aries' },
+        'en',
+      );
       expect(result?.content).toBe('first');
     });
 
@@ -87,7 +102,10 @@ describe('createInterpretationService', () => {
         { content: 'v2', updatedBy: 'admin-1' },
       );
 
-      const result = await service.getText({ category: 'planet-sign', subjectKey: 'sun-Aries' }, 'en');
+      const result = await service.getText(
+        { category: 'planet-sign', subjectKey: 'sun-Aries' },
+        'en',
+      );
       expect(result?.content).toBe('v2');
     });
   });

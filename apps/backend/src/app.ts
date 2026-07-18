@@ -16,7 +16,11 @@ import { createTokenService } from './auth/tokens';
 import { DrizzleUserRepository } from './db/drizzleUserRepository';
 import { DrizzleAccountRepository } from './db/drizzleAccountRepository';
 import { DrizzleInterpretationRepository } from './db/drizzleInterpretationRepository';
-import { InMemoryInterpretationCache, RedisInterpretationCache, type InterpretationCache } from './interpretations/cache';
+import {
+  InMemoryInterpretationCache,
+  RedisInterpretationCache,
+  type InterpretationCache,
+} from './interpretations/cache';
 import { createInterpretationService } from './interpretations/interpretationService';
 import { createInterpretationRouter } from './interpretations/interpretationRoute';
 import { createAccountService, type AccountService } from './account/accountService';
@@ -322,7 +326,7 @@ function buildWhatsAppSender(env: Env): WhatsAppSender {
  */
 function buildInterpretationCache(redis: RedisClient | null): InterpretationCache {
   if (redis) return new RedisInterpretationCache(redis);
-  // eslint-disable-next-line no-console
+
   console.warn(
     '[interpretations] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory interpretation cache. ' +
       "Admin edits will NOT invalidate other instances' caches.",

@@ -2,8 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { InMemoryInterpretationRepository } from './repository';
 import type { InterpretationKey } from './types';
 
-const SUN_ARIES: InterpretationKey = { category: 'planet-sign', subjectKey: 'sun-Aries', locale: 'en' };
-const MOON_ARIES: InterpretationKey = { category: 'planet-sign', subjectKey: 'moon-Aries', locale: 'en' };
+const SUN_ARIES: InterpretationKey = {
+  category: 'planet-sign',
+  subjectKey: 'sun-Aries',
+  locale: 'en',
+};
+const MOON_ARIES: InterpretationKey = {
+  category: 'planet-sign',
+  subjectKey: 'moon-Aries',
+  locale: 'en',
+};
 
 describe('InMemoryInterpretationRepository', () => {
   it('returns null for a row that was never written', async () => {

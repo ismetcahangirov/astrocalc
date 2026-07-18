@@ -49,10 +49,10 @@ export interface ResolvedInterpretation extends InterpretationSubjectQuery {
 
 /** The subset of a computed natal chart {@link getForComputedChart} needs. */
 export interface ComputedChartInput {
-  positions: Array<Pick<PlanetPosition, 'body' | 'sign' | 'longitude'>>;
+  positions: Pick<PlanetPosition, 'body' | 'sign' | 'longitude'>[];
   /** House cusps, when the birth time is known. Omit to skip planet-house text. */
   cusps?: HouseCusp[];
-  aspects?: Array<Pick<Aspect, 'bodyA' | 'bodyB' | 'type'>>;
+  aspects?: Pick<Aspect, 'bodyA' | 'bodyB' | 'type'>[];
 }
 
 export interface ComputedChartInterpretation {
@@ -68,7 +68,10 @@ export interface InterpretationService {
     locale: InterpretationLocale,
   ): Promise<ResolvedInterpretation | null>;
   /** Resolve many subjects in one call — what a chart result screen needs. */
-  getBatch(subjects: InterpretationSubjectQuery[], locale: InterpretationLocale): Promise<ResolvedInterpretation[]>;
+  getBatch(
+    subjects: InterpretationSubjectQuery[],
+    locale: InterpretationLocale,
+  ): Promise<ResolvedInterpretation[]>;
   /** Admin create/edit (EPIC 10). Invalidates the cache entry so the next read is fresh. */
   upsertText(key: InterpretationKey, input: InterpretationTextInput): Promise<InterpretationText>;
   /**
@@ -78,12 +81,17 @@ export interface InterpretationService {
    */
   listMissing(): Promise<InterpretationKey[]>;
   /** Compose the full interpretation set for an already-computed natal chart. */
-  getForComputedChart(chart: ComputedChartInput, locale: InterpretationLocale): Promise<ComputedChartInterpretation>;
+  getForComputedChart(
+    chart: ComputedChartInput,
+    locale: InterpretationLocale,
+  ): Promise<ComputedChartInterpretation>;
 }
 
 const INTERPRETED_BODY_SET = new Set<string>(INTERPRETED_BODIES);
 
-export function createInterpretationService(deps: InterpretationServiceDeps): InterpretationService {
+export function createInterpretationService(
+  deps: InterpretationServiceDeps,
+): InterpretationService {
   const { repo, cache, config } = deps;
 
   async function readThrough(key: InterpretationKey): Promise<InterpretationText | null> {
@@ -158,7 +166,10 @@ export function createInterpretationService(deps: InterpretationServiceDeps): In
 
       const aspectQueries = (chart.aspects ?? [])
         .filter((a) => INTERPRETED_BODY_SET.has(a.bodyA) && INTERPRETED_BODY_SET.has(a.bodyB))
-        .map((a) => ({ category: 'aspect' as const, subjectKey: aspectSubjectKey(a.type, a.bodyA, a.bodyB) }));
+        .map((a) => ({
+          category: 'aspect' as const,
+          subjectKey: aspectSubjectKey(a.type, a.bodyA, a.bodyB),
+        }));
 
       const [planetSign, planetHouse, aspects] = await Promise.all([
         getBatch(planetSignQueries, locale),
