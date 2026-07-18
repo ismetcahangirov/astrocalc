@@ -6,6 +6,18 @@ and the related issue/PR numbers.
 
 ## 2026-07-18
 
+- Historical timezone accuracy (geo-tz + luxon) — #16. `packages/calc-engine`:
+  new `timezone` module that determines the historically-correct IANA zone from
+  birth coordinates via `geo-tz` (the full "all" dataset, so pre-1970-divergent
+  zones like `America/Indiana/Indianapolis` survive) and converts local birth
+  time to UT via `luxon`'s zone-aware `DateTime` — never a static offset.
+  Exposes `findTimeZones()`, `localTimeToUtc()`, and the end-to-end
+  `resolveBirthInstant()` (returns the UT ISO string every downstream module
+  consumes). 20 new unit tests (86 total green) covering the 2007 US DST
+  extension, pre-1900 Paris Local Mean Time, Moscow's 2011/2014 non-DST offset
+  changes, southern-hemisphere inverted DST (Sydney), Indiana's late DST
+  adoption, ambiguous/non-existent DST-boundary local times, and validation.
+
 - Implemented Google OAuth (mobile + backend) — #2. Backend: `apps/backend`
   Express + TS scaffold with `POST /auth/google` that verifies the Google ID
   token (`aud`/`iss`/`exp`/`email_verified`) via `google-auth-library`,
