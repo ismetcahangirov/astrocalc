@@ -56,4 +56,17 @@ export interface UserDataExport {
     birthPlaceTimezone: string | null;
     onboardingCompletedAt: string | null;
   } | null;
+  /** Other people the user saved and can compute charts for (#s2). */
+  subjects: {
+    id: string;
+    name: string;
+    birthDate: string | null;
+    birthTime: string | null;
+    birthTimeKnown: boolean;
+    birthPlaceName: string | null;
+    birthPlaceLat: number | null;
+    birthPlaceLng: number | null;
+    birthPlaceTimezone: string | null;
+    createdAt: string;
+  }[];
 }

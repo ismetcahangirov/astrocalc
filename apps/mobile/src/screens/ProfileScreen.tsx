@@ -123,9 +123,15 @@ interface ProfileScreenProps {
   onManageAccount?: () => void;
   /** Called to navigate to the natal-chart result screen (#17/#18), when offered. */
   onViewChart?: () => void;
+  /** Called to navigate to the People list (#s2), when offered. */
+  onViewPeople?: () => void;
 }
 
-export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenProps = {}) {
+export function ProfileScreen({
+  onManageAccount,
+  onViewChart,
+  onViewPeople,
+}: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -343,6 +349,16 @@ export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenPro
           style={styles.manageAccountLink}
         >
           <Text style={styles.manageAccountLinkText}>{t('profile.viewChart')}</Text>
+        </Pressable>
+      ) : null}
+
+      {onViewPeople ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewPeople}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('people.link')}</Text>
         </Pressable>
       ) : null}
 

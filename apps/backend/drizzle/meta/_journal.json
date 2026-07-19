@@ -8,6 +8,13 @@
       "when": 1784470315702,
       "tag": "0000_windy_black_panther",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784490110164,
+      "tag": "0001_tearful_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

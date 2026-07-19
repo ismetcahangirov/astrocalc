@@ -57,6 +57,30 @@ export const profiles = pgTable('profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * A saved "other person" the user can compute a chart for (#s2 — Multiple
+ * people). Same birth-data shape as {@link profiles}, but scoped to an owner
+ * and carrying its own name; the user's own data stays in `profiles`. As with
+ * profiles, `birthPlaceTimezone` is derived server-side from the coordinates,
+ * never trusted from the client.
+ */
+export const subjects = pgTable('subjects', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  birthDate: date('birth_date', { mode: 'string' }),
+  birthTime: time('birth_time'),
+  birthTimeKnown: boolean('birth_time_known').notNull().default(false),
+  birthPlaceName: text('birth_place_name'),
+  birthPlaceLat: doublePrecision('birth_place_lat'),
+  birthPlaceLng: doublePrecision('birth_place_lng'),
+  birthPlaceTimezone: text('birth_place_timezone'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** An opened login session, referenced by the refresh token's `sessionId`. */
 export const sessions = pgTable('sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -179,6 +203,7 @@ export const interpretationTexts = pgTable(
 
 export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
+export type SubjectRow = typeof subjects.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
 export type AccountDeletionRow = typeof accountDeletions.$inferSelect;
 export type AccountLinkAuditRow = typeof accountLinkAudit.$inferSelect;

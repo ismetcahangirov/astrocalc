@@ -99,6 +99,9 @@ export class InMemoryAccountRepository implements AccountRepository {
             onboardingCompletedAt: profile.onboardingCompletedAt?.toISOString() ?? null,
           }
         : null,
+      // The in-memory double doesn't model subjects; the Drizzle repo populates
+      // this from the subjects table in production.
+      subjects: [],
     };
   }
 
