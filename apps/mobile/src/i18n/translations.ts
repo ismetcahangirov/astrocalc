@@ -119,6 +119,21 @@ const en = {
   'birthPlaceSearch.manualToggle': "Can't find it? Enter manually",
   'birthPlaceSearch.manualHide': 'Hide manual entry',
   'birthPlaceSearch.error': "Couldn't search right now — you can still enter it manually.",
+
+  'profile.viewChart': 'View my natal chart',
+
+  'natalChart.title': 'Your Natal Chart',
+  'natalChart.loadError': "Couldn't load your chart. Please try again.",
+  'natalChart.incompleteProfile': 'Complete your birth details in your profile to see your chart.',
+  'natalChart.retry': 'Try again',
+  'natalChart.housesUnavailable': "Houses aren't shown because your exact birth time is unknown.",
+  'natalChart.offlineNotice':
+    "You're viewing a chart computed on this device. Reconnect for your full reading.",
+  'natalChart.retrogradeHint': '"R" marks a planet in retrograde.',
+  'natalChart.readingTitle': 'Your Reading',
+  'natalChart.aspectsTitle': 'Aspects',
+  'natalChart.readingError': "Couldn't load your reading. Please try again.",
+  'natalChart.readingUnavailableOffline': 'Your reading needs an internet connection.',
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -237,6 +252,22 @@ const az: Record<keyof typeof en, string> = {
   'birthPlaceSearch.manualToggle': 'Tapa bilmirsiniz? Əl ilə daxil edin',
   'birthPlaceSearch.manualHide': 'Əl ilə daxiletməni gizlət',
   'birthPlaceSearch.error': 'Hazırda axtarış edilmədi — yenə də əl ilə daxil edə bilərsiniz.',
+
+  'profile.viewChart': 'Natal xəritəmə bax',
+
+  'natalChart.title': 'Sizin Natal Xəritəniz',
+  'natalChart.loadError': 'Xəritəniz yüklənmədi. Yenidən cəhd edin.',
+  'natalChart.incompleteProfile':
+    'Xəritənizi görmək üçün profilinizdə doğum məlumatlarınızı tamamlayın.',
+  'natalChart.retry': 'Yenidən cəhd et',
+  'natalChart.housesUnavailable': 'Dəqiq doğum vaxtınız bilinmədiyi üçün evlər göstərilmir.',
+  'natalChart.offlineNotice':
+    'Bu cihazda hesablanmış xəritəyə baxırsınız. Tam şərh üçün internetə qoşulun.',
+  'natalChart.retrogradeHint': '"R" retroqrad planeti bildirir.',
+  'natalChart.readingTitle': 'Sizin Şərhiniz',
+  'natalChart.aspectsTitle': 'Aspektlər',
+  'natalChart.readingError': 'Şərhiniz yüklənmədi. Yenidən cəhd edin.',
+  'natalChart.readingUnavailableOffline': 'Şərhiniz üçün internet bağlantısı lazımdır.',
 };
 
 export type TranslationKey = keyof typeof en;

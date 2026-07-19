@@ -25,6 +25,63 @@ const batchSchema = z.object({
 
 const upsertSchema = z.object({ content: z.string().min(1).max(5000) });
 
+const celestialBodySchema = z.enum([
+  'sun',
+  'moon',
+  'mercury',
+  'venus',
+  'mars',
+  'jupiter',
+  'saturn',
+  'uranus',
+  'neptune',
+  'pluto',
+  'northNode',
+  'southNode',
+  'chiron',
+]);
+const zodiacSignSchema = z.enum([
+  'Aries',
+  'Taurus',
+  'Gemini',
+  'Cancer',
+  'Leo',
+  'Virgo',
+  'Libra',
+  'Scorpio',
+  'Sagittarius',
+  'Capricorn',
+  'Aquarius',
+  'Pisces',
+]);
+const aspectTypeSchema = z.enum(['conjunction', 'sextile', 'square', 'trine', 'opposition']);
+
+const positionSchema = z.object({
+  body: celestialBodySchema,
+  sign: zodiacSignSchema,
+  longitude: z.number(),
+});
+const cuspSchema = z.object({
+  house: z.number().int().min(1).max(12),
+  longitude: z.number(),
+  sign: zodiacSignSchema,
+  degree: z.number(),
+});
+const chartAspectSchema = z.object({
+  bodyA: celestialBodySchema,
+  bodyB: celestialBodySchema,
+  type: aspectTypeSchema,
+});
+
+const forChartSchema = z.object({
+  locale: localeSchema,
+  chart: z.object({
+    positions: z.array(positionSchema).min(1).max(20),
+    cusps: z.array(cuspSchema).length(12).optional(),
+    aspects: z.array(chartAspectSchema).max(200).optional(),
+  }),
+});
+
 export interface InterpretationRouterOptions {
   /** Shared secret the admin panel presents to edit interpretation text (EPIC 10). */
   adminApiToken?: string;
@@ -40,6 +97,10 @@ function readBearer(header: string | undefined): string | null {
  * Interpretation-text routes (#18):
  *   GET  /interpretations/:category/:subjectKey?locale=en  (bearer) -> one resolved text, or 404
  *   POST /interpretations/batch  (bearer) { locale, subjects }      -> the ones with content
+ *   POST /interpretations/for-chart  (bearer) { chart, locale }     -> the natal-chart result
+ *                                                                       screen's full reading,
+ *                                                                       composed server-side
+ *                                                                       from a computed chart
  *   PUT  /interpretations/:category/:subjectKey/:locale  (admin)    -> upsert (admin panel edit, no deploy)
  *   GET  /interpretations/admin/missing  (admin)                    -> completeness checklist
  */
@@ -104,6 +165,20 @@ export function createInterpretationRouter(
 
       const results = await service.getBatch(parsed.data.subjects, parsed.data.locale);
       res.status(200).json({ results });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post('/for-chart', auth, async (req, res, next) => {
+    try {
+      const parsed = forChartSchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new InvalidRequestError(parsed.error.issues[0]?.message ?? 'Invalid request body');
+      }
+
+      const result = await service.getForComputedChart(parsed.data.chart, parsed.data.locale);
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed:interpretations": "tsx src/interpretations/seed.ts"
   },
   "dependencies": {
     "@astrocalc/calc-engine": "*",
