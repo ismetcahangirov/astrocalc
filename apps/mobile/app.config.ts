@@ -32,12 +32,27 @@ const config: ExpoConfig = {
         iosUrlScheme: process.env.GOOGLE_IOS_URL_SCHEME ?? 'com.googleusercontent.apps.PLACEHOLDER',
       },
     ],
+    [
+      'expo-build-properties',
+      {
+        // @react-native/gradle-plugin pins its own Kotlin Gradle Plugin to 1.9.24;
+        // this must match so expo-modules-core picks a compatible Compose Compiler
+        // version (see its versionsMap of kotlinVersion -> composeCompilerVersion).
+        android: {
+          kotlinVersion: '1.9.24',
+        },
+      },
+    ],
   ],
   extra: {
     apiBaseUrl: process.env.API_BASE_URL ?? 'http://localhost:4000',
     googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID ?? '',
     googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID ?? '',
+    eas: {
+      projectId: '085786d1-040e-4695-8302-cfff8b98eb2b',
+    },
   },
+  owner: 'rockdrago',
 };
 
 export default config;

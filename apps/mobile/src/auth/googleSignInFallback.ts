@@ -28,7 +28,11 @@ export async function getGoogleIdTokenViaAuthSession(): Promise<string> {
     redirectUri,
     responseType: AuthSession.ResponseType.IdToken,
     scopes: ['openid', 'profile', 'email'],
-    usePKCE: true,
+    // PKCE (code_challenge_method) is only valid for the authorization-code
+    // flow — Google's server rejects it outright when paired with the
+    // implicit id_token response type ("Parameter not allowed for this
+    // message type: code_challenge_method").
+    usePKCE: false,
     extraParams: { nonce: `astrocalc-${Date.now()}` },
   });
 
