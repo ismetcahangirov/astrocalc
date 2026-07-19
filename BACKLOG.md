@@ -6,6 +6,38 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Onboarding flow (mobile) — #6, plus closed a real gap in #8 (birth-place
+  search). Backend: `/geocoding/search` was fully implemented and tested but
+  never mounted in `app.ts` — fixed, with Redis-backed cache/rate-limiter when
+  configured, in-memory fallback otherwise (matches the existing `buildXxx`
+  wiring pattern). `apps/mobile`: new `OnboardingScreen` — a five-step wizard
+  (name → birth date → birth time → birth place → language) with back
+  navigation, a progress indicator, the required "I don't know my birth time"
+  explanation (house placements will be skipped), and an "I'll finish this
+  later" exit on every step that saves a draft via `completeOnboarding` and
+  resumes from wherever the user left off next time. New shared
+  `BirthPlaceSearchField` (debounced autocomplete over `/geocoding/search`,
+  manual lat/lng/timezone fallback when a place isn't found) — used by both
+  onboarding and the profile-edit screen (#7), replacing its old plain-text
+  birth-place input. New `app/index.tsx` auth gate: checks the stored session
+  on launch and after sign-in, then routes to login, onboarding, or the
+  profile screen (still this app's post-auth landing point — no home/dashboard
+  screen exists in any merged epic yet). `LoginScreen` now takes an
+  `onSignedIn` callback so the gate can re-check after a successful sign-in
+  (previously sign-in succeeded but the app never navigated anywhere).
+  Deviated from the issue's "react-hook-form + zod" technical note in favor of
+  the plain-state validation pattern the merged #7 profile screen already
+  uses — consistent with the rest of the app, no new dependency for equivalent
+  behavior. 9 new unit tests for the step-order/validation logic (pure `.ts`,
+  matching this app's test convention of not unit-testing `.tsx` components).
+  Remaining: WhatsApp OTP has no mobile UI yet (#3's backend is done); birth
+  place timezone is still a manual/optional field — there's no on-device way
+  to derive it (the RN-safe calc-engine build excludes the `geo-tz`/Node
+  timezone module) and the backend doesn't derive it either; only EN/AZ are
+  wired on mobile, not the full AZ/TR/EN/RU set; #4 (account-linking policy)
+  is untouched — Google sign-in still auto-links by email with no user
+  confirmation step, which the issue's own acceptance criteria call out as
+  the wrong behavior.
 - Offline calculation support (mobile) — #20 (core logic done; needs the
   `/natal-chart` backend endpoint to exercise end-to-end). Split
   `packages/calc-engine` into a React-Native-safe main entry (pure JS —

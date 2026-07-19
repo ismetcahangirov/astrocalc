@@ -2,14 +2,24 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useGoogleAuth } from '../auth/useGoogleAuth';
 import { useTranslation } from '../i18n/LocaleContext';
 
+interface LoginScreenProps {
+  /** Called after a session is successfully established, so the caller can route onward. */
+  onSignedIn?: () => void;
+}
+
 /**
  * Login screen — Section 2 design system (dark + gold). Renders the Google
  * Sign-In button, a loading state, and a clear inline error message when
  * sign-in or backend token verification fails.
  */
-export function LoginScreen() {
+export function LoginScreen({ onSignedIn }: LoginScreenProps = {}) {
   const { loading, error, signIn } = useGoogleAuth();
   const { t } = useTranslation();
+
+  const handlePress = async () => {
+    const session = await signIn();
+    if (session) onSignedIn?.();
+  };
 
   return (
     <View style={styles.container}>
@@ -22,7 +32,7 @@ export function LoginScreen() {
         accessibilityRole="button"
         accessibilityState={{ disabled: loading }}
         disabled={loading}
-        onPress={signIn}
+        onPress={handlePress}
         style={({ pressed }) => [
           styles.button,
           pressed && styles.buttonPressed,

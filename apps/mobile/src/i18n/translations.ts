@@ -34,8 +34,6 @@ const en = {
   'profile.birthTimeUnknown.label': "I don't know my exact birth time",
 
   'profile.birthPlace.label': 'Birth place',
-  'profile.birthPlace.placeholder': 'City, Country',
-  'profile.birthPlaceAdvanced.label': 'Coordinates & time zone (advanced)',
   'profile.birthPlaceLat.placeholder': 'Latitude',
   'profile.birthPlaceLng.placeholder': 'Longitude',
   'profile.birthPlaceTimezone.placeholder': 'IANA time zone, e.g. Asia/Baku',
@@ -48,6 +46,29 @@ const en = {
   'profile.loadError': "Couldn't load your profile.",
   'profile.saveError': "Couldn't save your changes. Please try again.",
   'profile.retry': 'Try again',
+
+  'onboarding.step.name.title': 'What should we call you?',
+  'onboarding.step.birthDate.title': 'When were you born?',
+  'onboarding.step.birthTime.title': 'What time were you born?',
+  'onboarding.step.birthTime.unknownExplain':
+    "We'll skip your Ascendant, Midheaven, and house placements until you add an exact time — everything else still works.",
+  'onboarding.step.birthPlace.title': 'Where were you born?',
+  'onboarding.step.language.title': 'Choose your language',
+  'onboarding.name.required': 'Enter your name to continue.',
+  'onboarding.birthPlace.required': 'Choose a birth place to continue.',
+  'onboarding.language.required': 'Choose a language to continue.',
+  'onboarding.back': 'Back',
+  'onboarding.next': 'Next',
+  'onboarding.finish': 'Finish',
+  'onboarding.finishLater': "I'll finish this later",
+  'onboarding.progressHint': 'Step',
+  'onboarding.saveError': "Couldn't save. Please try again.",
+
+  'birthPlaceSearch.placeholder': 'Search for a city…',
+  'birthPlaceSearch.noResults': 'No matches found.',
+  'birthPlaceSearch.manualToggle': "Can't find it? Enter manually",
+  'birthPlaceSearch.manualHide': 'Hide manual entry',
+  'birthPlaceSearch.error': "Couldn't search right now — you can still enter it manually.",
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -79,8 +100,6 @@ const az: Record<keyof typeof en, string> = {
   'profile.birthTimeUnknown.label': 'Dəqiq doğum vaxtımı bilmirəm',
 
   'profile.birthPlace.label': 'Doğum yeri',
-  'profile.birthPlace.placeholder': 'Şəhər, Ölkə',
-  'profile.birthPlaceAdvanced.label': 'Koordinatlar və saat qurşağı (əlavə)',
   'profile.birthPlaceLat.placeholder': 'En dairəsi',
   'profile.birthPlaceLng.placeholder': 'Uzunluq dairəsi',
   'profile.birthPlaceTimezone.placeholder': 'IANA saat qurşağı, məs. Asia/Baku',
@@ -93,6 +112,29 @@ const az: Record<keyof typeof en, string> = {
   'profile.loadError': 'Profiliniz yüklənmədi.',
   'profile.saveError': 'Dəyişikliklər yadda saxlanmadı. Yenidən cəhd edin.',
   'profile.retry': 'Yenidən cəhd et',
+
+  'onboarding.step.name.title': 'Sizə necə müraciət edək?',
+  'onboarding.step.birthDate.title': 'Nə vaxt anadan olmusunuz?',
+  'onboarding.step.birthTime.title': 'Neçədə anadan olmusunuz?',
+  'onboarding.step.birthTime.unknownExplain':
+    'Dəqiq vaxt əlavə edənə qədər Asenden, Zenit nöqtəsi və evləri hesablamayacağıq — qalan hər şey normal işləyir.',
+  'onboarding.step.birthPlace.title': 'Harada anadan olmusunuz?',
+  'onboarding.step.language.title': 'Dilinizi seçin',
+  'onboarding.name.required': 'Davam etmək üçün adınızı daxil edin.',
+  'onboarding.birthPlace.required': 'Davam etmək üçün doğum yerini seçin.',
+  'onboarding.language.required': 'Davam etmək üçün dil seçin.',
+  'onboarding.back': 'Geri',
+  'onboarding.next': 'Növbəti',
+  'onboarding.finish': 'Bitir',
+  'onboarding.finishLater': 'Bunu sonra bitirəcəyəm',
+  'onboarding.progressHint': 'Addım',
+  'onboarding.saveError': 'Yadda saxlanmadı. Yenidən cəhd edin.',
+
+  'birthPlaceSearch.placeholder': 'Şəhər axtarın…',
+  'birthPlaceSearch.noResults': 'Nəticə tapılmadı.',
+  'birthPlaceSearch.manualToggle': 'Tapa bilmirsiniz? Əl ilə daxil edin',
+  'birthPlaceSearch.manualHide': 'Əl ilə daxiletməni gizlət',
+  'birthPlaceSearch.error': 'Hazırda axtarış edilmədi — yenə də əl ilə daxil edə bilərsiniz.',
 };
 
 export type TranslationKey = keyof typeof en;
