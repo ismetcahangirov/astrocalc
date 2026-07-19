@@ -6,6 +6,24 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Getting Started guide + LICENSE decision — #26, #27, in one PR (both
+  repo-wide chores, no code dependency between them). #26: filled in the
+  README's Getting Started section and CONTRIBUTING's Local Development
+  Setup section, now that the monorepo (`apps/mobile`, `apps/backend`,
+  `packages/calc-engine`) is actually scaffolded — prerequisites, install,
+  running backend/mobile, running tests, lint/format. Also corrected the
+  README's stale "pre-implementation, no code written" status banner and
+  "not yet scaffolded" repository structure section, since both were
+  factually wrong next to the new setup instructions. #27: added a
+  proprietary/all-rights-reserved `LICENSE` (matching the closed-source
+  commercial model that was already the deciding factor against AGPL-3.0
+  Swiss Ephemeris — see #11/#13) and updated the README License section.
+  Audited every direct dependency across the root, `apps/backend`,
+  `apps/mobile`, and `packages/calc-engine` workspaces (1210 unique
+  transitive packages scanned) — all MIT/Apache-2.0/BSD/ISC or equivalent
+  permissive licenses, no copyleft (GPL/AGPL/SSPL) dependencies that would
+  conflict with closed-source distribution.
+
 - Cross-validation unit tests against reference ephemeris — #21 (last
   remaining sub-issue of #11, previously `needs-research` since it requires
   manually collected external data). Collected 10 birth scenarios (varying

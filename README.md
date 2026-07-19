@@ -5,11 +5,12 @@ transits & compatibility, numerology, and the Matrix of Destiny — built as
 an accurate, fast calculation tool first and a "fun astrology app" second.
 Account-gated, Free/Pro subscription model.
 
-> **Status: pre-implementation / planning phase.** No application code has
-> been written yet. This repository currently holds project scope, design
-> direction, and the full GitHub issue breakdown (Epics → sub-issues) that
-> serves as the source of truth for what gets built. See
-> [Roadmap](#roadmap--milestones) and the [issue tracker][issues].
+> **Status: active development.** The monorepo is scaffolded and
+> authentication, backend natal-chart calculation, and mobile natal-chart
+> rendering are implemented; the admin panel and marketing site have not
+> started. This repository also holds the full GitHub issue breakdown
+> (Epics → sub-issues) that serves as the source of truth for what gets
+> built. See [Roadmap](#roadmap--milestones) and the [issue tracker][issues].
 
 [issues]: https://github.com/ismetcahangirov/astrocalc/issues
 
@@ -71,29 +72,86 @@ above summarize [master spec](https://github.com/ismetcahangirov/astrocalc/issue
 
 ## Repository Structure
 
-Not yet scaffolded. The intended layout is a monorepo:
+A monorepo, managed with npm workspaces:
 
 ```
 apps/
-  mobile/       # Expo React Native app
-  backend/      # Express API
-  admin/        # Admin panel (web)
-  website/      # Marketing site (Next.js)
+  mobile/       # Expo React Native app (scaffolded)
+  backend/      # Express API (scaffolded)
+  admin/        # Admin panel (web) — not yet scaffolded
+  website/      # Marketing site (Next.js) — not yet scaffolded
 packages/
   calc-engine/  # Shared, platform-independent calculation logic
                 # (zodiac, natal chart, numerology, matrix) — used by
                 # both backend and mobile (for offline calculation)
+                # (scaffolded)
 ```
 
-Scaffolding this structure is tracked in
-[#12](https://github.com/ismetcahangirov/astrocalc/issues/12) (calc-engine)
-and the yet-to-be-created Backend & Infrastructure epic.
+`admin/` and `website/` are tracked under the yet-to-be-created Admin Panel
+and Marketing Website epics.
 
 ## Getting Started
 
-There's no code to run yet — this section will be filled in once the
-monorepo is scaffolded (tracked separately; see the issue tracker for the
-`chore` label).
+### Prerequisites
+
+- Node.js >= 20 and npm
+- A [Neon](https://neon.tech) Postgres database (free tier) for the backend
+- An [Expo](https://expo.dev) account and the Expo Go / dev client tooling
+  for running the mobile app on a device or simulator
+- Xcode (iOS) and/or Android Studio (Android) if you want to run platform
+  builds locally instead of Expo's cloud (EAS) builds
+
+### Install
+
+From the repo root (npm workspaces install every app/package in one pass):
+
+```bash
+git clone https://github.com/ismetcahangirov/astrocalc.git
+cd astrocalc
+npm install
+```
+
+### Running the backend
+
+```bash
+cd apps/backend
+cp .env.example .env   # fill in DATABASE_URL, GOOGLE_CLIENT_IDS, JWT secrets
+npm run db:generate && npm run db:migrate   # apply the Drizzle schema to Neon
+npm run dev                                 # starts the Express API on :4000
+```
+
+See [apps/backend/README.md](./apps/backend/README.md) for the full auth
+flow and API details.
+
+### Running the mobile app
+
+```bash
+cd apps/mobile
+cp .env.example .env   # fill in API_BASE_URL and Google OAuth client IDs
+npm run start           # expo start --dev-client
+```
+
+The mobile app requires a custom Expo dev client (not plain Expo Go) because
+of the AdMob and app-integrity native modules — run `npm run android` /
+`npm run ios` at least once per device/simulator to build and install the
+dev client, then `npm run start` for subsequent iteration.
+
+### Running tests
+
+```bash
+npm run test -w packages/calc-engine   # calc-engine unit tests (Vitest)
+npm run test -w apps/backend           # backend unit/integration tests (Vitest + Supertest)
+npm run test -w apps/mobile            # mobile unit tests (Vitest)
+```
+
+### Linting & formatting
+
+Repo-wide, from the root (see [Code Style](./CONTRIBUTING.md#code-style)):
+
+```bash
+npm run lint
+npm run format:check
+```
 
 ## Roadmap / Milestones
 
@@ -131,5 +189,12 @@ AI coding agents live in [CLAUDE.md](./CLAUDE.md).
 
 ## License
 
-Not yet decided — tracked as a follow-up issue. Do not assume any license
-grant until one is added.
+Proprietary — all rights reserved. See [LICENSE](./LICENSE). AstroCalc is a
+closed-source commercial app; no license grant is given to use, copy, or
+distribute this code. This is also why `astronomy-engine` (MIT) was chosen
+over Swiss Ephemeris (AGPL-3.0) as the calculation core — see the
+[Tech Stack](#tech-stack) table. Third-party dependencies remain under
+their own respective open-source licenses (MIT, Apache-2.0, BSD — verified
+against every direct dependency in `apps/*` and `packages/calc-engine`;
+none are copyleft-licensed in a way that would conflict with closed-source
+distribution).
