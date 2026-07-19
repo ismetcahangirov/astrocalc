@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Canvas,
   Circle,
@@ -11,6 +11,13 @@ import {
   useFont,
   type SkFont,
 } from '@shopify/react-native-skia';
+import {
+  Easing,
+  interpolate,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { normalize360, type Point, type WheelLayout } from './geometry';
 import { aspectStyles, chartTheme } from './theme';
 import { bodyGlyph, SIGN_GLYPHS } from './symbols';
@@ -64,146 +71,171 @@ export function NatalChartWheel({ layout }: NatalChartWheelProps) {
   const houseFont = useMemo(() => matchFont({ fontSize: size * 0.028 }), [size]);
   const retroFont = useMemo(() => matchFont({ fontSize: size * 0.022, fontWeight: '700' }), [size]);
 
+  // One-shot "reveal" on mount, driving a single 0→1 progress on the UI thread:
+  // the ring/signs fade + scale in, then the aspect chords draw on, then the
+  // planet glyphs fade in — a calm, staged entrance rather than a hard cut.
+  const reveal = useSharedValue(0);
+  useEffect(() => {
+    reveal.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) });
+  }, [reveal]);
+
+  // Ring + signs + houses: fade in over the first ~half, with a gentle scale-up.
+  const ringOpacity = useDerivedValue(() => interpolate(reveal.value, [0, 0.45], [0, 1], 'clamp'));
+  const ringTransform = useDerivedValue(() => [
+    { scale: interpolate(reveal.value, [0, 0.6], [0.92, 1], 'clamp') },
+  ]);
+  // Aspect chords "draw on" (Skia trims the path to `end`) through the middle.
+  const aspectEnd = useDerivedValue(() => interpolate(reveal.value, [0.35, 0.8], [0, 1], 'clamp'));
+  // Planet glyphs fade in last.
+  const planetsOpacity = useDerivedValue(() =>
+    interpolate(reveal.value, [0.55, 1], [0, 1], 'clamp'),
+  );
+
   return (
     <Canvas style={{ width: size, height: size }}>
-      {/* Backdrop disc + zodiac ring strokes */}
-      <Circle cx={center.x} cy={center.y} r={radii.outer} color={chartTheme.disc} />
-      <Circle
-        cx={center.x}
-        cy={center.y}
-        r={radii.outer}
-        style="stroke"
-        strokeWidth={1.5}
-        color={chartTheme.gold}
-      />
-      <Circle
-        cx={center.x}
-        cy={center.y}
-        r={radii.zodiacInner}
-        style="stroke"
-        strokeWidth={1}
-        color={chartTheme.goldMuted}
-      />
-      {layout.hasHouses ? (
+      <Group opacity={ringOpacity} transform={ringTransform} origin={center}>
+        {/* Backdrop disc + zodiac ring strokes */}
+        <Circle cx={center.x} cy={center.y} r={radii.outer} color={chartTheme.disc} />
         <Circle
           cx={center.x}
           cy={center.y}
-          r={radii.aspectRing}
+          r={radii.outer}
           style="stroke"
-          strokeWidth={0.75}
-          color={chartTheme.goldFaint}
+          strokeWidth={1.5}
+          color={chartTheme.gold}
         />
-      ) : null}
-
-      {/* Degree ticks, every 5° (bolder every 30°, at the sign boundaries) */}
-      {layout.ticks.map((tick) => (
-        <Line
-          key={`tick-${tick.angle}`}
-          p1={tick.inner}
-          p2={tick.outer}
-          color={tick.major ? chartTheme.gold : chartTheme.goldFaint}
-          strokeWidth={tick.major ? 1.25 : 0.6}
+        <Circle
+          cx={center.x}
+          cy={center.y}
+          r={radii.zodiacInner}
+          style="stroke"
+          strokeWidth={1}
+          color={chartTheme.goldMuted}
         />
-      ))}
-
-      {/* Zodiac sign glyphs (only once the bundled glyph font has loaded) */}
-      {signFont &&
-        layout.signs.map((sign) => {
-          const glyph = SIGN_GLYPHS[sign.index] ?? '?';
-          const pos = centered(signFont, glyph, sign.glyph.x, sign.glyph.y);
-          return (
-            <SkiaText
-              key={`sign-${sign.index}`}
-              font={signFont}
-              text={glyph}
-              x={pos.x}
-              y={pos.y}
-              color={chartTheme.gold}
-            />
-          );
-        })}
-
-      {/* House-cusp lines + numbers (absent entirely when the birth time is unknown) */}
-      {layout.houses.map((house) => {
-        const label = String(house.house);
-        const pos = centered(houseFont, label, house.label.x, house.label.y);
-        return (
-          <Group key={`house-${house.house}`}>
-            <Line
-              p1={house.inner}
-              p2={house.outer}
-              color={house.angular ? chartTheme.gold : chartTheme.goldMuted}
-              strokeWidth={house.angular ? 1.75 : 0.85}
-            />
-            <SkiaText
-              font={houseFont}
-              text={label}
-              x={pos.x}
-              y={pos.y}
-              color={chartTheme.textMuted}
-            />
-          </Group>
-        );
-      })}
-
-      {/* Aspect chords */}
-      {layout.aspects.map((aspect, i) => {
-        const style = aspectStyles[aspect.type];
-        return (
-          <Path
-            key={`aspect-${aspect.bodyA}-${aspect.bodyB}-${i}`}
-            path={linePath(aspect.from, aspect.to)}
+        {layout.hasHouses ? (
+          <Circle
+            cx={center.x}
+            cy={center.y}
+            r={radii.aspectRing}
             style="stroke"
-            strokeWidth={style.width}
-            color={style.color}
-          >
-            {style.dashed ? <DashPathEffect intervals={[6, 4]} /> : null}
-          </Path>
-        );
-      })}
+            strokeWidth={0.75}
+            color={chartTheme.goldFaint}
+          />
+        ) : null}
 
-      {/* Planet glyphs — a short leader line only when de-collision moved the glyph
-          away from its true degree, plus a retrograde "R" mark. */}
-      {planetFont &&
-        layout.planets.map((planet) => {
-          const glyph = bodyGlyph(planet.body);
-          const glyphPos = centered(planetFont, glyph, planet.glyph.x, planet.glyph.y);
-          const needsLeader = angularDistance(planet.trueAngle, planet.glyphAngle) > 0.5;
-          return (
-            <Group key={`planet-${planet.body}`}>
-              {needsLeader ? (
-                <Line
-                  p1={planet.degreeMark}
-                  p2={planet.glyph}
-                  color={chartTheme.goldFaint}
-                  strokeWidth={0.6}
-                />
-              ) : null}
-              <Circle
-                cx={planet.glyph.x}
-                cy={planet.glyph.y}
-                r={size * 0.018}
+        {/* Degree ticks, every 5° (bolder every 30°, at the sign boundaries) */}
+        {layout.ticks.map((tick) => (
+          <Line
+            key={`tick-${tick.angle}`}
+            p1={tick.inner}
+            p2={tick.outer}
+            color={tick.major ? chartTheme.gold : chartTheme.goldFaint}
+            strokeWidth={tick.major ? 1.25 : 0.6}
+          />
+        ))}
+
+        {/* Zodiac sign glyphs (only once the bundled glyph font has loaded) */}
+        {signFont &&
+          layout.signs.map((sign) => {
+            const glyph = SIGN_GLYPHS[sign.index] ?? '?';
+            const pos = centered(signFont, glyph, sign.glyph.x, sign.glyph.y);
+            return (
+              <SkiaText
+                key={`sign-${sign.index}`}
+                font={signFont}
+                text={glyph}
+                x={pos.x}
+                y={pos.y}
                 color={chartTheme.gold}
               />
-              <SkiaText
-                font={planetFont}
-                text={glyph}
-                x={glyphPos.x}
-                y={glyphPos.y}
-                color={chartTheme.onGold}
+            );
+          })}
+
+        {/* House-cusp lines + numbers (absent entirely when the birth time is unknown) */}
+        {layout.houses.map((house) => {
+          const label = String(house.house);
+          const pos = centered(houseFont, label, house.label.x, house.label.y);
+          return (
+            <Group key={`house-${house.house}`}>
+              <Line
+                p1={house.inner}
+                p2={house.outer}
+                color={house.angular ? chartTheme.gold : chartTheme.goldMuted}
+                strokeWidth={house.angular ? 1.75 : 0.85}
               />
-              {planet.retrograde ? (
-                <SkiaText
-                  font={retroFont}
-                  text="R"
-                  x={planet.glyph.x + size * 0.02}
-                  y={planet.glyph.y - size * 0.02}
-                  color={chartTheme.retrograde}
-                />
-              ) : null}
+              <SkiaText
+                font={houseFont}
+                text={label}
+                x={pos.x}
+                y={pos.y}
+                color={chartTheme.textMuted}
+              />
             </Group>
           );
         })}
+
+        {/* Aspect chords — animated `end` trims each chord so they draw on. */}
+        {layout.aspects.map((aspect, i) => {
+          const style = aspectStyles[aspect.type];
+          return (
+            <Path
+              key={`aspect-${aspect.bodyA}-${aspect.bodyB}-${i}`}
+              path={linePath(aspect.from, aspect.to)}
+              style="stroke"
+              strokeWidth={style.width}
+              color={style.color}
+              end={aspectEnd}
+            >
+              {style.dashed ? <DashPathEffect intervals={[6, 4]} /> : null}
+            </Path>
+          );
+        })}
+
+        {/* Planet glyphs (fade in last) — a short leader line only when de-collision
+          moved the glyph away from its true degree, plus a retrograde "R" mark. */}
+        <Group opacity={planetsOpacity}>
+          {planetFont &&
+            layout.planets.map((planet) => {
+              const glyph = bodyGlyph(planet.body);
+              const glyphPos = centered(planetFont, glyph, planet.glyph.x, planet.glyph.y);
+              const needsLeader = angularDistance(planet.trueAngle, planet.glyphAngle) > 0.5;
+              return (
+                <Group key={`planet-${planet.body}`}>
+                  {needsLeader ? (
+                    <Line
+                      p1={planet.degreeMark}
+                      p2={planet.glyph}
+                      color={chartTheme.goldFaint}
+                      strokeWidth={0.6}
+                    />
+                  ) : null}
+                  <Circle
+                    cx={planet.glyph.x}
+                    cy={planet.glyph.y}
+                    r={size * 0.018}
+                    color={chartTheme.gold}
+                  />
+                  <SkiaText
+                    font={planetFont}
+                    text={glyph}
+                    x={glyphPos.x}
+                    y={glyphPos.y}
+                    color={chartTheme.onGold}
+                  />
+                  {planet.retrograde ? (
+                    <SkiaText
+                      font={retroFont}
+                      text="R"
+                      x={planet.glyph.x + size * 0.02}
+                      y={planet.glyph.y - size * 0.02}
+                      color={chartTheme.retrograde}
+                    />
+                  ) : null}
+                </Group>
+              );
+            })}
+        </Group>
+      </Group>
     </Canvas>
   );
 }
