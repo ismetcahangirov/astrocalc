@@ -1,9 +1,17 @@
 import { normalizeAzSearchKey } from './azLocale';
+import { deriveBirthTimezone, type BirthTimezoneResolver } from './birthTimezone';
 import { searchAzCities } from './localSearch';
 import type { GeocodeCache } from './geocodeCache';
 import type { NominatimClient } from './nominatimClient';
 import type { NominatimRateLimiter } from './nominatimRateLimiter';
 import type { PlaceResult } from './types';
+
+/** Reverse-geocode result: a human-readable place plus the derived birth timezone. */
+export interface ReverseResult {
+  name: string | null;
+  region: string | null;
+  timezone: string | null;
+}
 
 export interface GeocodingServiceConfig {
   /** How long a Nominatim response is cached (seconds). */
@@ -20,16 +28,19 @@ export interface GeocodingServiceConfig {
 }
 
 export interface GeocodingServiceDeps {
-  nominatim: Pick<NominatimClient, 'search'>;
+  nominatim: Pick<NominatimClient, 'search' | 'reverse'>;
   cache: GeocodeCache;
   rateLimiter: NominatimRateLimiter;
   config: GeocodingServiceConfig;
   /** Injectable logger for swallowed Nominatim failures — defaults to console.warn. */
   onRemoteError?: (err: unknown) => void;
+  /** Coordinate → IANA timezone resolver; defaults to the real `geo-tz` lookup. */
+  deriveTimezone?: BirthTimezoneResolver;
 }
 
 export interface GeocodingService {
   search(query: string): Promise<PlaceResult[]>;
+  reverse(lat: number, lng: number): Promise<ReverseResult>;
 }
 
 /**
@@ -41,7 +52,7 @@ export interface GeocodingService {
  * the signal the client uses to offer the manual lat/lng fallback.
  */
 export function createGeocodingService(deps: GeocodingServiceDeps): GeocodingService {
-  const { nominatim, cache, rateLimiter, config } = deps;
+  const { nominatim, cache, rateLimiter, config, deriveTimezone = deriveBirthTimezone } = deps;
   const onRemoteError =
     deps.onRemoteError ?? ((err) => console.warn('[geocoding] Nominatim lookup failed:', err));
 
@@ -73,6 +84,35 @@ export function createGeocodingService(deps: GeocodingServiceDeps): GeocodingSer
       } catch (err) {
         onRemoteError(err);
         return localResults;
+      }
+    },
+
+    async reverse(lat: number, lng: number): Promise<ReverseResult> {
+      // The timezone is derived locally from the coordinates and is independent
+      // of Nominatim, so a reverse-geocode failure never loses it — the map can
+      // always confirm the zone even when the place name is unavailable.
+      const timezone = deriveTimezone(lat, lng);
+
+      const cacheKey = `reverse:${lat.toFixed(4)},${lng.toFixed(4)}`;
+      try {
+        // A cached `[]` means "reverse geocoding found no place here" — distinct
+        // from `null`, which is a cache miss.
+        const cached = await cache.get(cacheKey);
+        let place;
+        if (cached !== null) {
+          place = cached[0] ?? null;
+        } else {
+          await rateLimiter.acquire();
+          const found = await nominatim.reverse(lat, lng);
+          place = found
+            ? { id: found.id, name: found.name, region: found.region, lat, lng }
+            : null;
+          await cache.set(cacheKey, place ? [place] : [], config.cacheTtlSeconds);
+        }
+        return { name: place?.name ?? null, region: place?.region ?? null, timezone };
+      } catch (err) {
+        onRemoteError(err);
+        return { name: null, region: null, timezone };
       }
     },
   };

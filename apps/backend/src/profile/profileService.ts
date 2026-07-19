@@ -1,5 +1,6 @@
 import type { UserRepository } from '../auth/repository';
 import type { Profile, ProfileUpdateInput } from '../auth/types';
+import { deriveBirthTimezone, type BirthTimezoneResolver } from '../geocoding/birthTimezone';
 import {
   BIRTH_DATA_FIELDS,
   NoopChartCacheInvalidator,
@@ -16,6 +17,31 @@ export interface ProfileServiceDeps {
   repo: Pick<UserRepository, 'getProfile' | 'updateProfile'>;
   /** Defaults to a no-op — see `chartCacheInvalidator.ts` for why. */
   cache?: ChartCacheInvalidator;
+  /**
+   * Resolves a birth place's IANA timezone from its coordinates. Injectable so
+   * tests don't pull in `geo-tz`; defaults to the real `geo-tz`-backed lookup.
+   */
+  deriveTimezone?: BirthTimezoneResolver;
+}
+
+/**
+ * Force `birthPlaceTimezone` to the zone derived from the *effective*
+ * coordinates whenever a patch touches either coordinate — the server owns the
+ * zone, so any client-sent value is ignored. When the patch leaves coordinates
+ * untouched, the patch is returned unchanged (the place didn't move).
+ */
+function withDerivedTimezone(
+  patch: ProfileUpdateInput,
+  before: Profile | null,
+  derive: BirthTimezoneResolver,
+): ProfileUpdateInput {
+  const touchesLat = 'birthPlaceLat' in patch;
+  const touchesLng = 'birthPlaceLng' in patch;
+  if (!touchesLat && !touchesLng) return patch;
+
+  const lat = touchesLat ? patch.birthPlaceLat : (before?.birthPlaceLat ?? null);
+  const lng = touchesLng ? patch.birthPlaceLng : (before?.birthPlaceLng ?? null);
+  return { ...patch, birthPlaceTimezone: derive(lat, lng) };
 }
 
 /**
@@ -32,7 +58,8 @@ export interface ProfileServiceDeps {
  * criteria and `chartCacheInvalidator.ts` for the EPIC 3 / #19 dependency).
  */
 export function createProfileService(deps: ProfileServiceDeps): ProfileService {
-  const { repo, cache = new NoopChartCacheInvalidator() } = deps;
+  const { repo, cache = new NoopChartCacheInvalidator(), deriveTimezone = deriveBirthTimezone } =
+    deps;
 
   return {
     async getProfile(userId: string): Promise<Profile> {
@@ -43,7 +70,8 @@ export function createProfileService(deps: ProfileServiceDeps): ProfileService {
 
     async updateProfile(userId: string, patch: ProfileUpdateInput): Promise<Profile> {
       const before = touchesBirthData(patch) ? await repo.getProfile(userId) : null;
-      const updated = await repo.updateProfile(userId, patch);
+      const patchToApply = withDerivedTimezone(patch, before, deriveTimezone);
+      const updated = await repo.updateProfile(userId, patchToApply);
 
       if (before && BIRTH_DATA_FIELDS.some((field) => before[field] !== updated[field])) {
         await cache.invalidate(userId);

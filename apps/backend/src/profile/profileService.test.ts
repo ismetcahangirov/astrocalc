@@ -99,3 +99,76 @@ describe('createProfileService.updateProfile — chart cache invalidation', () =
     );
   });
 });
+
+describe('createProfileService.updateProfile — timezone derivation', () => {
+  // Fake resolver: Baku coordinates -> Asia/Baku, anything else -> null.
+  const deriveTimezone = (lat: number | null | undefined, lng: number | null | undefined) =>
+    lat === 40.4 && lng === 49.8 ? 'Asia/Baku' : null;
+
+  function buildWithDerive() {
+    const repo = new InMemoryUserRepository();
+    const service = createProfileService({ repo, deriveTimezone });
+    return { repo, service };
+  }
+
+  it('derives and stores the timezone from coordinates on save', async () => {
+    const { repo, service } = buildWithDerive();
+    const userId = await createUser(repo);
+
+    const updated = await service.updateProfile(userId, {
+      birthPlaceName: 'Baku, Azerbaijan',
+      birthPlaceLat: 40.4,
+      birthPlaceLng: 49.8,
+    });
+
+    expect(updated.birthPlaceTimezone).toBe('Asia/Baku');
+  });
+
+  it('overrides any client-sent timezone with the server-derived one', async () => {
+    const { repo, service } = buildWithDerive();
+    const userId = await createUser(repo);
+
+    const updated = await service.updateProfile(userId, {
+      birthPlaceLat: 40.4,
+      birthPlaceLng: 49.8,
+      birthPlaceTimezone: 'Europe/London', // client-supplied — must be ignored
+    });
+
+    expect(updated.birthPlaceTimezone).toBe('Asia/Baku');
+  });
+
+  it('clears the timezone when coordinates are removed', async () => {
+    const { repo, service } = buildWithDerive();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthPlaceLat: 40.4, birthPlaceLng: 49.8 });
+    const updated = await service.updateProfile(userId, {
+      birthPlaceLat: null,
+      birthPlaceLng: null,
+    });
+
+    expect(updated.birthPlaceTimezone).toBeNull();
+  });
+
+  it('derives from existing coordinates when only one coordinate is patched', async () => {
+    const { repo, service } = buildWithDerive();
+    const userId = await createUser(repo);
+
+    // Seed both coordinates but with the wrong lng, so tz is null...
+    await service.updateProfile(userId, { birthPlaceLat: 40.4, birthPlaceLng: 0 });
+    // ...then patch only lng to the Baku value; lat is read from the stored profile.
+    const updated = await service.updateProfile(userId, { birthPlaceLng: 49.8 });
+
+    expect(updated.birthPlaceTimezone).toBe('Asia/Baku');
+  });
+
+  it('leaves the stored timezone untouched when the patch does not touch coordinates', async () => {
+    const { repo, service } = buildWithDerive();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthPlaceLat: 40.4, birthPlaceLng: 49.8 });
+    const updated = await service.updateProfile(userId, { displayName: 'Ada Lovelace' });
+
+    expect(updated.birthPlaceTimezone).toBe('Asia/Baku');
+  });
+});
