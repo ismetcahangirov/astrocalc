@@ -72,3 +72,25 @@ export class AuthenticationRequiredError extends AuthError {
     this.name = 'AuthenticationRequiredError';
   }
 }
+
+/** An account-link token is missing, malformed, expired, or already used (#4). */
+export class AccountLinkTokenError extends AuthError {
+  constructor(message = 'This link request has expired. Please try signing in again.') {
+    super('account_link_token_invalid', message, 401);
+    this.name = 'AccountLinkTokenError';
+  }
+}
+
+/**
+ * The account-link token names a different existing account than the one the
+ * caller is currently authenticated as. Confirming a link must happen from a
+ * session opened on the account being linked *to* — otherwise anyone who
+ * intercepts a link token could attach their Google identity to someone
+ * else's account.
+ */
+export class AccountLinkMismatchError extends AuthError {
+  constructor(message = "This link request doesn't match your signed-in account.") {
+    super('account_link_mismatch', message, 403);
+    this.name = 'AccountLinkMismatchError';
+  }
+}

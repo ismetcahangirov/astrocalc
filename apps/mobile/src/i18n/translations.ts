@@ -10,6 +10,10 @@ const en = {
   'login.subtitle': 'Sign in to save your charts and readings',
   'login.continueWithGoogle': 'Continue with Google',
   'login.continueWithWhatsApp': 'Continue with WhatsApp',
+  'login.accountExists':
+    'An account already exists for this email. Continue with WhatsApp to sign in and link it:',
+  'login.linkHint': 'Verify your number to link your Google account to this one.',
+  'login.linkFailed': "Signed in, but couldn't link your Google account. You can try again later.",
 
   'otp.phone.title': 'Enter your phone number',
   'otp.phone.placeholder': '+15551234567',
@@ -24,6 +28,19 @@ const en = {
   'otp.code.expiresIn': 'Code expires in',
   'otp.attemptsRemaining': 'attempts remaining',
   'otp.useGoogleInstead': 'Use Google instead',
+
+  'otp.error.generic': 'Something went wrong. Please try again.',
+  'otp.error.notFound': 'No verification code was requested for this number.',
+  'otp.error.expired': 'This code has expired. Request a new one.',
+  'otp.error.invalidCode': 'That code is incorrect.',
+  'otp.error.maxAttempts': 'Too many incorrect attempts. Request a new code.',
+  'otp.error.cooldown': 'Please wait before requesting another code:',
+  'otp.error.accountLocked': 'Too many failed attempts. Try again in:',
+  'otp.error.rateLimited': 'Too many codes requested. Please try again in:',
+  'otp.error.quotaExceeded':
+    'WhatsApp verification is temporarily unavailable. Please continue with Google.',
+  'otp.error.sendFailed': 'Could not send the WhatsApp verification code. Please try again.',
+  'otp.error.network': 'Could not reach the server. Check your connection.',
 
   'account.manageLink': 'Manage account',
   'account.title': 'Account',
@@ -109,6 +126,11 @@ const az: Record<keyof typeof en, string> = {
   'login.subtitle': 'Xəritələrinizi və şərhlərinizi saxlamaq üçün daxil olun',
   'login.continueWithGoogle': 'Google ilə davam et',
   'login.continueWithWhatsApp': 'WhatsApp ilə davam et',
+  'login.accountExists':
+    'Bu e-poçt üçün artıq hesab mövcuddur. Daxil olub əlaqələndirmək üçün WhatsApp ilə davam edin:',
+  'login.linkHint': 'Google hesabınızı bu hesabla əlaqələndirmək üçün nömrənizi təsdiqləyin.',
+  'login.linkFailed':
+    'Daxil oldunuz, lakin Google hesabınızı əlaqələndirə bilmədik. Sonra yenidən cəhd edə bilərsiniz.',
 
   'otp.phone.title': 'Telefon nömrənizi daxil edin',
   'otp.phone.placeholder': '+15551234567',
@@ -123,6 +145,19 @@ const az: Record<keyof typeof en, string> = {
   'otp.code.expiresIn': 'Kodun etibarlılıq müddəti',
   'otp.attemptsRemaining': 'cəhd qalıb',
   'otp.useGoogleInstead': 'Bunun əvəzinə Google-dan istifadə et',
+
+  'otp.error.generic': 'Xəta baş verdi. Yenidən cəhd edin.',
+  'otp.error.notFound': 'Bu nömrə üçün heç bir təsdiq kodu tələb edilməyib.',
+  'otp.error.expired': 'Bu kodun müddəti bitib. Yeni kod tələb edin.',
+  'otp.error.invalidCode': 'Bu kod yanlışdır.',
+  'otp.error.maxAttempts': 'Çox sayda yanlış cəhd. Yeni kod tələb edin.',
+  'otp.error.cooldown': 'Yeni kod tələb etmək üçün gözləyin:',
+  'otp.error.accountLocked': 'Çox sayda uğursuz cəhd. Yenidən cəhd edin:',
+  'otp.error.rateLimited': 'Çox sayda kod tələb edilib. Zəhmət olmasa sonra cəhd edin:',
+  'otp.error.quotaExceeded':
+    'WhatsApp təsdiqi müvəqqəti əlçatan deyil. Zəhmət olmasa Google ilə davam edin.',
+  'otp.error.sendFailed': 'WhatsApp təsdiq kodu göndərilə bilmədi. Yenidən cəhd edin.',
+  'otp.error.network': 'Serverə qoşula bilmədik. İnternet bağlantınızı yoxlayın.',
 
   'account.manageLink': 'Hesabı idarə et',
   'account.title': 'Hesab',

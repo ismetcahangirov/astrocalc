@@ -6,6 +6,73 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Auth epic cleanup: account linking, a JWT clock bug, and closing out
+  already-done work — #2, #4, #5, #7, #10 (all sub-issues of #1). Swept every
+  open sub-issue of the auth epic to see which were genuinely closeable in one
+  PR:
+  - **#4 (account linking) — real gap, implemented.** `authService.signInWithGoogle`
+    used to auto-link a Google sign-in to any existing account sharing its
+    email, with no user confirmation — exactly the behavior #4's own
+    acceptance criteria call out as wrong (email/phone spoofing risk), and
+    already flagged twice in this log as untouched. Fixed: a same-email match
+    now returns a `link_required` outcome (masked email, no session) instead
+    of a token pair. New `auth/accountLinkToken.ts` mints a short-lived
+    (10 min default) signed token carrying the pending Google identity; new
+    `POST /auth/link/confirm` (bearer-authed) completes the link once the
+    caller has proven ownership of the existing account some other way (e.g.
+    WhatsApp OTP), and only if the authenticated session matches the token's
+    candidate account — otherwise `account_link_mismatch` (403). Every
+    completed link is recorded in a new `account_link_audit` table. Mobile:
+    `useGoogleAuth` surfaces `linkRequired` (not an error); `LoginScreen`
+    shows "an account already exists for `jo**@example.com`, continue with
+    WhatsApp"; `OtpLoginScreen` takes an optional `linkToken` prop and
+    exchanges it via `confirmAccountLink` right after a successful OTP verify.
+    Narrower than the full policy: only handles Google-finds-existing-email;
+    there's still no path for WhatsApp-first accounts to add/link an email
+    later (no email field exists in that flow).
+  - **#5 (JWT/session management) — real bug, fixed.** `sessionService.test.ts`
+    had 6 failing tests (flagged in the #7 entry below as "tracked under #5"
+    but never actually fixed). Root cause: `tokens.ts` signs with an
+    injectable clock (for deterministic tests) but verified with
+    `jwt.verify`'s real system clock — a test clock set far from wall-clock
+    time made every token look expired. Fixed by passing `clockTimestamp` into
+    `jwt.verify`. All 6 tests now pass; combined with the pre-existing (and
+    already-tested) rotation/reuse-detection/admin-revoke/secure-storage
+    behavior, every acceptance criterion on #5 is now genuinely verified.
+  - **#7 (profile edit) — already done, verified and closing.** Its one open
+    criterion (birth-data edits invalidating the cached chart) was completed
+    for real back in the #19 chart-caching entry below (`app.ts` passes a real
+    `RedisChartResultCache`/`InMemoryChartResultCache` instead of the no-op
+    invalidator) — just never linked back to close the issue. Re-verified the
+    wiring; no code changes needed here.
+  - **#10 (rate-limiting/abuse protection) — mostly already done, one real gap
+    closed.** OTP throttling, lockout, and admin-alert logging were already
+    fully wired server-side. The gap: `useOtpAuth` surfaced the backend's raw
+    English `AuthError.message` directly, regardless of app language —
+    failing #10's own "a clear, friendly error message (localized)" criterion.
+    New `otp/errorMessages.ts` maps error codes to translated strings (EN/AZ),
+    appending a formatted countdown for cooldown/lockout/rate-limit errors the
+    same way the screen already displays other countdowns. Extracted
+    `ApiError`/`OtpApiError` into dependency-free `api/apiError.ts` /
+    `otp/otpApiError.ts` so this pure mapping logic (and its test) don't drag
+    in `config.ts` → `expo-constants`, which doesn't parse cleanly under
+    Vitest's SSR transform — a real, previously-latent issue this is the first
+    test to have hit.
+  - **#2 (Google OAuth) — already done, verified and closing.** Mobile button
+    (with an `expo-auth-session` fallback) + backend `google-auth-library`
+    verification (aud/iss/exp/email_verified) + auto-create/session were all
+    already implemented and tested; no code changes needed.
+  - **Not closed: #9 (account deletion & GDPR export).** Still genuinely
+    incomplete — `LogExportNotifier` is a console.log stub with no real
+    email/push channel, so a completed export has no way to reach the user
+    with the download link outside local logs (already flagged in the entry
+    below). Left alone rather than picking an email provider without being
+    asked to.
+  Also fixed 2 pre-existing `tsc --noEmit` errors unrelated to any specific
+  issue (`config/duration.ts`'s `UNIT_SECONDS` lookup, `accountRoute.ts`'s
+  unguarded `req.params.jobId`) found while getting a clean baseline before
+  touching this code.
+
 - WhatsApp OTP login + account deletion/GDPR export mobile UI — #3, #9. Both
   sub-issues already had complete, tested backend implementations (Google
   OAuth, OTP, JWT/session revocation, rate-limiting, and account/export were

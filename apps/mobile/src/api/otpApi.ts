@@ -1,7 +1,9 @@
 import { config } from '../config';
-import { ApiError } from './authApi';
+import { ApiError } from './apiError';
+import { OtpApiError } from '../otp/otpApiError';
 
-export { ApiError } from './authApi';
+export { ApiError } from './apiError';
+export { OtpApiError } from '../otp/otpApiError';
 
 export interface OtpUser {
   id: string;
@@ -26,25 +28,6 @@ interface OtpErrorBody {
   retryAfterSeconds?: number;
   attemptsRemaining?: number;
   alternative?: 'google';
-}
-
-/**
- * Carries the extra client-facing fields the backend merges into OTP error
- * bodies (see `apps/backend/src/otp/errors.ts`) — cooldown/lockout countdowns,
- * remaining verification attempts, and the Google fallback signal for a
- * WhatsApp quota exhaustion.
- */
-export class OtpApiError extends ApiError {
-  constructor(
-    code: string,
-    message: string,
-    public readonly retryAfterSeconds?: number,
-    public readonly attemptsRemaining?: number,
-    public readonly alternative?: 'google',
-  ) {
-    super(code, message);
-    this.name = 'OtpApiError';
-  }
 }
 
 async function post<T>(path: string, body: unknown, fallbackMessage: string): Promise<T> {

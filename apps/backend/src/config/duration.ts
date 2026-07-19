@@ -1,9 +1,9 @@
-const UNIT_SECONDS: Record<string, number> = {
+const UNIT_SECONDS = {
   s: 1,
   m: 60,
   h: 60 * 60,
   d: 24 * 60 * 60,
-};
+} as const;
 
 /**
  * Parse a `jsonwebtoken`-style duration ('15m', '30d', '3600') into whole

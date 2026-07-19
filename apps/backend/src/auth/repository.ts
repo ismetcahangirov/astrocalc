@@ -22,6 +22,8 @@ export interface UserRepository {
   /** Create a phone-only account (WhatsApp OTP login, no email/google linked). */
   createUserWithPhone(input: { phone: string }): Promise<User>;
   linkGoogleId(userId: string, googleId: string): Promise<User>;
+  /** Audit trail row for a completed account link (#4) — who, which Google id, when. */
+  recordAccountLink(entry: { userId: string; googleId: string }): Promise<void>;
   createSession(userId: string): Promise<Session>;
   getProfile(userId: string): Promise<Profile | null>;
   updateProfile(userId: string, patch: ProfileUpdateInput): Promise<Profile>;
@@ -32,6 +34,7 @@ export class InMemoryUserRepository implements UserRepository {
   private users = new Map<string, User>();
   private profiles = new Map<string, Profile>();
   private sessions = new Map<string, Session>();
+  private accountLinks: { userId: string; googleId: string; createdAt: Date }[] = [];
 
   async findByGoogleId(googleId: string): Promise<User | null> {
     for (const user of this.users.values()) {
@@ -100,6 +103,10 @@ export class InMemoryUserRepository implements UserRepository {
     return { ...user };
   }
 
+  async recordAccountLink(entry: { userId: string; googleId: string }): Promise<void> {
+    this.accountLinks.push({ ...entry, createdAt: new Date() });
+  }
+
   async createSession(userId: string): Promise<Session> {
     const session: Session = { id: randomUUID(), userId, createdAt: new Date() };
     this.sessions.set(session.id, session);
@@ -129,6 +136,9 @@ export class InMemoryUserRepository implements UserRepository {
   }
   sessionCount(): number {
     return this.sessions.size;
+  }
+  accountLinkCount(): number {
+    return this.accountLinks.length;
   }
 }
 

@@ -28,6 +28,13 @@ const envSchema = z.object({
   // Shared secret the admin panel presents to force-revoke a user's sessions.
   // When unset, the admin revoke endpoint is disabled (fails closed).
   ADMIN_API_TOKEN: z.string().min(16, 'ADMIN_API_TOKEN must be at least 16 chars').optional(),
+  // --- Account linking (#4) ---
+  // Signs the short-lived token bridging "Google sign-in found a same-email
+  // account" and "user confirmed the link via their other login method".
+  // Falls back to JWT_ACCESS_SECRET when unset (a warning is logged), so
+  // local dev works without extra config.
+  ACCOUNT_LINK_TOKEN_SECRET: z.string().min(16).optional(),
+  ACCOUNT_LINK_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   // Birth-place geocoding (#8). A descriptive User-Agent (ideally with real
   // contact info) is required by Nominatim's usage policy — replace the
   // default in production.
