@@ -14,6 +14,7 @@ import { getSubjectChart } from '../api/subjectsApi';
 import { isNetworkError } from '../api/httpClient';
 import { fetchChartInterpretation, type ChartInterpretation } from '../api/interpretationApi';
 import { computeWheelLayout, type WheelInput } from '../chart/geometry';
+import { formatChartDetails } from '../chart/chartText';
 import { NatalChartWheel } from '../chart/NatalChartWheel';
 import { MissingBirthDataError } from '../offline/natalChartService';
 import { loadNatalChart } from '../offline/natalChartServiceWiring';
@@ -110,6 +111,16 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
     return computeWheelLayout(toWheelInput(state.view.chart, wheelSize));
   }, [state, wheelSize]);
 
+  // The computed placements as localized text — available even when the
+  // (separately-fetched) interpretation isn't, so the user always gets the data.
+  const details = useMemo(() => {
+    if (state.phase !== 'ready') return null;
+    return formatChartDetails(state.view.chart, locale, {
+      ascendant: t('natalChart.ascendant'),
+      midheaven: t('natalChart.midheaven'),
+    });
+  }, [state, locale, t]);
+
   if (state.phase === 'loading') {
     return (
       <View style={styles.centered}>
@@ -151,6 +162,56 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
         </View>
       ) : null}
       <Text style={styles.retrogradeHint}>{t('natalChart.retrogradeHint')}</Text>
+
+      {/* Computed placements, in text — shown before (and independent of) the reading. */}
+      {details ? (
+        <>
+          <Text style={styles.sectionTitle}>{t('natalChart.detailsTitle')}</Text>
+
+          <Text style={styles.subTitle}>{t('natalChart.planetsTitle')}</Text>
+          {details.planets.map((p) => (
+            <View key={p.body} style={styles.detailRow}>
+              <Text style={styles.detailName}>
+                {p.name}
+                {p.retrograde ? <Text style={styles.retroTag}> R</Text> : null}
+              </Text>
+              <Text style={styles.detailValue}>
+                {p.position}
+                {p.house != null ? ` · ${t('natalChart.houseAbbrev')} ${p.house}` : ''}
+              </Text>
+            </View>
+          ))}
+
+          {details.angles.length > 0 ? (
+            <>
+              <Text style={styles.subTitle}>{t('natalChart.anglesTitle')}</Text>
+              {details.angles.map((a) => (
+                <View key={a.name} style={styles.detailRow}>
+                  <Text style={styles.detailName}>{a.name}</Text>
+                  <Text style={styles.detailValue}>{a.position}</Text>
+                </View>
+              ))}
+            </>
+          ) : null}
+
+          {details.aspects.length > 0 ? (
+            <>
+              <Text style={styles.subTitle}>{t('natalChart.aspectsTitle')}</Text>
+              {details.aspects.map((a) => (
+                <View key={a.key} style={styles.detailRow}>
+                  <Text style={styles.detailName}>
+                    {a.bodyA} – {a.bodyB}
+                  </Text>
+                  <Text style={styles.detailValue}>
+                    {a.aspect} · {a.orb}
+                    {a.motion ? ` · ${a.motion}` : ''}
+                  </Text>
+                </View>
+              ))}
+            </>
+          ) : null}
+        </>
+      ) : null}
 
       <Text style={styles.sectionTitle}>{t('natalChart.readingTitle')}</Text>
       {interpretationError ? <Text style={styles.error}>{interpretationError}</Text> : null}
@@ -218,6 +279,29 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 12,
   },
+  subTitle: {
+    color: '#B9B4C7',
+    fontSize: 13,
+    fontWeight: '700',
+    alignSelf: 'flex-start',
+    marginTop: 14,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    alignSelf: 'stretch',
+    gap: 12,
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#221D33',
+  },
+  detailName: { color: '#F4F1FA', fontSize: 14, fontWeight: '600', flexShrink: 1 },
+  detailValue: { color: '#B9B4C7', fontSize: 13, textAlign: 'right', flexShrink: 1 },
+  retroTag: { color: '#F2A2A2', fontSize: 12, fontWeight: '700' },
   error: { color: '#F2A2A2', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   retryButton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10 },
   retryButtonText: { color: GOLD, fontSize: 15, fontWeight: '600' },
