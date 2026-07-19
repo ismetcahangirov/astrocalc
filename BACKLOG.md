@@ -6,6 +6,42 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Cross-validation unit tests against reference ephemeris — #21 (last
+  remaining sub-issue of #11, previously `needs-research` since it requires
+  manually collected external data). Collected 10 birth scenarios (varying
+  latitude, hemisphere, and era: equatorial, mid/high-latitude both
+  hemispheres, one deliberately inside the Arctic Circle, one pre-1900) from
+  astro-seek.com's free Placidus chart calculator via a real browser, with 3
+  spot-checked against astro.com. New
+  `packages/calc-engine/src/__fixtures__/reference-charts.ts` stores the
+  collected data (source URL + notes documented per scenario, per the
+  issue's technical note); new `reference-charts.test.ts` computes each
+  chart via this package's own `computeNatalChart()` and asserts positions/
+  Ascendant/Midheaven within ±3 arcminutes and every unambiguous reference
+  aspect (orb comfortably inside our `DEFAULT_ORBS` cap) is reproduced — 32
+  new tests, 145 total (up from 113), all green.
+  - Cross-checking surfaced a real, documented finding rather than a clean
+    pass: for the deliberate polar scenario (Tromsø, 1960-06-21 00:00),
+    astro-seek assumed Norway observed DST that June, but Norway ran no DST
+    between 1945 and 1980 — the historically correct offset is UTC+1 (CET),
+    which is what this package's `geo-tz`/`luxon` resolution correctly
+    gives. That ~1 hour gap shifts every body proportionally to its speed
+    (negligible for outer planets, enough for the Moon to fail a strict
+    tolerance), so the `positions` degree-level check is skipped for that
+    one scenario only (`knownDeviations`, with the full reasoning inline) —
+    everything else about it, including retrograde flags, still matches.
+    Separately and as intended, this same scenario confirms #14's
+    Placidus→Whole Sign polar fallback: astro-seek silently returned a full
+    Placidus house set with no warning, while this package correctly
+    detects the latitude/date is undefined for Placidus and falls back
+    (`fallbackApplied: true`), so house comparison is skipped there too —
+    not a defect, a different (and, per issue #14, intentional) house
+    system.
+  - CI already runs this suite on every PR (`.github/workflows/calc-engine-ci.yml`
+    triggers on any `packages/calc-engine/**` change and runs `test`), so no
+    workflow changes were needed to satisfy the issue's CI acceptance
+    criterion.
+
 - Natal-chart wheel rendering + multilingual interpretation content — #17,
   #18 (both sub-issues of #11), in one PR. Swept the epic's remaining open
   sub-issues (#17, #18, #21) to see what could close together: #17 and #18
