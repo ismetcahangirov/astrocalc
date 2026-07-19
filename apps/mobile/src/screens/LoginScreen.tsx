@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGoogleAuth } from '../auth/useGoogleAuth';
 import { useTranslation } from '../i18n/LocaleContext';
+import { OtpLoginScreen } from './OtpLoginScreen';
 
 interface LoginScreenProps {
   /** Called after a session is successfully established, so the caller can route onward. */
@@ -10,11 +12,18 @@ interface LoginScreenProps {
 /**
  * Login screen — Section 2 design system (dark + gold). Renders the Google
  * Sign-In button, a loading state, and a clear inline error message when
- * sign-in or backend token verification fails.
+ * sign-in or backend token verification fails. "Continue with WhatsApp"
+ * switches to the OTP flow (#3) in place, so both providers share the same
+ * `onSignedIn` handoff without a separate route.
  */
 export function LoginScreen({ onSignedIn }: LoginScreenProps = {}) {
   const { loading, error, signIn } = useGoogleAuth();
   const { t } = useTranslation();
+  const [mode, setMode] = useState<'google' | 'otp'>('google');
+
+  if (mode === 'otp') {
+    return <OtpLoginScreen onSignedIn={onSignedIn} onCancel={() => setMode('google')} />;
+  }
 
   const handlePress = async () => {
     const session = await signIn();
@@ -44,6 +53,14 @@ export function LoginScreen({ onSignedIn }: LoginScreenProps = {}) {
         ) : (
           <Text style={styles.buttonText}>{t('login.continueWithGoogle')}</Text>
         )}
+      </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setMode('otp')}
+        style={styles.secondaryButton}
+      >
+        <Text style={styles.secondaryButtonText}>{t('login.continueWithWhatsApp')}</Text>
       </Pressable>
 
       {error ? (
@@ -96,6 +113,21 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#1a1206',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#3A3550',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 54,
+  },
+  secondaryButtonText: {
+    color: '#F4F1FA',
     fontSize: 16,
     fontWeight: '600',
   },
