@@ -1,5 +1,7 @@
+import { useRouter } from 'expo-router';
 import { ProfileScreen } from '../src/screens/ProfileScreen';
 
 export default function Profile() {
-  return <ProfileScreen />;
+  const router = useRouter();
+  return <ProfileScreen onManageAccount={() => router.push('/account')} />;
 }

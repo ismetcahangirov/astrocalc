@@ -6,6 +6,34 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- WhatsApp OTP login + account deletion/GDPR export mobile UI — #3, #9. Both
+  sub-issues already had complete, tested backend implementations (Google
+  OAuth, OTP, JWT/session revocation, rate-limiting, and account/export were
+  all wired into `app.ts` with no mobile screens on top); this PR adds only
+  the missing mobile side. `apps/mobile`: new `OtpLoginScreen` — a two-step
+  phone → code flow surfacing the backend's abuse-protection state
+  (expiry/resend countdowns, remaining verification attempts, and a lockout
+  message), reached from `LoginScreen` via a new "Continue with WhatsApp"
+  option that switches in place (no new route, reuses the existing
+  `onSignedIn` handoff). On a WhatsApp quota exhaustion the backend's
+  `alternative: 'google'` flag now surfaces as a promoted "Use Google
+  instead" action. New `AccountScreen` (`/account`, linked from a new
+  "Manage account" line on the profile screen): a confirmation-phrase gated
+  "Delete account" section and a "Request data export" section that polls
+  job status until terminal. New pure-logic modules with unit tests —
+  `otp/validation.ts` (phone/code format validation, countdown formatting)
+  and `account/exportStatus.ts` (status → message mapping) — matching this
+  app's convention of testing only non-`.tsx` logic. New `otpApi.ts` (plain
+  fetch, unauthenticated — mirrors `authApi.ts`) and `accountApi.ts`
+  (authenticated via `httpClient.ts`). 17 new unit tests. Closes #3.
+  Remaining on #9: the export-ready notifier is still a console.log stub
+  (`LogExportNotifier`) — no real email/push channel exists yet, so a
+  completed export currently has no way to reach the user with the
+  download link outside local logs; this screen can only show job status,
+  not the link itself, until that channel is wired up. Also untouched:
+  #4 (account-linking policy) — Google sign-in still auto-links by email
+  with no user confirmation step, as already noted in the #6/#8 entry below.
+
 - Onboarding flow (mobile) — #6, plus closed a real gap in #8 (birth-place
   search). Backend: `/geocoding/search` was fully implemented and tested but
   never mounted in `app.ts` — fixed, with Redis-backed cache/rate-limiter when

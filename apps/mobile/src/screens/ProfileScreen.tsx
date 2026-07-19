@@ -117,7 +117,12 @@ function validate(form: FormState, t: (key: TranslationKey) => string): string |
  * Picking a language updates the app-wide `LocaleProvider` immediately (see
  * `LocaleContext.tsx`), independent of the save round trip.
  */
-export function ProfileScreen() {
+interface ProfileScreenProps {
+  /** Called to navigate to account deletion / data export (#9), when offered. */
+  onManageAccount?: () => void;
+}
+
+export function ProfileScreen({ onManageAccount }: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -329,6 +334,16 @@ export function ProfileScreen() {
           <Text style={styles.saveButtonText}>{t('profile.save')}</Text>
         )}
       </Pressable>
+
+      {onManageAccount ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onManageAccount}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('account.manageLink')}</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -408,4 +423,6 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#1a1206', fontSize: 16, fontWeight: '600' },
   retryButton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10 },
   retryButtonText: { color: GOLD, fontSize: 15, fontWeight: '600' },
+  manageAccountLink: { marginTop: 24, alignItems: 'center', paddingVertical: 8 },
+  manageAccountLinkText: { color: '#B9B4C7', fontSize: 14, fontWeight: '600' },
 });
