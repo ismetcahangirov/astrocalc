@@ -124,6 +124,97 @@ describe('POST /interpretations/batch', () => {
   });
 });
 
+describe('POST /interpretations/for-chart', () => {
+  const chart = {
+    positions: [
+      { body: 'sun', sign: 'Aries', longitude: 15 },
+      { body: 'moon', sign: 'Cancer', longitude: 95 },
+    ],
+    cusps: Array.from({ length: 12 }, (_, i) => ({
+      house: i + 1,
+      longitude: i * 30,
+      sign: 'Aries' as const,
+      degree: 0,
+    })),
+    aspects: [{ bodyA: 'sun', bodyB: 'moon', type: 'square' }],
+  };
+
+  it('requires auth', async () => {
+    const { app } = makeApp();
+    const res = await request(app).post('/interpretations/for-chart').send({ locale: 'en', chart });
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects an invalid chart shape', async () => {
+    const { app } = makeApp();
+    const res = await request(app)
+      .post('/interpretations/for-chart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        locale: 'en',
+        chart: { positions: [{ body: 'sun', sign: 'NotASign', longitude: 15 }] },
+      });
+    expect(res.status).toBe(400);
+  });
+
+  it('composes planet-sign, planet-house, and aspect readings for the computed chart', async () => {
+    const { app, repo } = makeApp();
+    await repo.upsert(
+      { category: 'planet-sign', subjectKey: 'sun-Aries', locale: 'en' },
+      { content: 'Sun in Aries text.', updatedBy: null },
+    );
+    await repo.upsert(
+      { category: 'planet-house', subjectKey: 'sun-1', locale: 'en' },
+      { content: 'Sun in house 1 text.', updatedBy: null },
+    );
+    await repo.upsert(
+      { category: 'aspect', subjectKey: 'square-moon-sun', locale: 'en' },
+      { content: 'Sun square Moon text.', updatedBy: null },
+    );
+
+    const res = await request(app)
+      .post('/interpretations/for-chart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ locale: 'en', chart });
+
+    expect(res.status).toBe(200);
+    expect(res.body.planetSign).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ subjectKey: 'sun-Aries', content: 'Sun in Aries text.' }),
+      ]),
+    );
+    expect(res.body.planetHouse).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ subjectKey: 'sun-1', content: 'Sun in house 1 text.' }),
+      ]),
+    );
+    expect(res.body.aspects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          subjectKey: 'square-moon-sun',
+          content: 'Sun square Moon text.',
+        }),
+      ]),
+    );
+  });
+
+  it('omits planet-house readings when the chart has no house cusps (birth time unknown)', async () => {
+    const { app, repo } = makeApp();
+    await repo.upsert(
+      { category: 'planet-sign', subjectKey: 'sun-Aries', locale: 'en' },
+      { content: 'Sun in Aries text.', updatedBy: null },
+    );
+
+    const res = await request(app)
+      .post('/interpretations/for-chart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ locale: 'en', chart: { positions: chart.positions } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.planetHouse).toEqual([]);
+  });
+});
+
 describe('PUT /interpretations/:category/:subjectKey/:locale (admin edit)', () => {
   it('rejects without the admin token', async () => {
     const { app } = makeApp();

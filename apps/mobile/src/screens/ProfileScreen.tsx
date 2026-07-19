@@ -120,9 +120,11 @@ function validate(form: FormState, t: (key: TranslationKey) => string): string |
 interface ProfileScreenProps {
   /** Called to navigate to account deletion / data export (#9), when offered. */
   onManageAccount?: () => void;
+  /** Called to navigate to the natal-chart result screen (#17/#18), when offered. */
+  onViewChart?: () => void;
 }
 
-export function ProfileScreen({ onManageAccount }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -334,6 +336,16 @@ export function ProfileScreen({ onManageAccount }: ProfileScreenProps = {}) {
           <Text style={styles.saveButtonText}>{t('profile.save')}</Text>
         )}
       </Pressable>
+
+      {onViewChart ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewChart}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('profile.viewChart')}</Text>
+        </Pressable>
+      ) : null}
 
       {onManageAccount ? (
         <Pressable

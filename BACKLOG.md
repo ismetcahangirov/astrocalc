@@ -6,6 +6,57 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Natal-chart wheel rendering + multilingual interpretation content — #17,
+  #18 (both sub-issues of #11), in one PR. Swept the epic's remaining open
+  sub-issues (#17, #18, #21) to see what could close together: #17 and #18
+  are both "the mobile natal-chart result screen" from two different angles
+  (the wheel visual, the reading text beneath it), so they landed as one
+  screen rather than two disconnected PRs. #21 (cross-validation against
+  real external calculators — astro.com/astro-seek) needs manually collected
+  reference data that can't be fabricated and stays `needs-research`,
+  untouched.
+  - **#17 (SVG/Skia wheel) — closed.** #38 had already built
+    `computeWheelLayout()` (pure geometry) but explicitly deferred "the
+    react-native-skia `<Canvas>` component that actually draws these
+    primitives." New `apps/mobile/src/chart/NatalChartWheel.tsx` is that
+    component: the zodiac ring + sign glyphs, degree ticks, house-cusp lines
+    (only present when `hasHouses` — the layout already degrades gracefully
+    when birth time is unknown, so this component just draws whatever it's
+    handed), de-collided planet glyphs with a retrograde "R" mark, and
+    dashed/solid aspect chords per `aspectStyles`. Uses Skia's `matchFont`
+    for glyph text rather than bundling a custom astrology font.
+  - **#18 (multilingual interpretation text) — closed.** #42 had built the
+    storage/cache/service/route layer but explicitly deferred "the
+    original-content generator/seed script to populate all 465 combinations
+    x 4 languages, and the mobile `natal-chart.json` i18next consumer."
+    New `apps/backend/src/interpretations/seedContent.ts` generates original
+    (not copied from any site) AZ/TR/EN/RU text for every one of the
+    465 (planet-sign/planet-house/aspect) subjects from a small hand-written
+    phrase bank (per-planet theme, per-sign/house quality, per-aspect
+    dynamic) composed into fixed per-locale sentence templates — a
+    reproducible baseline the admin panel (EPIC 10) can overwrite later,
+    never the reverse (`seed.ts` only fills rows that don't already exist).
+    Also added `POST /interpretations/for-chart` (bearer): the service's
+    existing-but-unrouted `getForComputedChart()` composer, now reachable
+    from the client with a computed chart's positions/cusps/aspects, so the
+    mobile app never has to rebuild subject keys itself. Skipped i18next
+    entirely — the app's actual i18n is a hand-rolled `LocaleContext` with
+    only `en`/`az` UI chrome (not the 4 interpretation-content locales), so
+    the natal-chart screen calls the new endpoint directly instead of
+    introducing a second i18n system for content that's already localized
+    server-side.
+  - New `apps/mobile/src/screens/NatalChartScreen.tsx` (routed at
+    `/natal-chart`, linked from the profile screen) ties both together:
+    loads the chart via the existing offline-aware `loadNatalChart`, renders
+    the wheel, and fetches/display the reading — the wheel and the reading
+    fail independently, so a reading error (or being offline) never blocks
+    the wheel.
+  - 10 new backend tests (7 seedContent parity/content + 3 seed-script) + 5
+    new interpretationRoute tests — 209 total backend tests pass, up from
+    194. `test`/`typecheck`/`lint`/`format:check` clean across
+    `apps/backend`, `apps/mobile` (73/73, untouched besides the new screen),
+    and `packages/calc-engine` (113/113, untouched).
+
 - Natal-chart backend API: orb-config admin endpoint, `/natal-chart`
   compute+cache, and the offline sync endpoint — #15, #19, #20 (all sub-issues
   of #11). Swept every open sub-issue of the natal-chart epic to see which
