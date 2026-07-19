@@ -6,6 +6,65 @@ and the related issue/PR numbers.
 
 ## 2026-07-19
 
+- Natal-chart backend API: orb-config admin endpoint, `/natal-chart`
+  compute+cache, and the offline sync endpoint — #15, #19, #20 (all sub-issues
+  of #11). Swept every open sub-issue of the natal-chart epic to see which
+  were genuinely closeable in one PR: #15's calc-engine layer (#37) and #19's
+  cache module (#41) both already existed but had no route calling them, and
+  #20's mobile client (#43) was already calling `/natal-chart` +
+  `/natal-chart/sync` endpoints that didn't exist yet. Building that missing
+  endpoint closes all three at once:
+  - **#15 (aspect calculation + configurable orbs) — backend half, closed.**
+    New `orbConfig` module mirrors the `interpretations` module's
+    repository/cache/service/route layering exactly: `DrizzleOrbConfigRepository`
+    reads/writes the existing `aspect_orb_config` table, `OrbConfigCache`
+    (Redis-backed, in-memory fallback) caches the whole effective override set
+    as one value (at most five rows), and `orbConfigService.getEffectiveOrbs()`
+    is a read-through cache in front of it. New routes: `GET /orb-config`
+    (bearer — effective merged config + stored rows) and
+    `PUT /orb-config/:aspectType` (admin-token-gated upsert, invalidates the
+    cache immediately — no deploy required, satisfying the issue's own AC).
+  - **#19 (chart result caching) — closed.** The cache/`getOrComputeChart()`
+    infrastructure from #41 had "no chart-computation service/route yet...for
+    it to actually be called from" (its own BACKLOG entry, verbatim). New
+    `chart/natalChartService.ts` is that missing piece: resolves a user's
+    profile to `NatalChartInput` (throwing a new `IncompleteProfileError`
+    listing exactly which birth field is missing, mirroring the mobile
+    client's `profileToChartInput`), loads the effective orb config, and
+    calls `getOrComputeChart()` with `@astrocalc/calc-engine`'s
+    `computeNatalChart` — the same function the mobile app calls offline, so
+    both sides produce byte-identical charts. `GET /natal-chart` (bearer)
+    exposes it.
+  - **#20 (offline calculation support) — AC #3 closed, rest already done.**
+    Its own BACKLOG entry from #43 already listed every other AC as done and
+    named the exact gap: "the backend `/natal-chart` + `/natal-chart/sync`
+    routes this client calls don't exist yet." New `POST /natal-chart/sync`
+    (bearer) is that route — it deliberately ignores the offline-computed
+    chart payload the client submits (the backend is the source of truth) and
+    always recomputes from the current profile, refreshing the cache
+    unconditionally rather than trusting client-submitted data for a
+    server-side cache.
+  - Not touched: #17 (Skia wheel rendering — a separate mobile UI/rendering
+    task, already has its own geometry-foundation PR at #38 with the actual
+    `<Canvas>` component still open) and #18 (multilingual interpretation
+    content — the storage/API layer is done per #42, but writing the actual
+    465×4-language text and building the mobile i18next consumer is a content
+    task, not something to bundle into a backend API PR). #21
+    (cross-validation against real external ephemeris data) needs manually
+    collected reference values from external calculators and stays
+    `needs-research`, untouched.
+  - `interpretation` is `null` in every `/natal-chart` response for now — no
+    subscription/Pro-entitlement concept exists anywhere in this repo yet, so
+    there's nothing to gate; the mobile client's own `NatalChartInterpretation`
+    type is already documented as "kept intentionally open... until the
+    interpretation-content epic" for the same reason.
+  35 new backend tests (4 orbConfig repository + 4 orbConfig cache + 5
+  orbConfigService + 7 orbConfig route + 8 natalChartService + 7
+  natalChartRoute) — 195 total backend tests pass, up from 160.
+  `npm test`/`typecheck`/`lint`/`format:check` clean across `apps/backend`,
+  `packages/calc-engine` (113/113, untouched), and `apps/mobile` (73/73,
+  untouched).
+
 - Auth epic cleanup: account linking, a JWT clock bug, and closing out
   already-done work — #2, #4, #5, #7, #10 (all sub-issues of #1). Swept every
   open sub-issue of the auth epic to see which were genuinely closeable in one

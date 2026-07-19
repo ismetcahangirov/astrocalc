@@ -73,6 +73,24 @@ export class AuthenticationRequiredError extends AuthError {
   }
 }
 
+/**
+ * The signed-in user's profile is missing birth data required to compute a
+ * natal chart (birth date, birth-place coordinates, or the resolved
+ * timezone) — the offline/backend parity #20 depends on assumes every field
+ * `computeNatalChart` needs is present before either side computes anything.
+ */
+export class IncompleteProfileError extends AuthError {
+  constructor(missing: string[]) {
+    super(
+      'incomplete_profile',
+      'Complete your birth details before viewing your natal chart.',
+      422,
+      { missing },
+    );
+    this.name = 'IncompleteProfileError';
+  }
+}
+
 /** An account-link token is missing, malformed, expired, or already used (#4). */
 export class AccountLinkTokenError extends AuthError {
   constructor(message = 'This link request has expired. Please try signing in again.') {
