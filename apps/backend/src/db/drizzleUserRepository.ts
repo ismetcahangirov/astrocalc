@@ -1,6 +1,13 @@
 import { eq } from 'drizzle-orm';
 import type { Database } from './client';
-import { profiles, sessions, users, type ProfileRow, type UserRow } from './schema';
+import {
+  accountLinkAudit,
+  profiles,
+  sessions,
+  users,
+  type ProfileRow,
+  type UserRow,
+} from './schema';
 import type { CreateUserInput, UserRepository } from '../auth/repository';
 import type { Profile, ProfileUpdateInput, Session, User } from '../auth/types';
 
@@ -96,6 +103,12 @@ export class DrizzleUserRepository implements UserRepository {
       .returning();
     if (!row) throw new Error(`user ${userId} not found`);
     return toUser(row);
+  }
+
+  async recordAccountLink(entry: { userId: string; googleId: string }): Promise<void> {
+    await this.db
+      .insert(accountLinkAudit)
+      .values({ userId: entry.userId, linkedGoogleId: entry.googleId });
   }
 
   async createSession(userId: string): Promise<Session> {

@@ -17,12 +17,18 @@ interface LoginScreenProps {
  * `onSignedIn` handoff without a separate route.
  */
 export function LoginScreen({ onSignedIn }: LoginScreenProps = {}) {
-  const { loading, error, signIn } = useGoogleAuth();
+  const { loading, error, linkRequired, signIn } = useGoogleAuth();
   const { t } = useTranslation();
   const [mode, setMode] = useState<'google' | 'otp'>('google');
 
   if (mode === 'otp') {
-    return <OtpLoginScreen onSignedIn={onSignedIn} onCancel={() => setMode('google')} />;
+    return (
+      <OtpLoginScreen
+        onSignedIn={onSignedIn}
+        onCancel={() => setMode('google')}
+        linkToken={linkRequired?.linkToken}
+      />
+    );
   }
 
   const handlePress = async () => {
@@ -63,7 +69,15 @@ export function LoginScreen({ onSignedIn }: LoginScreenProps = {}) {
         <Text style={styles.secondaryButtonText}>{t('login.continueWithWhatsApp')}</Text>
       </Pressable>
 
-      {error ? (
+      {linkRequired ? (
+        // Google matched an existing account's email (#4) — never linked
+        // automatically. Surfacing this (rather than a generic error) is
+        // #4's own acceptance criterion: the user must see this explanation
+        // and be routed to sign in with their other method to confirm.
+        <Text accessibilityRole="alert" style={styles.notice}>
+          {t('login.accountExists')} {linkRequired.maskedEmail}
+        </Text>
+      ) : error ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {error}
         </Text>
@@ -130,6 +144,12 @@ const styles = StyleSheet.create({
     color: '#F4F1FA',
     fontSize: 16,
     fontWeight: '600',
+  },
+  notice: {
+    color: GOLD,
+    fontSize: 14,
+    marginTop: 20,
+    textAlign: 'center',
   },
   error: {
     color: '#F2A2A2',

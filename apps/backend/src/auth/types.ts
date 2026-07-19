@@ -94,5 +94,23 @@ export interface SignInResult {
   isNewUser: boolean;
 }
 
+/**
+ * Result of a Google sign-in attempt (#4). A verified Google identity whose
+ * email matches an *existing* account (created via another method, with no
+ * Google id of its own yet) is never linked automatically — email/phone
+ * spoofing makes silent linking unsafe. Instead the caller gets a
+ * `link_required` outcome and must confirm the link while authenticated as
+ * that existing account (see `accountLinkService.ts`).
+ */
+export type GoogleSignInOutcome =
+  | ({ status: 'signed_in' } & SignInResult)
+  | {
+      status: 'link_required';
+      /** Short-lived, single-purpose token carrying the verified Google identity. */
+      linkToken: string;
+      /** Partially hidden so the response never fully echoes the existing email. */
+      maskedEmail: string;
+    };
+
 /** Function that turns a raw Google ID token into a trusted profile. */
 export type VerifyGoogleToken = (idToken: string) => Promise<GoogleProfile>;

@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
-import { ApiError } from '../api/authApi';
 import { OtpApiError, requestOtp, verifyOtp, type OtpVerifyResponse } from '../api/otpApi';
+import { useTranslation } from '../i18n/LocaleContext';
+import type { TranslationKey } from '../i18n/translations';
+import { localizeOtpError } from '../otp/errorMessages';
 import { saveTokens } from './tokenStorage';
 
 export type OtpStep = 'phone' | 'code';
@@ -41,28 +43,32 @@ const INITIAL: State = {
  */
 export function useOtpAuth() {
   const [state, setState] = useState<State>(INITIAL);
+  const { t } = useTranslation();
 
-  const requestCode = useCallback(async (phone: string): Promise<boolean> => {
-    setState((s) => ({ ...s, loading: true, error: null }));
-    try {
-      const result = await requestOtp(phone);
-      setState((s) => ({
-        ...s,
-        step: 'code',
-        phone,
-        loading: false,
-        error: null,
-        expiresInSeconds: result.expiresInSeconds,
-        resendAvailableInSeconds: result.resendAvailableInSeconds,
-        attemptsRemaining: null,
-        retryAfterSeconds: null,
-      }));
-      return true;
-    } catch (err) {
-      setState((s) => applyError(s, err));
-      return false;
-    }
-  }, []);
+  const requestCode = useCallback(
+    async (phone: string): Promise<boolean> => {
+      setState((s) => ({ ...s, loading: true, error: null }));
+      try {
+        const result = await requestOtp(phone);
+        setState((s) => ({
+          ...s,
+          step: 'code',
+          phone,
+          loading: false,
+          error: null,
+          expiresInSeconds: result.expiresInSeconds,
+          resendAvailableInSeconds: result.resendAvailableInSeconds,
+          attemptsRemaining: null,
+          retryAfterSeconds: null,
+        }));
+        return true;
+      } catch (err) {
+        setState((s) => applyError(s, err, t));
+        return false;
+      }
+    },
+    [t],
+  );
 
   const verifyCode = useCallback(
     async (code: string): Promise<OtpVerifyResponse | null> => {
@@ -73,11 +79,11 @@ export function useOtpAuth() {
         setState((s) => ({ ...s, loading: false, error: null }));
         return result;
       } catch (err) {
-        setState((s) => applyError(s, err));
+        setState((s) => applyError(s, err, t));
         return null;
       }
     },
-    [state.phone],
+    [state.phone, t],
   );
 
   const reset = useCallback(() => setState(INITIAL), []);
@@ -85,12 +91,11 @@ export function useOtpAuth() {
   return { ...state, requestCode, verifyCode, reset };
 }
 
-function applyError(state: State, err: unknown): State {
-  const message = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+function applyError(state: State, err: unknown, t: (key: TranslationKey) => string): State {
   return {
     ...state,
     loading: false,
-    error: message,
+    error: localizeOtpError(err, t),
     attemptsRemaining: err instanceof OtpApiError ? (err.attemptsRemaining ?? null) : null,
     retryAfterSeconds: err instanceof OtpApiError ? (err.retryAfterSeconds ?? null) : null,
     alternative: err instanceof OtpApiError ? (err.alternative ?? null) : null,

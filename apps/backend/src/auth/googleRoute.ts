@@ -8,7 +8,10 @@ const bodySchema = z.object({
 });
 
 /**
- * POST /auth/google  { idToken }  ->  { user, accessToken, refreshToken, isNewUser }
+ * POST /auth/google  { idToken }  ->
+ *   { status: 'signed_in', user, accessToken, refreshToken, isNewUser } | on a
+ *   same-email match with an unlinked existing account (#4):
+ *   { status: 'link_required', linkToken, maskedEmail }
  *
  * Errors are thrown (AuthError subclasses) and translated to JSON by
  * `errorHandler`, so the mobile client always receives a stable
@@ -25,17 +28,27 @@ export function createGoogleAuthRouter(authService: AuthService): Router {
         throw new InvalidRequestError(message);
       }
 
-      const result = await authService.signInWithGoogle(parsed.data.idToken);
+      const outcome = await authService.signInWithGoogle(parsed.data.idToken);
+
+      if (outcome.status === 'link_required') {
+        res.status(200).json({
+          status: 'link_required',
+          linkToken: outcome.linkToken,
+          maskedEmail: outcome.maskedEmail,
+        });
+        return;
+      }
 
       res.status(200).json({
+        status: 'signed_in',
         user: {
-          id: result.user.id,
-          email: result.user.email,
-          googleId: result.user.googleId,
+          id: outcome.user.id,
+          email: outcome.user.email,
+          googleId: outcome.user.googleId,
         },
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-        isNewUser: result.isNewUser,
+        accessToken: outcome.accessToken,
+        refreshToken: outcome.refreshToken,
+        isNewUser: outcome.isNewUser,
       });
     } catch (err) {
       next(err);

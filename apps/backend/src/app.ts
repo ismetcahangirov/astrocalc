@@ -1,5 +1,8 @@
 import express, { type Express } from 'express';
 import { OAuth2Client } from 'google-auth-library';
+import { createAccountLinkService } from './auth/accountLinkService';
+import { createAccountLinkTokenService } from './auth/accountLinkToken';
+import { createAccountLinkRouter } from './auth/accountLinkRoute';
 import { createAuthService } from './auth/authService';
 import { createGoogleVerifier } from './auth/googleVerifier';
 import { createGoogleAuthRouter } from './auth/googleRoute';
@@ -86,7 +89,28 @@ export function createApp(env: Env): Express {
     refreshTtl: env.JWT_REFRESH_TTL,
   });
 
-  const authService = createAuthService({ verifyGoogleToken, repo, tokenService });
+  // Account linking (#4): a Google sign-in that matches an existing account's
+  // email never auto-links — it mints this short-lived token instead, and the
+  // caller must confirm via `POST /auth/link/confirm` while authenticated as
+  // that existing account (e.g. having just signed in with WhatsApp OTP).
+  if (!env.ACCOUNT_LINK_TOKEN_SECRET) {
+    console.warn(
+      '[auth] ACCOUNT_LINK_TOKEN_SECRET not set — falling back to JWT_ACCESS_SECRET. ' +
+        'Set a dedicated secret in production.',
+    );
+  }
+  const linkTokenService = createAccountLinkTokenService({
+    secret: env.ACCOUNT_LINK_TOKEN_SECRET ?? env.JWT_ACCESS_SECRET,
+    ttlSeconds: env.ACCOUNT_LINK_TOKEN_TTL_SECONDS,
+  });
+
+  const authService = createAuthService({
+    verifyGoogleToken,
+    repo,
+    tokenService,
+    linkTokenService,
+  });
+  const accountLinkService = createAccountLinkService({ repo, tokenService, linkTokenService });
 
   // Shared Upstash Redis client (or null for local dev/tests without it) — reused
   // by revocation, the OTP store and OTP rate limiters so every instance of the
@@ -163,6 +187,7 @@ export function createApp(env: Env): Express {
   });
 
   app.use('/auth', createGoogleAuthRouter(authService));
+  app.use('/auth', createAccountLinkRouter(accountLinkService, tokenService));
   app.use('/auth', createSessionRouter(sessionService, { adminApiToken: env.ADMIN_API_TOKEN }));
   app.use(
     '/otp',

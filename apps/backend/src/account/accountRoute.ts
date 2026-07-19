@@ -70,7 +70,9 @@ export function createAccountRouter(
 
   router.get('/export/:jobId', auth, async (req, res, next) => {
     try {
-      const job = await service.getExportStatus(req.userId as string, req.params.jobId);
+      const { jobId } = req.params;
+      if (!jobId) throw new InvalidRequestError('jobId is required');
+      const job = await service.getExportStatus(req.userId as string, jobId);
       res.status(200).json({
         jobId: job.id,
         status: job.status,

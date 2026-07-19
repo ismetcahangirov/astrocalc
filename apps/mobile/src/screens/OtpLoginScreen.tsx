@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { confirmAccountLink } from '../api/authApi';
 import { useOtpAuth } from '../auth/useOtpAuth';
+import { saveTokens } from '../auth/tokenStorage';
 import { useTranslation } from '../i18n/LocaleContext';
 import { formatCountdown, isValidCode, isValidPhone, normalizePhoneInput } from '../otp/validation';
 
@@ -11,6 +13,15 @@ interface OtpLoginScreenProps {
   onSignedIn?: () => void;
   /** Called when the user backs out to the Google sign-in flow instead. */
   onCancel: () => void;
+  /**
+   * A pending account-link token (#4) — set when the user got here after a
+   * Google sign-in matched an existing account's email. Once WhatsApp
+   * verification succeeds (proving ownership of *this* account), it's
+   * exchanged for the actual link via `POST /auth/link/confirm` before
+   * `onSignedIn` fires, so the Google identity ends up attached to this
+   * account rather than left as a dangling offer.
+   */
+  linkToken?: string;
 }
 
 /**
@@ -21,7 +32,7 @@ interface OtpLoginScreenProps {
  * On a WhatsApp quota exhaustion the backend flags `alternative: 'google'`,
  * which this screen turns into a direct prompt back to `onCancel`.
  */
-export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
+export function OtpLoginScreen({ onSignedIn, onCancel, linkToken }: OtpLoginScreenProps) {
   const { t } = useTranslation();
   const {
     step,
@@ -40,6 +51,8 @@ export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
   const [phoneInput, setPhoneInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
 
@@ -78,12 +91,31 @@ export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
 
   const handleVerify = async () => {
     setValidationError(null);
+    setLinkError(null);
     if (!isValidCode(codeInput, CODE_LENGTH)) {
       setValidationError(t('otp.code.invalid'));
       return;
     }
     const result = await verifyCode(codeInput);
-    if (result) onSignedIn?.();
+    if (!result) return;
+
+    if (linkToken) {
+      // Prove-then-link: this WhatsApp sign-in just proved ownership of the
+      // existing account, so exchange the pending offer for the real link
+      // instead of leaving the Google identity unattached (#4).
+      setLinking(true);
+      try {
+        const linked = await confirmAccountLink(result.accessToken, linkToken);
+        await saveTokens(linked.accessToken, linked.refreshToken);
+      } catch {
+        setLinkError(t('login.linkFailed'));
+        setLinking(false);
+        return;
+      }
+      setLinking(false);
+    }
+
+    onSignedIn?.();
   };
 
   const handleCancel = () => {
@@ -91,7 +123,8 @@ export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
     onCancel();
   };
 
-  const displayError = validationError ?? error;
+  const displayError = validationError ?? linkError ?? error;
+  const busy = loading || linking;
 
   return (
     <View style={styles.container}>
@@ -100,6 +133,7 @@ export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
           {step === 'phone' ? t('otp.phone.title') : t('otp.code.title')}
         </Text>
         {step === 'code' ? <Text style={styles.subtitle}>{phone}</Text> : null}
+        {linkToken ? <Text style={styles.subtitle}>{t('login.linkHint')}</Text> : null}
       </View>
 
       {step === 'phone' ? (
@@ -167,16 +201,16 @@ export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: loading }}
-            disabled={loading}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
             onPress={handleVerify}
             style={({ pressed }) => [
               styles.button,
               pressed && styles.buttonPressed,
-              loading && styles.buttonDisabled,
+              busy && styles.buttonDisabled,
             ]}
           >
-            {loading ? (
+            {busy ? (
               <ActivityIndicator color="#1a1206" />
             ) : (
               <Text style={styles.buttonText}>{t('otp.code.verify')}</Text>
@@ -185,8 +219,8 @@ export function OtpLoginScreen({ onSignedIn, onCancel }: OtpLoginScreenProps) {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityState={{ disabled: resendSecondsLeft > 0 || loading }}
-            disabled={resendSecondsLeft > 0 || loading}
+            accessibilityState={{ disabled: resendSecondsLeft > 0 || busy }}
+            disabled={resendSecondsLeft > 0 || busy}
             onPress={handleResend}
             style={styles.linkButton}
           >

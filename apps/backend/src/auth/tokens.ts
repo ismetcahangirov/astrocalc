@@ -71,7 +71,11 @@ export function createTokenService(config: TokenServiceConfig): TokenService {
     const secret = kind === 'access' ? config.accessSecret : config.refreshSecret;
     let decoded: unknown;
     try {
-      decoded = jwt.verify(token, secret);
+      // `exp`/`nbf` are checked against this clock rather than the real system
+      // clock, so an injected test clock stays consistent between issuing a
+      // token (`sign`, above) and verifying it — otherwise a fake clock far
+      // from wall-clock time makes every token look expired (or not-yet-valid).
+      decoded = jwt.verify(token, secret, { clockTimestamp: Math.floor(now() / 1000) });
     } catch {
       throw new AuthError('token_invalid', `Invalid or expired ${kind} token`, 401);
     }

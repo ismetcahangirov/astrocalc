@@ -118,6 +118,22 @@ export const dataExportJobs = pgTable('data_export_jobs', {
 });
 
 /**
+ * Account-linking audit trail (#4). Google sign-in never silently links to an
+ * existing account that shares its email — the user must confirm the link
+ * while authenticated as the existing account (see `accountLinkService.ts`).
+ * This table records every link that actually happens: who, which Google
+ * identity got attached, and when.
+ */
+export const accountLinkAudit = pgTable('account_link_audit', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  linkedGoogleId: text('linked_google_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
  * Admin-configurable orb values for aspect calculation (#15). One row per major
  * aspect type (`conjunction`, `sextile`, `square`, `trine`, `opposition`);
  * `orbDegrees` is the allowed deviation from the exact angle. Rows are the
@@ -165,5 +181,6 @@ export type UserRow = typeof users.$inferSelect;
 export type ProfileRow = typeof profiles.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
 export type AccountDeletionRow = typeof accountDeletions.$inferSelect;
+export type AccountLinkAuditRow = typeof accountLinkAudit.$inferSelect;
 export type DataExportJobRow = typeof dataExportJobs.$inferSelect;
 export type InterpretationTextRow = typeof interpretationTexts.$inferSelect;
