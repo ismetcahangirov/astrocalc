@@ -58,8 +58,11 @@ function withDerivedTimezone(
  * criteria and `chartCacheInvalidator.ts` for the EPIC 3 / #19 dependency).
  */
 export function createProfileService(deps: ProfileServiceDeps): ProfileService {
-  const { repo, cache = new NoopChartCacheInvalidator(), deriveTimezone = deriveBirthTimezone } =
-    deps;
+  const {
+    repo,
+    cache = new NoopChartCacheInvalidator(),
+    deriveTimezone = deriveBirthTimezone,
+  } = deps;
 
   return {
     async getProfile(userId: string): Promise<Profile> {

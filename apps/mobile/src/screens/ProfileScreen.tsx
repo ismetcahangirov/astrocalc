@@ -17,6 +17,7 @@ import {
   type ProfileUpdateInput,
 } from '../api/profileApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
+import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 import {
   isSupportedLocale,
@@ -262,25 +263,23 @@ export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenPro
       </Field>
 
       <Field label={t('profile.birthDate.label')}>
-        <TextInput
-          style={styles.input}
+        <DateTimeField
+          mode="date"
           value={form.birthDate}
-          onChangeText={(v) => update('birthDate', v)}
-          placeholder={t('profile.birthDate.placeholder')}
-          placeholderTextColor={MUTED}
-          keyboardType="numbers-and-punctuation"
+          onChange={(v) => update('birthDate', v)}
+          placeholder={t('birthDate.select')}
+          testID="profile-birthDate"
         />
       </Field>
 
       <Field label={t('profile.birthTime.label')}>
-        <TextInput
-          style={[styles.input, !form.birthTimeKnown && styles.inputDisabled]}
+        <DateTimeField
+          mode="time"
           value={form.birthTime}
-          onChangeText={(v) => update('birthTime', v)}
-          placeholder={t('profile.birthTime.placeholder')}
-          placeholderTextColor={MUTED}
-          editable={form.birthTimeKnown}
-          keyboardType="numbers-and-punctuation"
+          onChange={(v) => update('birthTime', v)}
+          placeholder={t('birthTime.select')}
+          disabled={!form.birthTimeKnown}
+          testID="profile-birthTime"
         />
         <View style={styles.switchRow}>
           <Switch

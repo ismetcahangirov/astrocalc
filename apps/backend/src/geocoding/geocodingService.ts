@@ -104,9 +104,7 @@ export function createGeocodingService(deps: GeocodingServiceDeps): GeocodingSer
         } else {
           await rateLimiter.acquire();
           const found = await nominatim.reverse(lat, lng);
-          place = found
-            ? { id: found.id, name: found.name, region: found.region, lat, lng }
-            : null;
+          place = found ? { id: found.id, name: found.name, region: found.region, lat, lng } : null;
           await cache.set(cacheKey, place ? [place] : [], config.cacheTtlSeconds);
         }
         return { name: place?.name ?? null, region: place?.region ?? null, timezone };

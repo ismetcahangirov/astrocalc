@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError, searchPlaces, type PlaceResult } from '../api/geocodingApi';
 import { useTranslation } from '../i18n/LocaleContext';
+import { BirthPlaceMap, type MapPickResult } from './BirthPlaceMap';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -33,6 +34,7 @@ export function BirthPlaceSearchField({ value, onChange }: BirthPlaceSearchField
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   const requestId = useRef(0);
 
   useEffect(() => {
@@ -81,6 +83,19 @@ export function BirthPlaceSearchField({ value, onChange }: BirthPlaceSearchField
     onChange({ ...value, name: text });
   };
 
+  const onMapSelect = (result: MapPickResult) => {
+    setQuery(result.name);
+    setResults([]);
+    setSearched(false);
+    setMapOpen(false);
+    onChange({
+      name: result.name,
+      lat: result.lat,
+      lng: result.lng,
+      timezone: result.timezone,
+    });
+  };
+
   return (
     <View>
       <TextInput
@@ -119,11 +134,16 @@ export function BirthPlaceSearchField({ value, onChange }: BirthPlaceSearchField
         </Text>
       ) : null}
 
-      <Pressable accessibilityRole="button" onPress={() => setManualOpen((open) => !open)}>
-        <Text style={styles.manualToggle}>
-          {t(manualOpen ? 'birthPlaceSearch.manualHide' : 'birthPlaceSearch.manualToggle')}
-        </Text>
-      </Pressable>
+      <View style={styles.linkRow}>
+        <Pressable accessibilityRole="button" onPress={() => setMapOpen(true)}>
+          <Text style={styles.link}>{t('birthPlaceSearch.pickOnMap')}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => setManualOpen((open) => !open)}>
+          <Text style={styles.link}>
+            {t(manualOpen ? 'birthPlaceSearch.manualHide' : 'birthPlaceSearch.manualToggle')}
+          </Text>
+        </Pressable>
+      </View>
 
       {manualOpen ? (
         <View style={styles.manualFields}>
@@ -143,16 +163,16 @@ export function BirthPlaceSearchField({ value, onChange }: BirthPlaceSearchField
             placeholderTextColor={MUTED}
             keyboardType="numeric"
           />
-          <TextInput
-            style={[styles.input, styles.inputSpaced]}
-            value={value.timezone}
-            onChangeText={(v) => onChange({ ...value, timezone: v })}
-            placeholder={t('profile.birthPlaceTimezone.placeholder')}
-            placeholderTextColor={MUTED}
-            autoCapitalize="none"
-          />
         </View>
       ) : null}
+
+      <BirthPlaceMap
+        visible={mapOpen}
+        initialLat={value.lat}
+        initialLng={value.lng}
+        onCancel={() => setMapOpen(false)}
+        onSelect={onMapSelect}
+      />
     </View>
   );
 }
@@ -191,6 +211,12 @@ const styles = StyleSheet.create({
   resultName: { color: '#F4F1FA', fontSize: 14, fontWeight: '600' },
   resultRegion: { color: MUTED, fontSize: 12, marginTop: 2 },
   hint: { color: MUTED, fontSize: 13, marginTop: 8 },
-  manualToggle: { color: GOLD, fontSize: 13, fontWeight: '600', marginTop: 12 },
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    gap: 16,
+  },
+  link: { color: GOLD, fontSize: 13, fontWeight: '600' },
   manualFields: { marginTop: 10 },
 });

@@ -119,6 +119,18 @@ const en = {
   'birthPlaceSearch.manualToggle': "Can't find it? Enter manually",
   'birthPlaceSearch.manualHide': 'Hide manual entry',
   'birthPlaceSearch.error': "Couldn't search right now — you can still enter it manually.",
+  'birthPlaceSearch.pickOnMap': 'Pick on map',
+
+  'birthDate.select': 'Select date',
+  'birthTime.select': 'Select time',
+  'common.done': 'Done',
+  'common.cancel': 'Cancel',
+
+  'birthPlaceMap.title': 'Tap the map to set your birth place',
+  'birthPlaceMap.tapHint': 'Tap anywhere on the map to drop a pin.',
+  'birthPlaceMap.locating': 'Finding place…',
+  'birthPlaceMap.timezoneLabel': 'Time zone',
+  'birthPlaceMap.use': 'Use this location',
 
   'profile.viewChart': 'View my natal chart',
 
@@ -252,6 +264,18 @@ const az: Record<keyof typeof en, string> = {
   'birthPlaceSearch.manualToggle': 'Tapa bilmirsiniz? Əl ilə daxil edin',
   'birthPlaceSearch.manualHide': 'Əl ilə daxiletməni gizlət',
   'birthPlaceSearch.error': 'Hazırda axtarış edilmədi — yenə də əl ilə daxil edə bilərsiniz.',
+  'birthPlaceSearch.pickOnMap': 'Xəritədə seçin',
+
+  'birthDate.select': 'Tarixi seçin',
+  'birthTime.select': 'Vaxtı seçin',
+  'common.done': 'Hazırdır',
+  'common.cancel': 'Ləğv et',
+
+  'birthPlaceMap.title': 'Doğum yerinizi xəritəyə toxunaraq seçin',
+  'birthPlaceMap.tapHint': 'Nişan qoymaq üçün xəritədə istənilən yerə toxunun.',
+  'birthPlaceMap.locating': 'Yer axtarılır…',
+  'birthPlaceMap.timezoneLabel': 'Saat qurşağı',
+  'birthPlaceMap.use': 'Bu yeri istifadə et',
 
   'profile.viewChart': 'Natal xəritəmə bax',
 

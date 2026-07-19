@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ApiError, getProfile, updateProfile, type ProfileUpdateInput } from '../api/profileApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
+import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 import { isSupportedLocale, SUPPORTED_LOCALES, type Locale } from '../i18n/translations';
 import {
@@ -225,13 +226,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         {step === 'birthDate' ? (
           <>
             <Text style={styles.title}>{t('onboarding.step.birthDate.title')}</Text>
-            <TextInput
-              style={styles.input}
+            <DateTimeField
+              mode="date"
               value={form.birthDate}
-              onChangeText={(v) => update('birthDate', v)}
-              placeholder={t('profile.birthDate.placeholder')}
-              placeholderTextColor={MUTED}
-              keyboardType="numbers-and-punctuation"
+              onChange={(v) => update('birthDate', v)}
+              placeholder={t('birthDate.select')}
+              testID="onboarding-birthDate"
             />
           </>
         ) : null}
@@ -239,14 +239,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         {step === 'birthTime' ? (
           <>
             <Text style={styles.title}>{t('onboarding.step.birthTime.title')}</Text>
-            <TextInput
-              style={[styles.input, !form.birthTimeKnown && styles.inputDisabled]}
+            <DateTimeField
+              mode="time"
               value={form.birthTime}
-              onChangeText={(v) => update('birthTime', v)}
-              placeholder={t('profile.birthTime.placeholder')}
-              placeholderTextColor={MUTED}
-              editable={form.birthTimeKnown}
-              keyboardType="numbers-and-punctuation"
+              onChange={(v) => update('birthTime', v)}
+              placeholder={t('birthTime.select')}
+              disabled={!form.birthTimeKnown}
+              testID="onboarding-birthTime"
             />
             <View style={styles.switchRow}>
               <Switch
