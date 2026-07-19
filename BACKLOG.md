@@ -4,6 +4,43 @@ Reverse-chronological log of completed work on AstroCalc. Add an entry here
 whenever a task is finished (merged or ready for review) — what was done,
 and the related issue/PR numbers.
 
+## 2026-07-20
+
+- Accurate birth-data entry (date/time pickers + OSM map + auto-timezone) —
+  Spec 1 (`docs/superpowers/specs/2026-07-19-accurate-birth-data-entry-design.md`).
+  The accuracy keystone: the birth-place IANA timezone is now derived
+  server-side from coordinates (calc-engine/node's `geo-tz` `findTimeZones`)
+  at profile-save time instead of being hand-typed — closing the gap that
+  made charts wrong (`findTimeZones` existed but was never wired in). Added a
+  `GET /geocoding/reverse` endpoint (Nominatim reverse + derived timezone).
+  Mobile: replaced the free-text birth date/time inputs with native modal
+  pickers (`@react-native-community/datetimepicker`), added a
+  `react-native-webview` + Leaflet + OpenStreetMap birth-place map picker (no
+  API key — consistent with the Nominatim/OSM geocoding), and removed the
+  hand-typed IANA timezone field. 15 new backend tests + 11 mobile
+  format-helper tests. Verified end-to-end on the emulator: pick on map →
+  "Qaradağ rayonu" + "Asia/Baku" derived → profile saved.
+- Multiple people (saved subjects) — Spec 2
+  (`docs/superpowers/specs/2026-07-19-multiple-subjects-design.md`). Charts
+  for other people, not just yourself. Backend: `subjects` table (+ migration)
+  mirroring the profile birth-data shape, owner-scoped CRUD with the same
+  server-side timezone derivation and ownership isolation, per-subject chart
+  compute (`GET /subjects/:id/natal-chart`), and subjects included in the GDPR
+  data export (deletion already cascades via the users FK). Extracted the
+  shared `birthDataToChartInput` used by both profile and subject charts.
+  Mobile: a People list ("Me" pinned + saved subjects, add/edit/delete) and a
+  subject form reusing Spec 1's date/time pickers + map field; the natal-chart
+  screen can now render a subject's chart. 19 new backend tests. Verified on
+  the emulator: People list shows "Me" chart-ready + Add-a-person form.
+- Dev-client build fixes surfaced while getting the Android app to run:
+  pinned Kotlin 1.9.24 (Compose Compiler compatibility), added the reanimated
+  Babel plugin, aligned react-native-screens/safe-area-context to the Expo SDK
+  52 versions, bumped `@react-native-google-signin/google-signin` to v16, and
+  dropped the invalid PKCE param from the auth-session fallback. Google
+  Sign-In now works end-to-end after adding the debug keystore's SHA-1
+  (`5E:8F:…`) and enabling the custom URI scheme on the Android OAuth client
+  (the OAuth consent screen was also published to production).
+
 ## 2026-07-19
 
 - Getting Started guide + LICENSE decision — #26, #27, in one PR (both
