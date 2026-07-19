@@ -26,6 +26,16 @@ import {
 } from './interpretations/cache';
 import { createInterpretationService } from './interpretations/interpretationService';
 import { createInterpretationRouter } from './interpretations/interpretationRoute';
+import { DrizzleOrbConfigRepository } from './db/drizzleOrbConfigRepository';
+import {
+  InMemoryOrbConfigCache,
+  RedisOrbConfigCache,
+  type OrbConfigCache,
+} from './orbConfig/cache';
+import { createOrbConfigService } from './orbConfig/orbConfigService';
+import { createOrbConfigRouter } from './orbConfig/orbConfigRoute';
+import { createNatalChartService } from './chart/natalChartService';
+import { createNatalChartRouter } from './chart/natalChartRoute';
 import { createAccountService, type AccountService } from './account/accountService';
 import { createAccountRouter } from './account/accountRoute';
 import { InMemoryObjectStorage, type ObjectStorage } from './account/objectStorage';
@@ -241,6 +251,28 @@ export function createApp(env: Env): Express {
     }),
   );
 
+  // Admin-configurable aspect orb config (#15), admin-editable (EPIC 10) — the
+  // effective values `/natal-chart` passes into `computeNatalChart`.
+  const orbConfigService = createOrbConfigService({
+    repo: new DrizzleOrbConfigRepository(db),
+    cache: buildOrbConfigCache(redis),
+    config: { cacheTtlSeconds: env.ORB_CONFIG_CACHE_TTL_SECONDS },
+  });
+  app.use(
+    '/orb-config',
+    createOrbConfigRouter(orbConfigService, tokenService, { adminApiToken: env.ADMIN_API_TOKEN }),
+  );
+
+  // Natal-chart computation (#19's missing endpoint, #20's sync target): ties the
+  // chart cache, the effective orb config, and `@astrocalc/calc-engine`'s shared
+  // `computeNatalChart` together behind the routes the mobile client already calls.
+  const natalChartService = createNatalChartService({
+    repo,
+    cache: chartCache,
+    orbConfig: orbConfigService,
+  });
+  app.use('/natal-chart', createNatalChartRouter(natalChartService, tokenService));
+
   // Terminal error handler — must be registered last.
   app.use(errorHandler);
 
@@ -389,6 +421,21 @@ function buildInterpretationCache(redis: RedisClient | null): InterpretationCach
       "Admin edits will NOT invalidate other instances' caches.",
   );
   return new InMemoryInterpretationCache();
+}
+
+/**
+ * Use the shared Upstash Redis cache for the admin orb config when configured;
+ * otherwise a per-process in-memory fallback (local dev/tests only — an
+ * admin edit on one instance would not invalidate another instance's cache).
+ */
+function buildOrbConfigCache(redis: RedisClient | null): OrbConfigCache {
+  if (redis) return new RedisOrbConfigCache(redis);
+
+  console.warn(
+    '[orb-config] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory orb config cache. ' +
+      "Admin edits will NOT invalidate other instances' caches.",
+  );
+  return new InMemoryOrbConfigCache();
 }
 
 /**

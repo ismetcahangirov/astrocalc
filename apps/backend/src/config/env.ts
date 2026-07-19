@@ -64,6 +64,13 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(60 * 60 * 24),
+  // Admin-configurable aspect orb config (#15). An admin edit invalidates the
+  // cache immediately, so a generous TTL is safe here too.
+  ORB_CONFIG_CACHE_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60 * 24),
   // --- Account deletion & GDPR data export (#9) ---
   // Public base URL of this API, used to build the single-use download link in
   // notifications and the QStash worker webhook target. Required for QStash.
