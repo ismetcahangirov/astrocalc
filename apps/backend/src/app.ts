@@ -34,6 +34,19 @@ import { InMemoryOtpStore, type OtpStore } from './otp/otpStore';
 import { RedisOtpStore } from './otp/redisOtpStore';
 import { createOtpService } from './otp/otpService';
 import { createOtpRouter } from './otp/otpRoute';
+import { createGeocodingRouter } from './geocoding/geocodingRoute';
+import { createGeocodingService } from './geocoding/geocodingService';
+import {
+  InMemoryGeocodeCache,
+  RedisGeocodeCache,
+  type GeocodeCache,
+} from './geocoding/geocodeCache';
+import { createNominatimClient } from './geocoding/nominatimClient';
+import {
+  InMemoryNominatimRateLimiter,
+  RedisNominatimRateLimiter,
+  type NominatimRateLimiter,
+} from './geocoding/nominatimRateLimiter';
 import {
   FakeWhatsAppSender,
   createMetaWhatsAppSender,
@@ -170,6 +183,25 @@ export function createApp(env: Env): Express {
       workerToken: env.DATA_EXPORT_WORKER_TOKEN,
     }),
   );
+
+  // Birth-place search (#8): offline AZ gazetteer + rate-limited/cached
+  // Nominatim fallback, used by the onboarding (#6) and profile-edit (#7)
+  // birth-place autocomplete fields.
+  const geocodingService = createGeocodingService({
+    nominatim: createNominatimClient({
+      baseUrl: env.NOMINATIM_BASE_URL,
+      userAgent: env.NOMINATIM_USER_AGENT,
+    }),
+    cache: buildGeocodeCache(redis),
+    rateLimiter: buildNominatimRateLimiter(redis),
+    config: {
+      cacheTtlSeconds: env.GEOCODE_CACHE_TTL_SECONDS,
+      localLimit: 8,
+      remoteLimit: 8,
+      minLocalResultsBeforeRemote: 3,
+    },
+  });
+  app.use('/geocoding', createGeocodingRouter(geocodingService, tokenService));
 
   // Multilingual natal-chart interpretation text (#18), admin-editable (EPIC 10).
   const interpretationService = createInterpretationService({
@@ -332,6 +364,37 @@ function buildInterpretationCache(redis: RedisClient | null): InterpretationCach
       "Admin edits will NOT invalidate other instances' caches.",
   );
   return new InMemoryInterpretationCache();
+}
+
+/**
+ * Use the shared Upstash Redis geocode-search cache when configured;
+ * otherwise a per-process in-memory fallback (local dev/tests only — repeat
+ * searches would re-hit Nominatim instead of being cached).
+ */
+function buildGeocodeCache(redis: RedisClient | null): GeocodeCache {
+  if (redis) return new RedisGeocodeCache(redis);
+
+  console.warn(
+    '[geocoding] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory geocode cache. ' +
+      'Nominatim results will NOT be shared across instances.',
+  );
+  return new InMemoryGeocodeCache();
+}
+
+/**
+ * Use the shared Upstash Redis lock when configured, enforcing Nominatim's
+ * 1 req/sec ceiling across every instance; otherwise a per-process in-memory
+ * fallback (local dev/tests only — the ceiling would not be shared across
+ * instances, risking a usage-policy violation in production).
+ */
+function buildNominatimRateLimiter(redis: RedisClient | null): NominatimRateLimiter {
+  if (redis) return new RedisNominatimRateLimiter(redis);
+
+  console.warn(
+    '[geocoding] UPSTASH_REDIS_REST_URL/TOKEN not set — using an in-memory Nominatim rate ' +
+      'limiter. The 1 req/sec ceiling will NOT be shared across instances.',
+  );
+  return new InMemoryNominatimRateLimiter();
 }
 
 /**

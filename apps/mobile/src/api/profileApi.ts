@@ -19,7 +19,10 @@ export interface Profile {
   onboardingCompletedAt: string | null;
 }
 
-/** Fields the profile-edit screen (#7) may update. Mirrors the backend's `ProfileUpdateInput`. */
+/**
+ * Fields the onboarding flow (#6) and profile-edit screen (#7) may update.
+ * Mirrors the backend's `ProfileUpdateInput`.
+ */
 export interface ProfileUpdateInput {
   displayName?: string | null;
   avatarUrl?: string | null;
@@ -31,6 +34,8 @@ export interface ProfileUpdateInput {
   birthPlaceLat?: number | null;
   birthPlaceLng?: number | null;
   birthPlaceTimezone?: string | null;
+  /** Set when the onboarding flow is exited — normally or via "finish later". */
+  completeOnboarding?: boolean;
 }
 
 async function authedFetch(path: string, init: RequestInit): Promise<Response> {

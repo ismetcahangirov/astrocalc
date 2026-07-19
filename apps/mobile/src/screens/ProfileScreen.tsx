@@ -16,6 +16,7 @@ import {
   type Profile,
   type ProfileUpdateInput,
 } from '../api/profileApi';
+import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
 import { useTranslation } from '../i18n/LocaleContext';
 import {
   isSupportedLocale,
@@ -285,39 +286,19 @@ export function ProfileScreen() {
       </Field>
 
       <Field label={t('profile.birthPlace.label')}>
-        <TextInput
-          style={styles.input}
-          value={form.birthPlaceName}
-          onChangeText={(v) => update('birthPlaceName', v)}
-          placeholder={t('profile.birthPlace.placeholder')}
-          placeholderTextColor={MUTED}
-        />
-      </Field>
-
-      <Field label={t('profile.birthPlaceAdvanced.label')}>
-        <TextInput
-          style={styles.input}
-          value={form.birthPlaceLat}
-          onChangeText={(v) => update('birthPlaceLat', v)}
-          placeholder={t('profile.birthPlaceLat.placeholder')}
-          placeholderTextColor={MUTED}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={[styles.input, styles.inputSpaced]}
-          value={form.birthPlaceLng}
-          onChangeText={(v) => update('birthPlaceLng', v)}
-          placeholder={t('profile.birthPlaceLng.placeholder')}
-          placeholderTextColor={MUTED}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={[styles.input, styles.inputSpaced]}
-          value={form.birthPlaceTimezone}
-          onChangeText={(v) => update('birthPlaceTimezone', v)}
-          placeholder={t('profile.birthPlaceTimezone.placeholder')}
-          placeholderTextColor={MUTED}
-          autoCapitalize="none"
+        <BirthPlaceSearchField
+          value={{
+            name: form.birthPlaceName,
+            lat: form.birthPlaceLat.trim() === '' ? null : Number(form.birthPlaceLat),
+            lng: form.birthPlaceLng.trim() === '' ? null : Number(form.birthPlaceLng),
+            timezone: form.birthPlaceTimezone,
+          }}
+          onChange={(v: BirthPlaceValue) => {
+            update('birthPlaceName', v.name);
+            update('birthPlaceLat', v.lat != null ? String(v.lat) : '');
+            update('birthPlaceLng', v.lng != null ? String(v.lng) : '');
+            update('birthPlaceTimezone', v.timezone);
+          }}
         />
       </Field>
 
