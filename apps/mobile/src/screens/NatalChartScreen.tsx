@@ -10,19 +10,23 @@ import {
 } from 'react-native';
 import type { NatalChart } from '@astrocalc/calc-engine';
 import { ApiError, getProfile } from '../api/profileApi';
+import { getSubjectChart } from '../api/subjectsApi';
 import { isNetworkError } from '../api/httpClient';
 import { fetchChartInterpretation, type ChartInterpretation } from '../api/interpretationApi';
 import { computeWheelLayout, type WheelInput } from '../chart/geometry';
 import { NatalChartWheel } from '../chart/NatalChartWheel';
 import { MissingBirthDataError } from '../offline/natalChartService';
 import { loadNatalChart } from '../offline/natalChartServiceWiring';
-import type { NatalChartView } from '../offline/natalChartService';
 import { useTranslation } from '../i18n/LocaleContext';
 
+/** What this screen actually reads from a loaded chart — a subset of `NatalChartView`. */
+interface ChartView {
+  chart: NatalChart;
+  source: 'backend' | 'offline';
+}
+
 type LoadState =
-  | { phase: 'loading' }
-  | { phase: 'error'; message: string }
-  | { phase: 'ready'; view: NatalChartView };
+  { phase: 'loading' } | { phase: 'error'; message: string } | { phase: 'ready'; view: ChartView };
 
 /** Map a computed chart to the pure `WheelInput` `computeWheelLayout()` expects. */
 function toWheelInput(chart: NatalChart, size: number): WheelInput {
@@ -47,7 +51,14 @@ function toWheelInput(chart: NatalChart, size: number): WheelInput {
  * offline) never blocks the wheel, which needs no network once the chart
  * itself is loaded.
  */
-export function NatalChartScreen() {
+interface NatalChartScreenProps {
+  /** When set, shows this saved person's chart (online only) instead of the user's own. */
+  subjectId?: string;
+  /** The person's name, shown as the title when viewing a subject. */
+  subjectName?: string;
+}
+
+export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenProps = {}) {
   const { t, locale } = useTranslation();
   const { width } = useWindowDimensions();
   const wheelSize = Math.min(width - 48, 420);
@@ -62,8 +73,11 @@ export function NatalChartScreen() {
     setInterpretationError(null);
 
     try {
-      const profile = await getProfile();
-      const view = await loadNatalChart(profile);
+      // A saved subject's chart is fetched from the backend only (no offline
+      // path); the user's own chart keeps its offline-capable loader.
+      const view = subjectId
+        ? { chart: (await getSubjectChart(subjectId)).chart, source: 'backend' as const }
+        : await loadNatalChart(await getProfile());
       setState({ phase: 'ready', view });
 
       try {
@@ -84,7 +98,7 @@ export function NatalChartScreen() {
             : t('natalChart.loadError');
       setState({ phase: 'error', message });
     }
-  }, [locale, t]);
+  }, [locale, t, subjectId]);
 
   useEffect(() => {
     load();
@@ -122,7 +136,7 @@ export function NatalChartScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t('natalChart.title')}</Text>
+      <Text style={styles.title}>{subjectName ?? t('natalChart.title')}</Text>
 
       {view.source === 'offline' ? (
         <Text style={styles.notice}>{t('natalChart.offlineNotice')}</Text>

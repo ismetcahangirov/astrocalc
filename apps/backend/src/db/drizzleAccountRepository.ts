@@ -1,6 +1,13 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from './client';
-import { accountDeletions, dataExportJobs, profiles, users, type DataExportJobRow } from './schema';
+import {
+  accountDeletions,
+  dataExportJobs,
+  profiles,
+  subjects,
+  users,
+  type DataExportJobRow,
+} from './schema';
 import type { AccountRepository } from '../account/repository';
 import type {
   AccountDeletionRecord,
@@ -49,6 +56,11 @@ export class DrizzleAccountRepository implements AccountRepository {
       .from(profiles)
       .where(eq(profiles.userId, userId))
       .limit(1);
+    const subjectRows = await this.db
+      .select()
+      .from(subjects)
+      .where(eq(subjects.userId, userId))
+      .orderBy(subjects.createdAt);
 
     return {
       exportedAt: new Date().toISOString(),
@@ -72,6 +84,18 @@ export class DrizzleAccountRepository implements AccountRepository {
             onboardingCompletedAt: profile.onboardingCompletedAt?.toISOString() ?? null,
           }
         : null,
+      subjects: subjectRows.map((s) => ({
+        id: s.id,
+        name: s.name,
+        birthDate: s.birthDate,
+        birthTime: s.birthTime,
+        birthTimeKnown: s.birthTimeKnown,
+        birthPlaceName: s.birthPlaceName,
+        birthPlaceLat: s.birthPlaceLat,
+        birthPlaceLng: s.birthPlaceLng,
+        birthPlaceTimezone: s.birthPlaceTimezone,
+        createdAt: s.createdAt.toISOString(),
+      })),
     };
   }
 

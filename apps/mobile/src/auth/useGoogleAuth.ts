@@ -44,6 +44,12 @@ export function useGoogleAuth() {
           throw nativeErr;
         }
         if (Platform.OS === 'web') throw nativeErr;
+        // Surface the native failure before falling back — a silent fallback hides
+        // root causes like DEVELOPER_ERROR (SHA-1/package mismatch in the console).
+        console.warn(
+          '[auth] Native Google Sign-In failed, falling back to auth-session:',
+          nativeErr,
+        );
         idToken = await getGoogleIdTokenViaAuthSession();
       }
 

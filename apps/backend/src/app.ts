@@ -36,6 +36,9 @@ import { createOrbConfigService } from './orbConfig/orbConfigService';
 import { createOrbConfigRouter } from './orbConfig/orbConfigRoute';
 import { createNatalChartService } from './chart/natalChartService';
 import { createNatalChartRouter } from './chart/natalChartRoute';
+import { createSubjectsService } from './subjects/subjectsService';
+import { createSubjectsRouter } from './subjects/subjectsRoute';
+import { DrizzleSubjectRepository } from './db/drizzleSubjectRepository';
 import { createAccountService, type AccountService } from './account/accountService';
 import { createAccountRouter } from './account/accountRoute';
 import { InMemoryObjectStorage, type ObjectStorage } from './account/objectStorage';
@@ -272,6 +275,15 @@ export function createApp(env: Env): Express {
     orbConfig: orbConfigService,
   });
   app.use('/natal-chart', createNatalChartRouter(natalChartService, tokenService));
+
+  // Saved subjects (#s2): charts for other people. Reuses the same chart cache
+  // (namespaced per subject) and orb config as the user's own chart.
+  const subjectsService = createSubjectsService({
+    repo: new DrizzleSubjectRepository(db),
+    chartCache,
+    orbConfig: orbConfigService,
+  });
+  app.use('/subjects', createSubjectsRouter(subjectsService, tokenService));
 
   // Terminal error handler — must be registered last.
   app.use(errorHandler);

@@ -6,8 +6,7 @@ import {
   type OrbConfig,
 } from '@astrocalc/calc-engine';
 import type { UserRepository } from '../auth/repository';
-import type { Profile } from '../auth/types';
-import { IncompleteProfileError } from '../auth/errors';
+import { birthDataToChartInput } from './birthChartInput';
 import type { OrbConfigService } from '../orbConfig/orbConfigService';
 import type { ChartCacheKeyInput } from './chartCacheKey';
 import { getOrComputeChart, type ChartResultCache } from './chartResultCache';
@@ -49,35 +48,6 @@ export interface NatalChartServiceDeps {
   orbConfig: OrbConfigService;
 }
 
-type MissingProfileField =
-  'birthDate' | 'birthPlaceLat' | 'birthPlaceLng' | 'birthPlaceTimezone' | 'birthTime';
-
-/**
- * Map a stored {@link Profile} to the engine's {@link NatalChartInput}, or throw
- * {@link IncompleteProfileError} listing exactly what's absent. Mirrors the
- * mobile app's `profileToChartInput` (`apps/mobile/src/offline/natalChartService.ts`)
- * so both sides refuse to compute for the same reason.
- */
-function profileToChartInput(profile: Profile): NatalChartInput {
-  const missing: MissingProfileField[] = [];
-  if (!profile.birthDate) missing.push('birthDate');
-  if (profile.birthPlaceLat == null) missing.push('birthPlaceLat');
-  if (profile.birthPlaceLng == null) missing.push('birthPlaceLng');
-  if (!profile.birthPlaceTimezone) missing.push('birthPlaceTimezone');
-  if (profile.birthTimeKnown && !profile.birthTime) missing.push('birthTime');
-
-  if (missing.length > 0) throw new IncompleteProfileError(missing);
-
-  return {
-    birthDate: profile.birthDate!,
-    birthTime: profile.birthTime,
-    birthTimeKnown: profile.birthTimeKnown,
-    latitude: profile.birthPlaceLat!,
-    longitude: profile.birthPlaceLng!,
-    timezone: profile.birthPlaceTimezone!,
-  };
-}
-
 function toCacheKey(input: NatalChartInput, orbs: OrbConfig): ChartCacheKeyInput {
   return {
     birthDate: input.birthDate,
@@ -104,7 +74,7 @@ export function createNatalChartService(deps: NatalChartServiceDeps): NatalChart
   ): Promise<{ input: NatalChartInput; orbs: OrbConfig }> {
     const profile = await repo.getProfile(userId);
     if (!profile) throw new Error(`profile for user ${userId} not found`);
-    const input = profileToChartInput(profile);
+    const input = birthDataToChartInput(profile);
     const orbs = await orbConfig.getEffectiveOrbs();
     return { input, orbs };
   }

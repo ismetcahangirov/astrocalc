@@ -7,6 +7,11 @@ import type { TokenService } from '../auth/tokens';
 
 const querySchema = z.object({ q: z.string().trim().min(1).max(200) });
 
+const reverseSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+});
+
 /**
  * GET /geocoding/search?q=<text> -> { results: PlaceResult[] }
  * Used by the birth-place field's autocomplete (onboarding + profile edit).
@@ -29,6 +34,26 @@ export function createGeocodingRouter(
 
       const results = await service.search(parsed.data.q);
       res.status(200).json({ results });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  /**
+   * GET /geocoding/reverse?lat=<num>&lng=<num> -> { name, region, timezone }
+   * Turns a map-picked point into a human-readable place plus the historically
+   * correct IANA timezone (derived from the coordinates). Used by the birth-place
+   * map picker to label a dropped pin and preview its zone.
+   */
+  router.get('/reverse', auth, async (req, res, next) => {
+    try {
+      const parsed = reverseSchema.safeParse(req.query);
+      if (!parsed.success) {
+        throw new InvalidRequestError('Query parameters "lat" and "lng" are required');
+      }
+
+      const result = await service.reverse(parsed.data.lat, parsed.data.lng);
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }

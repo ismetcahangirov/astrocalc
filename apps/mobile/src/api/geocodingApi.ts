@@ -39,3 +39,31 @@ export async function searchPlaces(query: string): Promise<PlaceResult[]> {
 
   return data.results;
 }
+
+/** Mirrors the backend's reverse-geocode response (`geocodingService.ReverseResult`). */
+export interface ReverseResult {
+  name: string | null;
+  region: string | null;
+  timezone: string | null;
+}
+
+/**
+ * Reverse-geocode a map-picked point (#8): turns coordinates into a
+ * human-readable place name plus the historically-correct IANA timezone
+ * (derived server-side from the coordinates). Used by the birth-place map to
+ * label a dropped pin and confirm its zone.
+ */
+export async function reverseGeocode(lat: number, lng: number): Promise<ReverseResult> {
+  const res = await authedFetch(`/geocoding/reverse?lat=${lat}&lng=${lng}`, { method: 'GET' });
+  const data = (await res.json().catch(() => null)) as ApiEnvelope<ReverseResult>;
+
+  if (!res.ok || !data || 'error' in data) {
+    const err = data && 'error' in data ? data.error : null;
+    throw new ApiError(
+      err?.code ?? 'unknown_error',
+      err?.message ?? 'Could not look up that location. Please try again.',
+    );
+  }
+
+  return data;
+}

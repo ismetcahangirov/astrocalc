@@ -17,6 +17,7 @@ import {
   type ProfileUpdateInput,
 } from '../api/profileApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
+import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 import {
   isSupportedLocale,
@@ -122,9 +123,15 @@ interface ProfileScreenProps {
   onManageAccount?: () => void;
   /** Called to navigate to the natal-chart result screen (#17/#18), when offered. */
   onViewChart?: () => void;
+  /** Called to navigate to the People list (#s2), when offered. */
+  onViewPeople?: () => void;
 }
 
-export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenProps = {}) {
+export function ProfileScreen({
+  onManageAccount,
+  onViewChart,
+  onViewPeople,
+}: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -262,25 +269,23 @@ export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenPro
       </Field>
 
       <Field label={t('profile.birthDate.label')}>
-        <TextInput
-          style={styles.input}
+        <DateTimeField
+          mode="date"
           value={form.birthDate}
-          onChangeText={(v) => update('birthDate', v)}
-          placeholder={t('profile.birthDate.placeholder')}
-          placeholderTextColor={MUTED}
-          keyboardType="numbers-and-punctuation"
+          onChange={(v) => update('birthDate', v)}
+          placeholder={t('birthDate.select')}
+          testID="profile-birthDate"
         />
       </Field>
 
       <Field label={t('profile.birthTime.label')}>
-        <TextInput
-          style={[styles.input, !form.birthTimeKnown && styles.inputDisabled]}
+        <DateTimeField
+          mode="time"
           value={form.birthTime}
-          onChangeText={(v) => update('birthTime', v)}
-          placeholder={t('profile.birthTime.placeholder')}
-          placeholderTextColor={MUTED}
-          editable={form.birthTimeKnown}
-          keyboardType="numbers-and-punctuation"
+          onChange={(v) => update('birthTime', v)}
+          placeholder={t('birthTime.select')}
+          disabled={!form.birthTimeKnown}
+          testID="profile-birthTime"
         />
         <View style={styles.switchRow}>
           <Switch
@@ -344,6 +349,16 @@ export function ProfileScreen({ onManageAccount, onViewChart }: ProfileScreenPro
           style={styles.manageAccountLink}
         >
           <Text style={styles.manageAccountLinkText}>{t('profile.viewChart')}</Text>
+        </Pressable>
+      ) : null}
+
+      {onViewPeople ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewPeople}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('people.link')}</Text>
         </Pressable>
       ) : null}
 

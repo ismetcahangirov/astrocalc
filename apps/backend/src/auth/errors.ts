@@ -91,6 +91,14 @@ export class IncompleteProfileError extends AuthError {
   }
 }
 
+/** A saved subject (#s2) doesn't exist, or doesn't belong to the caller. */
+export class SubjectNotFoundError extends AuthError {
+  constructor(message = 'That person could not be found.') {
+    super('subject_not_found', message, 404);
+    this.name = 'SubjectNotFoundError';
+  }
+}
+
 /** An account-link token is missing, malformed, expired, or already used (#4). */
 export class AccountLinkTokenError extends AuthError {
   constructor(message = 'This link request has expired. Please try signing in again.') {
