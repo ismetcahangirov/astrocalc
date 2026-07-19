@@ -135,8 +135,22 @@ expectation.
 
 ## Local Development Setup
 
-Not applicable yet — there's no application code to run. This section will
-be written once `apps/` and `packages/calc-engine` are scaffolded.
+See the [README's Getting Started section](./README.md#getting-started) for
+full setup steps (prerequisites, install, running the backend and mobile
+app, running tests). Quick reference once dependencies are installed
+(`npm install` at the repo root):
+
+```bash
+npm run test -w packages/calc-engine   # calc-engine unit tests
+npm run test -w apps/backend           # backend tests
+npm run test -w apps/mobile            # mobile tests
+npm run lint                            # repo-wide ESLint
+npm run format:check                    # repo-wide Prettier check
+```
+
+Each workspace (`apps/backend`, `apps/mobile`, `packages/calc-engine`) also
+has its own README with package-specific details (env vars, API shape,
+public exports).
 
 ## Questions
 
