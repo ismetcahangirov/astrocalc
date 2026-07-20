@@ -154,7 +154,11 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
 
       {layout ? (
         <View style={styles.canvasWrap}>
-          <OctagramChart layout={layout} />
+          <OctagramChart
+            layout={layout}
+            maleLineLabel={t('matrix.maleLine')}
+            femaleLineLabel={t('matrix.femaleLine')}
+          />
         </View>
       ) : null}
 

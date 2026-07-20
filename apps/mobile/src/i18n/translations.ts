@@ -240,6 +240,8 @@ const en = {
   'matrix.offlineNotice':
     "You're viewing a Matrix computed on this device. Reconnect for your full reading.",
   'matrix.readingTitle': 'Your Reading',
+  'matrix.maleLine': 'male generation line',
+  'matrix.femaleLine': 'female generation line',
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -478,6 +480,8 @@ const az: Record<keyof typeof en, string> = {
   'matrix.offlineNotice':
     'Bu cihazda hesablanmış matrisə baxırsınız. Tam şərh üçün internetə qoşulun.',
   'matrix.readingTitle': 'Sizin Şərhiniz',
+  'matrix.maleLine': 'kişi nəsil xətti',
+  'matrix.femaleLine': 'qadın nəsil xətti',
 };
 
 export type TranslationKey = keyof typeof en;
