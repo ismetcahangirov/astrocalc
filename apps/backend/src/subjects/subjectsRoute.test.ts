@@ -2,11 +2,18 @@ import { describe, expect, it } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { createSubjectsRouter } from './subjectsRoute';
+import { createSubjectsService } from './subjectsService';
 import type { SubjectsService } from './subjectsService';
+import { InMemorySubjectRepository } from './repository';
 import type { Subject } from './types';
 import { SubjectNotFoundError } from '../auth/errors';
 import { createTokenService } from '../auth/tokens';
 import { errorHandler } from '../auth/errorHandler';
+import { InMemoryChartResultCache } from '../chart/chartResultCache';
+import { InMemoryNumerologyResultCache } from '../numerology/numerologyResultCache';
+import { InMemoryOrbConfigCache } from '../orbConfig/cache';
+import { InMemoryOrbConfigRepository } from '../orbConfig/repository';
+import { createOrbConfigService } from '../orbConfig/orbConfigService';
 
 const tokenService = createTokenService({
   accessSecret: 'a',
@@ -40,6 +47,7 @@ function makeApp(service: Partial<SubjectsService>) {
     update: async () => sampleSubject,
     remove: async () => undefined,
     getChart: async () => ({ chart: {} as never, interpretation: null }),
+    getNumerology: async () => ({ profile: {} as never, interpretation: null }),
     ...service,
   };
   const app = express();
@@ -128,5 +136,89 @@ describe('GET /subjects/:id/natal-chart', () => {
     expect(res.status).toBe(200);
     expect(res.body.chart).toBeDefined();
     expect(res.body.interpretation).toBeNull();
+  });
+});
+
+describe('GET /subjects/:id/numerology', () => {
+  // A real (non-mocked) service + in-memory repo/caches, so ownership isolation
+  // and the computed value are exercised end to end rather than through a stub
+  // that could pass trivially.
+  function buildRealApp() {
+    const service = createSubjectsService({
+      repo: new InMemorySubjectRepository(),
+      chartCache: new InMemoryChartResultCache(),
+      numerologyCache: new InMemoryNumerologyResultCache(),
+      orbConfig: createOrbConfigService({
+        repo: new InMemoryOrbConfigRepository(),
+        cache: new InMemoryOrbConfigCache(),
+        config: { cacheTtlSeconds: 3600 },
+      }),
+      deriveTimezone: () => null,
+    });
+    const app = express();
+    app.use(express.json());
+    app.use('/subjects', createSubjectsRouter(service, tokenService));
+    app.use(errorHandler);
+    return { app, service };
+  }
+
+  it('rejects without a bearer token', async () => {
+    const { app } = buildRealApp();
+    const res = await request(app).get('/subjects/subject-1/numerology');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns the computed profile for the owner', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1950-03-04' });
+
+    const res = await request(app)
+      .get(`/subjects/${subject.id}/numerology`)
+      .query({ referenceDate: '2026-07-20' })
+      .set('Authorization', auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.interpretation).toBeNull();
+    // Hand-checked: year 1950 -> 1+9+5+0=15 -> 1+5=6; month 03 -> 3; day 04 -> 4;
+    // 6 + 3 + 4 = 13, a karmic-debt number, which reduces to 1+3 = 4.
+    expect(res.body.profile.lifePath.value).toBe(4);
+  });
+
+  it('returns 404 subject_not_found when a different user requests it', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1950-03-04' });
+    const { accessToken: otherUsersToken } = tokenService.issueTokens('user-2', 'session-2');
+
+    const res = await request(app)
+      .get(`/subjects/${subject.id}/numerology`)
+      .set('Authorization', `Bearer ${otherUsersToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('subject_not_found');
+  });
+
+  it('returns 422 incomplete_profile when the subject has no birthDate', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'No birth date' });
+
+    const res = await request(app)
+      .get(`/subjects/${subject.id}/numerology`)
+      .set('Authorization', auth);
+
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('incomplete_profile');
+  });
+
+  it('rejects a malformed referenceDate', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1950-03-04' });
+
+    const res = await request(app)
+      .get(`/subjects/${subject.id}/numerology`)
+      .query({ referenceDate: '20-07-2026' })
+      .set('Authorization', auth);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('invalid_request');
   });
 });

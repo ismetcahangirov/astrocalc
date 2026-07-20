@@ -25,15 +25,23 @@ const createSchema = z.object({
 
 const updateSchema = createSchema.partial();
 
+const querySchema = z.object({
+  referenceDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'referenceDate must be YYYY-MM-DD')
+    .optional(),
+});
+
 /**
- * Saved-subject routes (#s2), all bearer-authenticated and scoped to the
+ * Saved-subject routes (#s2, #64), all bearer-authenticated and scoped to the
  * signed-in user:
- *   GET    /subjects                 -> the user's saved people
- *   POST   /subjects                 -> create one
- *   GET    /subjects/:id             -> one (404 if not owned)
- *   PATCH  /subjects/:id             -> update one
- *   DELETE /subjects/:id             -> delete one (204)
- *   GET    /subjects/:id/natal-chart -> that person's chart
+ *   GET    /subjects                    -> the user's saved people
+ *   POST   /subjects                    -> create one
+ *   GET    /subjects/:id                -> one (404 if not owned)
+ *   PATCH  /subjects/:id                -> update one
+ *   DELETE /subjects/:id                -> delete one (204)
+ *   GET    /subjects/:id/natal-chart    -> that person's chart
+ *   GET    /subjects/:id/numerology     -> that person's numerology profile
  */
 export function createSubjectsRouter(service: SubjectsService, tokenService: TokenService): Router {
   const router = Router();
@@ -99,6 +107,24 @@ export function createSubjectsRouter(service: SubjectsService, tokenService: Tok
   router.get('/:id/natal-chart', auth, async (req, res, next) => {
     try {
       const result = await service.getChart(req.userId as string, req.params.id as string);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/:id/numerology', auth, async (req, res, next) => {
+    try {
+      const parsed = querySchema.safeParse(req.query);
+      if (!parsed.success) {
+        throw new InvalidRequestError(parsed.error.issues[0]?.message ?? 'Invalid query');
+      }
+      const referenceDate = parsed.data.referenceDate ?? new Date().toISOString().slice(0, 10);
+      const result = await service.getNumerology(
+        req.userId as string,
+        req.params.id as string,
+        referenceDate,
+      );
       res.status(200).json(result);
     } catch (err) {
       next(err);

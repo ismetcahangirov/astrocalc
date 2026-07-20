@@ -286,11 +286,13 @@ export function createApp(env: Env): Express {
   });
   app.use('/natal-chart', createNatalChartRouter(natalChartService, tokenService));
 
-  // Saved subjects (#s2): charts for other people. Reuses the same chart cache
-  // (namespaced per subject) and orb config as the user's own chart.
+  // Saved subjects (#s2, #64): charts and numerology profiles for other people.
+  // Reuses the same chart cache, numerology cache (each namespaced per subject)
+  // and orb config as the user's own chart/numerology.
   const subjectsService = createSubjectsService({
     repo: new DrizzleSubjectRepository(db),
     chartCache,
+    numerologyCache,
     orbConfig: orbConfigService,
   });
   app.use('/subjects', createSubjectsRouter(subjectsService, tokenService));
