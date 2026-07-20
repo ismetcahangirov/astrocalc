@@ -166,7 +166,7 @@ describe('PATCH /profile', () => {
   it('rejects a fullName that is empty or too long', async () => {
     const { app, accessToken } = await buildApp();
 
-    for (const fullName of ['', 'x'.repeat(121)]) {
+    for (const fullName of ['', '   ', 'x'.repeat(201)]) {
       const res = await request(app)
         .patch('/profile')
         .set('Authorization', `Bearer ${accessToken}`)
