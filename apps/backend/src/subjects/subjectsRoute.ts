@@ -42,6 +42,7 @@ const querySchema = z.object({
  *   DELETE /subjects/:id                -> delete one (204)
  *   GET    /subjects/:id/natal-chart    -> that person's chart
  *   GET    /subjects/:id/numerology     -> that person's numerology profile
+ *   GET    /subjects/:id/matrix         -> that person's Matrix of Destiny
  */
 export function createSubjectsRouter(service: SubjectsService, tokenService: TokenService): Router {
   const router = Router();
@@ -125,6 +126,17 @@ export function createSubjectsRouter(service: SubjectsService, tokenService: Tok
         req.params.id as string,
         referenceDate,
       );
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // No query parsing here, unlike `/numerology` above: the Matrix takes no
+  // reference date, because every arcana comes from the birth date alone.
+  router.get('/:id/matrix', auth, async (req, res, next) => {
+    try {
+      const result = await service.getMatrix(req.userId as string, req.params.id as string);
       res.status(200).json(result);
     } catch (err) {
       next(err);

@@ -9,6 +9,8 @@ import {
   type NumerologyResultCache,
 } from '../numerology/numerologyResultCache';
 import type { NumerologyCacheKeyInput } from '../numerology/numerologyCacheKey';
+import { InMemoryMatrixResultCache, type MatrixResultCache } from '../matrix/matrixResultCache';
+import type { MatrixCacheKeyInput } from '../matrix/matrixCacheKey';
 import { InMemorySubjectRepository } from './repository';
 import { createSubjectsService } from './subjectsService';
 
@@ -65,6 +67,32 @@ class CountingNumerologyResultCache implements NumerologyResultCache {
   }
 }
 
+/**
+ * Wraps the in-memory Matrix cache the same way, and for a sharper version of
+ * the same reason. A Matrix cache key is *only* the birth date, so two subjects
+ * born on the same day hash identically — if the service ever namespaced by
+ * `userId` instead of the subject `id`, one person's Matrix would be served for
+ * the other and an input/output comparison could not tell. `ownerIdsUsed` is
+ * the only thing that catches it.
+ */
+class CountingMatrixResultCache implements MatrixResultCache {
+  readonly inner = new InMemoryMatrixResultCache();
+  invalidated: string[] = [];
+  ownerIdsUsed: string[] = [];
+  get<T>(owner: string, key: MatrixCacheKeyInput) {
+    this.ownerIdsUsed.push(owner);
+    return this.inner.get<T>(owner, key);
+  }
+  set<T>(owner: string, key: MatrixCacheKeyInput, value: T) {
+    this.ownerIdsUsed.push(owner);
+    return this.inner.set(owner, key, value);
+  }
+  async invalidate(owner: string) {
+    this.invalidated.push(owner);
+    return this.inner.invalidate(owner);
+  }
+}
+
 function makeService() {
   const repo = new InMemorySubjectRepository();
   const cache = new CountingChartCache();
@@ -74,14 +102,16 @@ function makeService() {
     cache: new InMemoryOrbConfigCache(),
     config: { cacheTtlSeconds: 3600 },
   });
+  const matrixCache = new CountingMatrixResultCache();
   const service = createSubjectsService({
     repo,
     chartCache: cache,
     numerologyCache,
+    matrixCache,
     orbConfig,
     deriveTimezone: fakeDerive,
   });
-  return { repo, cache, numerologyCache, service };
+  return { repo, cache, numerologyCache, matrixCache, service };
 }
 
 describe('subjectsService — create', () => {
@@ -327,5 +357,105 @@ describe('subjectsService — numerology cache invalidation', () => {
 
     expect(numerologyCache.invalidated).toContain(subject.id);
     expect(cache.invalidated).toContain(subject.id);
+  });
+});
+
+describe('subjectsService — getMatrix', () => {
+  it('computes the Matrix for a subject the caller owns', async () => {
+    const { service } = makeService();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1990-11-22' });
+
+    const result = await service.getMatrix('user-1', subject.id);
+
+    // The method spec's §6 reference case: day 22 kept as 22, centre 14.
+    expect(result.matrix.core).toMatchObject({ day: 22, month: 11, year: 19, sum: 7, centre: 14 });
+    expect(result.interpretation).toBeNull();
+  });
+
+  it('refuses a subject belonging to another user', async () => {
+    const { service } = makeService();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1990-11-22' });
+
+    await expect(service.getMatrix('user-2', subject.id)).rejects.toMatchObject({
+      code: 'subject_not_found',
+    });
+  });
+
+  it('namespaces the cache under the SUBJECT id, never the user id', async () => {
+    // This matters more for the Matrix than for either sibling. Its cache key is
+    // *only* the birth date, so two subjects born on the same day hash
+    // identically — namespacing by `userId` would serve one person's Matrix for
+    // the other, and comparing the two results could not reveal it because they
+    // would be legitimately equal. Only the recorded owner id catches it.
+    const { service, matrixCache } = makeService();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1990-11-22' });
+
+    await service.getMatrix('user-1', subject.id);
+
+    expect(matrixCache.ownerIdsUsed.length).toBeGreaterThan(0);
+    expect(new Set(matrixCache.ownerIdsUsed)).toEqual(new Set([subject.id]));
+    expect(matrixCache.ownerIdsUsed).not.toContain('user-1');
+  });
+
+  it('caches two same-birthday subjects separately', async () => {
+    const { service, matrixCache } = makeService();
+    const a = await service.create('user-1', { name: 'Twin A', birthDate: '1990-11-22' });
+    const b = await service.create('user-1', { name: 'Twin B', birthDate: '1990-11-22' });
+
+    await service.getMatrix('user-1', a.id);
+    await service.getMatrix('user-1', b.id);
+
+    expect(new Set(matrixCache.ownerIdsUsed)).toEqual(new Set([a.id, b.id]));
+  });
+
+  it('throws incomplete_profile when the subject has no birth date', async () => {
+    const { service } = makeService();
+    const subject = await service.create('user-1', { name: 'No birth date' });
+
+    await expect(service.getMatrix('user-1', subject.id)).rejects.toMatchObject({
+      code: 'incomplete_profile',
+    });
+  });
+});
+
+describe('subjectsService — Matrix cache invalidation', () => {
+  it('invalidates the Matrix on a birthDate update', async () => {
+    const { service, matrixCache } = makeService();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1990-01-01' });
+
+    await service.update('user-1', subject.id, { birthDate: '1991-01-01' });
+
+    expect(matrixCache.invalidated).toEqual([subject.id]);
+  });
+
+  it('does NOT invalidate the Matrix on a name-only update', async () => {
+    // The narrowest of the three triggers: numerology must drop its cache on a
+    // rename because every name-derived number is a letter sum, but no letter of
+    // the name reaches the Matrix.
+    const { service, matrixCache, numerologyCache } = makeService();
+    const subject = await service.create('user-1', { name: 'Granma', birthDate: '1990-01-01' });
+
+    await service.update('user-1', subject.id, { name: 'Grandma' });
+
+    expect(matrixCache.invalidated).toEqual([]);
+    expect(numerologyCache.invalidated).toEqual([subject.id]);
+  });
+
+  it('does not invalidate the Matrix on a birth-place-only update', async () => {
+    const { service, matrixCache } = makeService();
+    const subject = await service.create('user-1', { name: 'Traveler', ...BAKU });
+
+    await service.update('user-1', subject.id, { ...LONDON });
+
+    expect(matrixCache.invalidated).toEqual([]);
+  });
+
+  it('invalidates the Matrix on remove', async () => {
+    const { service, matrixCache } = makeService();
+    const subject = await service.create('user-1', { name: 'Temp' });
+
+    await service.remove('user-1', subject.id);
+
+    expect(matrixCache.invalidated).toContain(subject.id);
   });
 });

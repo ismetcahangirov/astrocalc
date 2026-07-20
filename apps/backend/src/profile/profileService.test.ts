@@ -17,8 +17,14 @@ function build() {
       numerologyInvalidated.push(userId);
     },
   };
-  const service = createProfileService({ repo, cache, numerologyCache });
-  return { repo, service, invalidated, numerologyInvalidated };
+  const matrixInvalidated: string[] = [];
+  const matrixCache: ChartCacheInvalidator = {
+    async invalidate(userId: string) {
+      matrixInvalidated.push(userId);
+    },
+  };
+  const service = createProfileService({ repo, cache, numerologyCache, matrixCache });
+  return { repo, service, invalidated, numerologyInvalidated, matrixInvalidated };
 }
 
 async function createUser(repo: InMemoryUserRepository) {
@@ -159,6 +165,56 @@ describe('createProfileService.updateProfile — numerology cache invalidation',
     await service.updateProfile(userId, { displayName: 'Ada L.' });
 
     expect(numerologyInvalidated).toEqual([]);
+  });
+});
+
+describe('createProfileService.updateProfile — Matrix cache invalidation', () => {
+  it('invalidates all three caches when birthDate changes — the one field all of them read', async () => {
+    const { repo, service, invalidated, numerologyInvalidated, matrixInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthDate: '1990-05-12' });
+
+    expect(matrixInvalidated).toEqual([userId]);
+    expect(numerologyInvalidated).toEqual([userId]);
+    expect(invalidated).toEqual([userId]);
+  });
+
+  it('does not invalidate the Matrix cache when only fullName changes', async () => {
+    // The Matrix is derived from the birth date alone — no letter of the name
+    // enters it. This is the narrowest of the three triggers, and the test that
+    // stops a future edit from folding `MATRIX_DATA_FIELDS` into the numerology
+    // list "because birthDate is in both".
+    const { repo, service, matrixInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { fullName: 'Augusta Ada King' });
+
+    expect(matrixInvalidated).toEqual([]);
+  });
+
+  it('does not invalidate the Matrix cache for birth time or birth place edits', async () => {
+    const { repo, service, matrixInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthTime: '10:30', birthTimeKnown: true });
+    await service.updateProfile(userId, { birthPlaceName: 'Baku' });
+
+    expect(matrixInvalidated).toEqual([]);
+  });
+
+  it('does not invalidate when birthDate is resent with its existing value', async () => {
+    const { repo, service, matrixInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthDate: '1990-05-12' });
+    matrixInvalidated.length = 0; // reset after the initial (real) change
+
+    // The onboarding flow re-sends the whole form on its final step, so a
+    // no-op resend must not drop anything.
+    await service.updateProfile(userId, { birthDate: '1990-05-12' });
+
+    expect(matrixInvalidated).toEqual([]);
   });
 });
 

@@ -8,6 +8,7 @@ export default function Profile() {
       onManageAccount={() => router.push('/account')}
       onViewChart={() => router.push('/natal-chart')}
       onViewNumerology={() => router.push('/numerology')}
+      onViewMatrix={() => router.push('/matrix')}
       onViewPeople={() => router.push('/people')}
     />
   );

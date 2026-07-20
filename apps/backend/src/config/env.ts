@@ -66,6 +66,16 @@ const envSchema = z.object({
     .int()
     .nonnegative()
     .default(60 * 60 * 24 * 180),
+  // Matrix of Destiny result cache (#73). Same convention as the two above,
+  // but note what does *not* apply here: a Matrix key is scoped to an immutable
+  // birth date, so — unlike a month-scoped numerology key — nothing orphans an
+  // entry except an explicit invalidate. The TTL is the backstop for that one
+  // case (a birth-date correction), not a volume control; set `0` for no TTL.
+  MATRIX_CACHE_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(60 * 60 * 24 * 180),
   // Natal-chart interpretation text (#18). An admin edit invalidates the
   // specific cache entry, so a generous TTL is safe here.
   INTERPRETATION_CACHE_TTL_SECONDS: z.coerce

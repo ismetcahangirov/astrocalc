@@ -33,10 +33,20 @@ function numerologyReady(subject: Subject): boolean {
   return !!subject.birthDate && subject.name.trim() !== '';
 }
 
+/**
+ * The Matrix needs less than either of the others: a birth *date* and nothing
+ * else — no place, no time, and not even a name. So a person whose row offers
+ * neither a chart nor numbers can still offer a Matrix.
+ */
+function matrixReady(subject: Subject): boolean {
+  return !!subject.birthDate;
+}
+
 interface PeopleScreenProps {
   onOpenSelfChart: () => void;
   onOpenSubjectChart: (id: string, name: string) => void;
   onOpenSubjectNumerology?: (id: string, name: string) => void;
+  onOpenSubjectMatrix?: (id: string, name: string) => void;
   onAddSubject: () => void;
   onEditSubject: (id: string) => void;
 }
@@ -51,6 +61,7 @@ export function PeopleScreen({
   onOpenSelfChart,
   onOpenSubjectChart,
   onOpenSubjectNumerology,
+  onOpenSubjectMatrix,
   onAddSubject,
   onEditSubject,
 }: PeopleScreenProps) {
@@ -171,6 +182,15 @@ export function PeopleScreen({
                   hitSlop={8}
                 >
                   <Text style={styles.numerologyText}>{t('people.viewNumbers')}</Text>
+                </Pressable>
+              ) : null}
+              {onOpenSubjectMatrix && matrixReady(subject) ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onOpenSubjectMatrix(subject.id, subject.name)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.numerologyText}>{t('people.viewMatrix')}</Text>
                 </Pressable>
               ) : null}
               <Pressable

@@ -52,3 +52,25 @@ export const NUMEROLOGY_DATA_FIELDS = [
 export function touchesNumerologyData(patch: ProfileUpdateInput): boolean {
   return NUMEROLOGY_DATA_FIELDS.some((field) => field in patch);
 }
+
+/**
+ * Matrix-relevant fields (#73): the birth date, and only the birth date. Every
+ * arcana in the Matrix of Destiny is derived from the day, month and year — the
+ * birth *time*, *place* and the full *name* have no bearing on it.
+ *
+ * A third list rather than a reuse of either existing one, for the same reason
+ * {@link NUMEROLOGY_DATA_FIELDS} is separate from {@link BIRTH_DATA_FIELDS}:
+ * folding the Matrix into the birth-data list would throw away a valid Matrix
+ * every time a user corrected their birth *place*, and folding it into the
+ * numerology list would throw one away on every name correction. This list
+ * being a strict subset of both is precisely why it must stand alone — a subset
+ * is invalidated *more* often than it needs to be if it is merged upward.
+ */
+export const MATRIX_DATA_FIELDS = [
+  'birthDate',
+] as const satisfies readonly (keyof ProfileUpdateInput)[];
+
+/** Whether a patch sets the one field the Matrix calculation depends on. */
+export function touchesMatrixData(patch: ProfileUpdateInput): boolean {
+  return MATRIX_DATA_FIELDS.some((field) => field in patch);
+}
