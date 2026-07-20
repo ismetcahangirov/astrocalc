@@ -211,6 +211,7 @@ const en = {
   'numerology.fullNameLabel': 'Full birth name',
   'numerology.fullNameHint':
     'The complete name on your birth certificate, including middle names. Your numerology is calculated letter by letter from it, so it may differ from the display name above.',
+  'numerology.fullNameTooLong': 'Full birth name must be 200 characters or fewer.',
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -422,6 +423,7 @@ const az: Record<keyof typeof en, string> = {
   'numerology.fullNameLabel': 'Tam doğum adı',
   'numerology.fullNameHint':
     'Doğum haqqında şəhadətnamənizdəki tam ad, ata adı da daxil olmaqla. Numerologiyanız hərf-hərf bu addan hesablanır, ona görə də yuxarıdakı görünən addan fərqlənə bilər.',
+  'numerology.fullNameTooLong': 'Tam doğum adı 200 simvoldan çox ola bilməz.',
 };
 
 export type TranslationKey = keyof typeof en;

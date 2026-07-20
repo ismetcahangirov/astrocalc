@@ -95,7 +95,13 @@ function toPatch(form: FormState): ProfileUpdateInput {
 }
 
 /** Client-side mirror of the backend's PATCH validation, so bad input is caught before the round trip. */
+/** Mirrors the backend's `fullName` ceiling, so an over-long name fails inline. */
+const FULL_NAME_MAX = 200;
+
 function validate(form: FormState, t: (key: TranslationKey) => string): string | null {
+  if (form.fullName.trim().length > FULL_NAME_MAX) {
+    return t('numerology.fullNameTooLong');
+  }
   if (form.avatarUrl.trim() !== '' && !URL_RE.test(form.avatarUrl.trim())) {
     return t('profile.avatarUrl.invalid');
   }
