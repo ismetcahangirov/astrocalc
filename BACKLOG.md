@@ -6,6 +6,26 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Numerology + Matrix of Destiny roadmap — Spec 3
+  (`docs/superpowers/specs/2026-07-20-numerology-and-matrix-roadmap-design.md`),
+  #56. Two of the four calculation domains README promises had **no
+  implementation at all** — no calc-engine module, no exported type, no test,
+  no route, no table, no screen, no i18n key (every "matrix" hit in the repo
+  was a forward-looking comment or the unrelated "465-subject matrix" of
+  interpretation rows). Decomposed both into three epics and 23 sub-issues:
+  `[EPIC] Numerology` (#57, M1, 9 subs), `[EPIC] Matrix of Destiny` (#67, M2,
+  8 subs), `[EPIC] Numerology and Matrix interpretation content` (#76, M2,
+  6 subs). Key decisions: Matrix follows the **Natalia Ladini** method (the
+  Matrix has no canonical standard, so picking a school is a prerequisite for
+  writing a single meaningful test — hence #68 is a research issue that gates
+  the rest); numerology ships the full package; **calculation first, content
+  second** — the ~410 subject keys × 4 locales are ~80% of the work by volume,
+  so screens ship with an empty reading section rather than blocking on text;
+  and no generic "calculation plugin" layer (two consumers is too few to
+  derive one). Shared prerequisite identified: `InterpretationCategory` and
+  the `zod` enum at `interpretationRoute.ts:9` are astrology-only and must be
+  widened (#58) before either epic can store reading text — the
+  `interpretation_texts` table itself needs no migration.
 - Accurate birth-data entry (date/time pickers + OSM map + auto-timezone) —
   Spec 1 (`docs/superpowers/specs/2026-07-19-accurate-birth-data-entry-design.md`).
   The accuracy keystone: the birth-place IANA timezone is now derived
