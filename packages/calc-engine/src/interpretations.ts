@@ -166,6 +166,9 @@ export type NumerologyNumberKind =
   | 'challenge-3'
   | 'challenge-4';
 
+/** Every value a full reduction can land on before master numbers are considered. */
+const DIGITS_1_9: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
 /**
  * Values that carry master numbers: 1–9 plus 11, 22, 33. Only valid for kinds
  * whose formula can actually sum high enough to reach 33 — name-derived
@@ -173,26 +176,34 @@ export type NumerologyNumberKind =
  * sums a life path (max 22) with an expression (max 33), so 33 is reachable
  * there too.
  */
-const MASTER_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22, 33];
+const MASTER_RANGE: readonly number[] = [...DIGITS_1_9, 11, 22, 33];
 /**
  * Masters reachable from Life Path, which sums three already-reduced 1–9
  * components (month + day + year), for a max of 27. 22 fits; 33 (which needs
  * a component sum of at least 33) does not.
+ *
+ * Textually identical to {@link PINNACLE_THIRD_RANGE} today, but derived from
+ * an unrelated formula (a 3-component sum vs. a sum of two pinnacles) — do
+ * not merge them, or an independent domain fact changing would silently move
+ * the other.
  */
-const LIFE_PATH_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22];
+const LIFE_PATH_RANGE: readonly number[] = [...DIGITS_1_9, 11, 22];
 /**
  * Masters reachable by Pinnacles 1, 2 and 4, each of which sums two
  * already-reduced 1–9 components for a max of 18. Only 11 fits under that
  * ceiling; 22 and 33 do not.
  */
-const PINNACLE_PAIR_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11];
+const PINNACLE_PAIR_RANGE: readonly number[] = [...DIGITS_1_9, 11];
 /**
  * Masters reachable by Pinnacle 3, which sums Pinnacles 1 and 2 — each in
  * {1..9, 11} — for a max of 11 + 11 = 22. 22 fits; 33 does not.
+ *
+ * Textually identical to {@link LIFE_PATH_RANGE} today, but derived from an
+ * unrelated formula — see that constant's comment for why they stay separate.
  */
-const PINNACLE_THIRD_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22];
+const PINNACLE_THIRD_RANGE: readonly number[] = [...DIGITS_1_9, 11, 22];
 /** Values reduced to a single digit: 1–9. */
-const SINGLE_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const SINGLE_RANGE: readonly number[] = DIGITS_1_9;
 /** Challenges uniquely include 0, and never exceed 8. */
 const CHALLENGE_RANGE: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 /** Birthday is the raw day of the month, never reduced. */
@@ -219,24 +230,16 @@ const NUMEROLOGY_VALUE_RANGES: Record<NumerologyNumberKind, readonly number[]> =
 };
 
 /**
- * `'pinnacle'`/`'challenge'` without a position index still have a known
- * range. Pinnacle uses the widest of the three pinnacle ranges
- * ({@link PINNACLE_THIRD_RANGE}, which includes 22) so a caller passing the
- * loose kind is never rejected for a value that is valid at some position.
+ * Build the subject key for a numerology number, e.g. `life-path-7`. `kind`
+ * is always position-indexed (`pinnacle-1`…`pinnacle-4`,
+ * `challenge-1`…`challenge-4`) — there is no unsuffixed `'pinnacle'`/
+ * `'challenge'` alias, because every real caller (the planned `pinnacles()`
+ * and `challenges()` compute functions) always knows its position, and a
+ * loose `'pinnacle'` kind would read confusingly like the exact kind
+ * `'pinnacle-1'` once the value is appended.
  */
-function rangeForLooseKind(kind: string): readonly number[] | null {
-  if (kind === 'pinnacle') return PINNACLE_THIRD_RANGE;
-  if (kind === 'challenge') return CHALLENGE_RANGE;
-  return null;
-}
-
-/**
- * Build the subject key for a numerology number, e.g. `life-path-7`.
- * Accepts the unsuffixed `pinnacle`/`challenge` kinds too, so callers that
- * do not care about the position can pass `'challenge'` and a value.
- */
-export function numerologySubjectKey(kind: string, value: number): string {
-  const range = NUMEROLOGY_VALUE_RANGES[kind as NumerologyNumberKind] ?? rangeForLooseKind(kind);
+export function numerologySubjectKey(kind: NumerologyNumberKind, value: number): string {
+  const range = NUMEROLOGY_VALUE_RANGES[kind];
   if (!range) {
     throw new CalcEngineError('invalid_input', `unknown numerology kind: ${kind}`);
   }

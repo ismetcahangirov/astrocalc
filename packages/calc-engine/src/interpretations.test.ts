@@ -9,6 +9,7 @@ import {
   numerologySubjectKey,
   planetHouseSubjectKey,
   planetSignSubjectKey,
+  type NumerologyNumberKind,
 } from './interpretations';
 
 describe('SUPPORTED_LOCALES', () => {
@@ -68,13 +69,27 @@ describe('numerology subject keys', () => {
   it('builds a stable key per number kind and value', () => {
     expect(numerologySubjectKey('life-path', 7)).toBe('life-path-7');
     expect(numerologySubjectKey('personal-year', 1)).toBe('personal-year-1');
-    expect(numerologySubjectKey('challenge', 0)).toBe('challenge-0');
+    expect(numerologySubjectKey('challenge-1', 0)).toBe('challenge-1-0');
   });
 
   it('rejects a value outside the kind range', () => {
     expect(() => numerologySubjectKey('life-path', 10)).toThrow(CalcEngineError);
     expect(() => numerologySubjectKey('birthday', 32)).toThrow(CalcEngineError);
-    expect(() => numerologySubjectKey('challenge', 9)).toThrow(CalcEngineError);
+    expect(() => numerologySubjectKey('challenge-1', 9)).toThrow(CalcEngineError);
+  });
+
+  it('rejects an unrecognized kind', () => {
+    // Cast through unknown: the point is to exercise the runtime guard that
+    // protects against a JS caller or an `as` at a call site.
+    const bad = (kind: string) => numerologySubjectKey(kind as NumerologyNumberKind, 5);
+    expect(() => bad('lifepath')).toThrow(CalcEngineError);
+    expect(() => bad('')).toThrow(CalcEngineError);
+  });
+
+  it('rejects non-integer and negative values', () => {
+    expect(() => numerologySubjectKey('life-path', 5.5)).toThrow(CalcEngineError);
+    expect(() => numerologySubjectKey('life-path', -1)).toThrow(CalcEngineError);
+    expect(() => numerologySubjectKey('life-path', Number.NaN)).toThrow(CalcEngineError);
   });
 });
 
