@@ -19,15 +19,21 @@ describe('generateSeedInterpretations', () => {
     expect(generatedIds).toEqual(requiredIds);
   });
 
-  it('has 2,600 rows: 650 subjects x 4 locales (465 astrology + 185 numerology)', () => {
-    expect(required.length).toBe(650 * 4);
-    expect(rows.length).toBe(650 * 4);
+  it('has 5,328 rows: 1,332 subjects x 4 locales (465 astrology + 185 numerology + 682 matrix)', () => {
+    expect(required.length).toBe(1332 * 4);
+    expect(rows.length).toBe(1332 * 4);
   });
 
   it('covers all 185 numerology subjects, 4 locales each', () => {
     const numerology = rows.filter((r) => r.category === 'numerology');
     expect(numerology.length).toBe(185 * 4);
     expect(new Set(numerology.map((r) => r.subjectKey)).size).toBe(185);
+  });
+
+  it('covers all 682 matrix subjects, 4 locales each', () => {
+    const matrix = rows.filter((r) => r.category === 'matrix');
+    expect(matrix.length).toBe(682 * 4);
+    expect(new Set(matrix.map((r) => r.subjectKey)).size).toBe(682);
   });
 
   it('every row has substantial, non-placeholder content', () => {
@@ -122,6 +128,44 @@ describe('generateSeedInterpretations', () => {
 
   it('writes numerology text in all four locales for a subject, all different', () => {
     const byLocale = SUPPORTED_LOCALES.map((locale) => numerologyRow('soul-urge-11', locale));
+    expect(byLocale.every((c) => typeof c === 'string' && c.length >= 40)).toBe(true);
+    expect(new Set(byLocale).size).toBe(SUPPORTED_LOCALES.length);
+  });
+
+  const matrixRow = (subjectKey: string, locale: string) =>
+    rows.find((r) => r.category === 'matrix' && r.subjectKey === subjectKey && r.locale === locale)
+      ?.content;
+
+  it('produces a legible matrix base-arcana example (#80)', () => {
+    expect(matrixRow('arcana-1', 'en')).toBe(
+      'Arcana 1 — the Magician — stands for will, skill, and the power to turn ideas into action. ' +
+        'This is its base meaning, the theme it carries wherever it falls in your Matrix.',
+    );
+  });
+
+  it('produces a legible matrix position-specific example (#81)', () => {
+    expect(matrixRow('comfort-zone-19', 'en')).toBe(
+      'Comfort zone — the centre — the energy you rest in and return to. ' +
+        'Here Arcana 19 (the Sun) brings joy, vitality, and open success.',
+    );
+  });
+
+  it('reads the same arcana differently at the base and at a position', () => {
+    // Same arcana (the Emperor, 4), same meaning phrase, but the base text and
+    // each position frame differ — the reason #81 is written per position.
+    const base = matrixRow('arcana-4', 'en');
+    const dayPoint = matrixRow('day-4', 'en');
+    const fathersLine = matrixRow('paternal-line-4', 'en');
+    expect(new Set([base, dayPoint, fathersLine]).size).toBe(3);
+    expect(dayPoint).toContain('inborn portrait');
+    expect(fathersLine).toContain("passed down your father's line");
+    for (const content of [base, dayPoint, fathersLine]) {
+      expect(content).toContain('authority, structure, and stable leadership');
+    }
+  });
+
+  it('writes matrix text in all four locales for a subject, all different', () => {
+    const byLocale = SUPPORTED_LOCALES.map((locale) => matrixRow('chakra-anahata-6', locale));
     expect(byLocale.every((c) => typeof c === 'string' && c.length >= 40)).toBe(true);
     expect(new Set(byLocale).size).toBe(SUPPORTED_LOCALES.length);
   });

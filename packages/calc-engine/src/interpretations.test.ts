@@ -5,10 +5,13 @@ import {
   SUPPORTED_LOCALES,
   aspectSubjectKey,
   listInterpretationSubjects,
+  listMatrixSubjects,
   listNumerologySubjects,
+  matrixSubjectKey,
   numerologySubjectKey,
   planetHouseSubjectKey,
   planetSignSubjectKey,
+  type MatrixSubjectKind,
   type NumerologyNumberKind,
 } from './interpretations';
 
@@ -117,11 +120,10 @@ describe('listNumerologySubjects', () => {
 
   it('is folded into listInterpretationSubjects as of #82, on top of the 465 astrology subjects', () => {
     const all = listInterpretationSubjects();
-    // 465 astrology + 185 numerology = 650. Matrix is still absent (its
-    // position list is not fixed until #68), so nothing beyond these two.
-    expect(all).toHaveLength(650);
+    // 465 astrology + 185 numerology + 682 matrix = 1332.
+    expect(all).toHaveLength(1332);
     expect(all.filter((s) => s.category === 'numerology')).toHaveLength(185);
-    expect(all.some((s) => s.category === 'matrix')).toBe(false);
+    expect(all.filter((s) => s.category === 'matrix')).toHaveLength(682);
     // Every numerology subject listNumerologySubjects() enumerates is present.
     const foldedKeys = new Set(
       all.filter((s) => s.category === 'numerology').map((s) => s.subjectKey),
@@ -145,5 +147,59 @@ describe('listNumerologySubjects', () => {
     // Name-derived numbers are unbounded, so all three masters stay.
     expect(keys.has('expression-33')).toBe(true);
     expect(keys.has('maturity-33')).toBe(true);
+  });
+});
+
+describe('listMatrixSubjects', () => {
+  const subjects = listMatrixSubjects();
+
+  it('enumerates 682 subjects: 22 base arcana + 30 positions x 22 arcana', () => {
+    // 'arcana' (base, #80) + 30 named positions (#81), each across the 22 Major
+    // Arcana: 31 kinds x 22 = 682.
+    expect(subjects).toHaveLength(31 * 22);
+    expect(subjects).toHaveLength(682);
+    expect(subjects.every((s) => s.category === 'matrix')).toBe(true);
+  });
+
+  it('has no duplicate keys', () => {
+    expect(new Set(subjects.map((s) => s.subjectKey)).size).toBe(subjects.length);
+  });
+
+  it('keys the base meanings and the position-specific meanings distinctly', () => {
+    const keys = new Set(subjects.map((s) => s.subjectKey));
+    expect(keys.has('arcana-1')).toBe(true); // #80 base
+    expect(keys.has('arcana-22')).toBe(true);
+    expect(keys.has('comfort-zone-13')).toBe(true); // #81 position-specific
+    expect(keys.has('paternal-line-7')).toBe(true);
+    expect(keys.has('chakra-muladhara-22')).toBe(true);
+    // Every kind spans exactly the 22 arcana, 1..22.
+    for (const arcana of [1, 22]) expect(keys.has(`day-${arcana}`)).toBe(true);
+    expect(keys.has('day-0')).toBe(false);
+    expect(keys.has('day-23')).toBe(false);
+  });
+
+  it('is folded into listInterpretationSubjects', () => {
+    const folded = new Set(
+      listInterpretationSubjects()
+        .filter((s) => s.category === 'matrix')
+        .map((s) => s.subjectKey),
+    );
+    expect(subjects.every((s) => folded.has(s.subjectKey))).toBe(true);
+    expect(folded.size).toBe(682);
+  });
+});
+
+describe('matrixSubjectKey', () => {
+  it('builds `${kind}-${arcana}` for a valid arcana', () => {
+    expect(matrixSubjectKey('arcana', 1)).toBe('arcana-1');
+    expect(matrixSubjectKey('comfort-zone', 22)).toBe('comfort-zone-22');
+    expect(matrixSubjectKey('chakra-anahata', 6)).toBe('chakra-anahata-6');
+  });
+
+  it('rejects an arcana outside 1..22', () => {
+    const kind: MatrixSubjectKind = 'day';
+    expect(() => matrixSubjectKey(kind, 0)).toThrow(CalcEngineError);
+    expect(() => matrixSubjectKey(kind, 23)).toThrow(CalcEngineError);
+    expect(() => matrixSubjectKey(kind, 1.5)).toThrow(CalcEngineError);
   });
 });

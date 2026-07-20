@@ -1,6 +1,8 @@
 import {
+  ARCANA_VALUES,
   aspectSubjectKey,
   INTERPRETED_BODIES,
+  matrixSubjectKey,
   numerologySubjectKey,
   planetHouseSubjectKey,
   planetSignSubjectKey,
@@ -9,6 +11,7 @@ import {
   type CelestialBody,
   type InterpretationCategory,
   type InterpretationLocale,
+  type MatrixSubjectKind,
   type NumerologyNumberKind,
   type ZodiacSign,
 } from '@astrocalc/calc-engine';
@@ -19,14 +22,14 @@ import {
  * enumerates, in all four {@link SUPPORTED_LOCALES}. Each language sentence is
  * composed from a small bank of hand-written phrases — for astrology the
  * planet's core theme, the sign/house's quality, the aspect's dynamic; for
- * numerology the position's frame and the number's meaning — plugged into a
- * fixed per-locale sentence template, so every one of the 2,600 rows (650
- * subjects × 4 locales) is unique, complete prose rather than a copy-pasted
- * placeholder.
+ * numerology the position's frame and the number's meaning; for the Matrix the
+ * arcana's meaning and the octagram position's frame — plugged into a fixed
+ * per-locale sentence template, so every one of the 5,328 rows (1,332 subjects
+ * × 4 locales) is unique, complete prose rather than a copy-pasted placeholder.
  *
  * Coverage: 465 astrology subjects (#18) + 185 numerology subjects (content
- * epic #76: #77/#78/#79). Matrix of Destiny (#67) joins once #68 fixes its
- * position list — see `listInterpretationSubjects()` in calc-engine.
+ * epic #76: #77/#78/#79) + 682 Matrix subjects (#76: #80 base arcana, #81
+ * position-specific) — the full set `listInterpretationSubjects()` enumerates.
  *
  * This is a *baseline*: the admin panel (EPIC 10) can overwrite any row with
  * bespoke copy later without touching this generator, via the same
@@ -1052,6 +1055,551 @@ function composeNumerology(
   }
 }
 
+// ── Matrix of Destiny (#67 content epic #76: base arcana #80, position-specific ─
+//    #81) ────────────────────────────────────────────────────────────────────
+//
+// Two blocks, same compositional approach as astrology and numerology above:
+//
+//  - #80 — the base meaning of each of the 22 Major Arcana, the theme it carries
+//    wherever it lands (subject `arcana-{1..22}`).
+//  - #81 — that same arcana read at each of the 30 named positions of the
+//    octagram (subject `${position}-{1..22}`). Written per position, because the
+//    Emperor on the day point and the Emperor on the father's line are different
+//    readings — the position frame carries the difference, the arcana meaning is
+//    the shared thread.
+//
+// The 682 keys are owned by `listMatrixSubjects()` in calc-engine;
+// `matrixSubjectKey()` rejects any arcana outside 1–22, and `seedContent.test.ts`
+// checks this generator against that list, so nothing here can drift from it.
+
+/** The 22 Major Arcana names, per locale. Proper nouns — transliterated, not translated. */
+const ARCANA_NAME: Record<number, LocalizedText> = {
+  1: { en: 'the Magician', az: 'Sehrbaz', tr: 'Büyücü', ru: 'Маг' },
+  2: { en: 'the High Priestess', az: 'Baş Kahin', tr: 'Başrahibe', ru: 'Верховная Жрица' },
+  3: { en: 'the Empress', az: 'İmperatriça', tr: 'İmparatoriçe', ru: 'Императрица' },
+  4: { en: 'the Emperor', az: 'İmperator', tr: 'İmparator', ru: 'Император' },
+  5: { en: 'the Hierophant', az: 'Baş Rahib', tr: 'Başrahip', ru: 'Иерофант' },
+  6: { en: 'the Lovers', az: 'Aşiqlər', tr: 'Âşıklar', ru: 'Влюблённые' },
+  7: { en: 'the Chariot', az: 'Araba', tr: 'Savaş Arabası', ru: 'Колесница' },
+  8: { en: 'Justice', az: 'Ədalət', tr: 'Adalet', ru: 'Справедливость' },
+  9: { en: 'the Hermit', az: 'Zahid', tr: 'Ermiş', ru: 'Отшельник' },
+  10: { en: 'the Wheel of Fortune', az: 'Tale Çarxı', tr: 'Kader Çarkı', ru: 'Колесо Фортуны' },
+  11: { en: 'Strength', az: 'Güc', tr: 'Güç', ru: 'Сила' },
+  12: { en: 'the Hanged Man', az: 'Asılmış Adam', tr: 'Asılan Adam', ru: 'Повешенный' },
+  13: { en: 'Death', az: 'Ölüm', tr: 'Ölüm', ru: 'Смерть' },
+  14: { en: 'Temperance', az: 'Mötədillik', tr: 'Denge', ru: 'Умеренность' },
+  15: { en: 'the Devil', az: 'Şeytan', tr: 'Şeytan', ru: 'Дьявол' },
+  16: { en: 'the Tower', az: 'Qüllə', tr: 'Kule', ru: 'Башня' },
+  17: { en: 'the Star', az: 'Ulduz', tr: 'Yıldız', ru: 'Звезда' },
+  18: { en: 'the Moon', az: 'Ay', tr: 'Ay', ru: 'Луна' },
+  19: { en: 'the Sun', az: 'Günəş', tr: 'Güneş', ru: 'Солнце' },
+  20: { en: 'Judgement', az: 'Mühakimə', tr: 'Mahkeme', ru: 'Суд' },
+  21: { en: 'the World', az: 'Dünya', tr: 'Dünya', ru: 'Мир' },
+  22: { en: 'the Fool', az: 'Dəli', tr: 'Deli', ru: 'Шут' },
+};
+
+/** Each arcana's core meaning as a noun phrase — slots into "brings …" / "проявляется как …". */
+const ARCANA_MEANING: Record<number, LocalizedText> = {
+  1: {
+    en: 'will, skill, and the power to turn ideas into action',
+    az: 'iradə, bacarıq və fikirləri əmələ çevirmə gücü',
+    tr: 'irade, beceri ve fikirleri eyleme dönüştürme gücü',
+    ru: 'воля, умение и сила воплощать замыслы в дела',
+  },
+  2: {
+    en: 'intuition, inner wisdom, and knowledge kept below the surface',
+    az: 'intuisiya, daxili müdriklik və səthin altında saxlanan bilik',
+    tr: 'sezgi, iç bilgelik ve yüzeyin altında saklı bilgi',
+    ru: 'интуиция, внутренняя мудрость и скрытое знание',
+  },
+  3: {
+    en: 'fertility, abundance, and nurturing creativity',
+    az: 'bərəkət, bolluq və qayğıkeş yaradıcılıq',
+    tr: 'bereket, bolluk ve şefkatli yaratıcılık',
+    ru: 'плодородие, изобилие и заботливое творчество',
+  },
+  4: {
+    en: 'authority, structure, and stable leadership',
+    az: 'hakimiyyət, struktur və sabit liderlik',
+    tr: 'otorite, yapı ve istikrarlı liderlik',
+    ru: 'власть, структура и устойчивое лидерство',
+  },
+  5: {
+    en: 'tradition, teaching, and guidance by shared values',
+    az: 'ənənə, təlim və ortaq dəyərlərlə istiqamətlənmə',
+    tr: 'gelenek, öğreti ve ortak değerlerle yönlenme',
+    ru: 'традиция, наставничество и опора на общие ценности',
+  },
+  6: {
+    en: 'love, meaningful choice, and union',
+    az: 'sevgi, mənalı seçim və birlik',
+    tr: 'sevgi, anlamlı seçim ve birliktelik',
+    ru: 'любовь, значимый выбор и союз',
+  },
+  7: {
+    en: 'drive, self-command, and victory won by control',
+    az: 'həvəs, özünəhakimlik və nəzarətlə qazanılan qələbə',
+    tr: 'azim, öz denetimi ve denetimle kazanılan zafer',
+    ru: 'напор, самообладание и победа через контроль',
+  },
+  8: {
+    en: 'fairness, balance, and the law of cause and effect',
+    az: 'ədalət, tarazlıq və səbəb-nəticə qanunu',
+    tr: 'adalet, denge ve neden-sonuç yasası',
+    ru: 'справедливость, равновесие и закон причины и следствия',
+  },
+  9: {
+    en: 'introspection, solitude, and hard-won wisdom',
+    az: 'daxili düşüncə, tənhalıq və çətinliklə qazanılmış müdriklik',
+    tr: 'iç gözlem, yalnızlık ve zorlukla kazanılmış bilgelik',
+    ru: 'самопознание, уединение и трудно добытая мудрость',
+  },
+  10: {
+    en: 'cycles, turning points, and the turns of fate',
+    az: 'dövrlər, dönüş nöqtələri və talenin gərdişi',
+    tr: 'döngüler, dönüm noktaları ve kaderin dönüşleri',
+    ru: 'циклы, поворотные точки и повороты судьбы',
+  },
+  11: {
+    en: 'courage, inner strength, and patient self-mastery',
+    az: 'cəsarət, daxili güc və səbirli özünəhakimlik',
+    tr: 'cesaret, iç güç ve sabırlı öz hâkimiyet',
+    ru: 'мужество, внутренняя сила и терпеливое владение собой',
+  },
+  12: {
+    en: 'surrender, a fresh perspective, and letting go',
+    az: 'təslimiyyət, yeni baxış və buraxma',
+    tr: 'teslimiyet, yeni bir bakış ve bırakabilme',
+    ru: 'смирение, новый взгляд и умение отпускать',
+  },
+  13: {
+    en: 'endings, transformation, and rebirth',
+    az: 'sonluqlar, transformasiya və yenidən doğulma',
+    tr: 'sonlar, dönüşüm ve yeniden doğuş',
+    ru: 'завершения, преображение и перерождение',
+  },
+  14: {
+    en: 'balance, moderation, and quiet healing',
+    az: 'tarazlıq, mötədillik və sakit şəfa',
+    tr: 'denge, ölçülülük ve sakin bir şifa',
+    ru: 'равновесие, умеренность и тихое исцеление',
+  },
+  15: {
+    en: 'attachment, temptation, and the pull of the material',
+    az: 'bağlılıq, şirnikləndirmə və maddiyyatın cazibəsi',
+    tr: 'bağımlılık, ayartı ve maddiyatın çekimi',
+    ru: 'привязанность, соблазн и притяжение материального',
+  },
+  16: {
+    en: 'sudden upheaval, breakdown, and revealing truth',
+    az: 'qəfil sarsıntı, dağılma və üzə çıxan həqiqət',
+    tr: 'ani sarsıntı, çöküş ve açığa çıkan gerçek',
+    ru: 'внезапное потрясение, крушение и открывшаяся правда',
+  },
+  17: {
+    en: 'hope, inspiration, and serene renewal',
+    az: 'ümid, ilham və dinc yeniləşmə',
+    tr: 'umut, ilham ve huzurlu bir yenilenme',
+    ru: 'надежда, вдохновение и безмятежное обновление',
+  },
+  18: {
+    en: 'intuition, dreams, and the pull of the unconscious',
+    az: 'intuisiya, xəyallar və şüuraltının cazibəsi',
+    tr: 'sezgi, rüyalar ve bilinçaltının çekimi',
+    ru: 'интуиция, сны и притяжение бессознательного',
+  },
+  19: {
+    en: 'joy, vitality, and open success',
+    az: 'sevinc, canlılıq və açıq uğur',
+    tr: 'neşe, canlılık ve açık bir başarı',
+    ru: 'радость, жизненная сила и явный успех',
+  },
+  20: {
+    en: 'awakening, honest reckoning, and renewal',
+    az: 'oyanış, dürüst hesablaşma və yeniləşmə',
+    tr: 'uyanış, dürüst bir hesaplaşma ve yenilenme',
+    ru: 'пробуждение, честный пересмотр и обновление',
+  },
+  21: {
+    en: 'completion, wholeness, and fulfilment',
+    az: 'tamamlanma, bütövlük və reallaşma',
+    tr: 'tamamlanma, bütünlük ve gerçekleşme',
+    ru: 'завершённость, целостность и осуществление',
+  },
+  22: {
+    en: 'new beginnings, freedom, and a leap of faith',
+    az: 'yeni başlanğıclar, azadlıq və inam sıçrayışı',
+    tr: 'yeni başlangıçlar, özgürlük ve bir inanç sıçrayışı',
+    ru: 'новые начинания, свобода и прыжок веры',
+  },
+};
+
+/** The 30 named positions — every {@link MatrixSubjectKind} except the `'arcana'` base. */
+type MatrixPosition = Exclude<MatrixSubjectKind, 'arcana'>;
+
+/** Each position's display name, per locale. */
+const MATRIX_LABEL: Record<MatrixPosition, LocalizedText> = {
+  day: { en: 'Day point', az: 'Gün nöqtəsi', tr: 'Gün noktası', ru: 'Точка Дня' },
+  month: { en: 'Month point', az: 'Ay nöqtəsi', tr: 'Ay noktası', ru: 'Точка Месяца' },
+  year: { en: 'Year point', az: 'İl nöqtəsi', tr: 'Yıl noktası', ru: 'Точка Года' },
+  'karmic-tail': {
+    en: 'Karmic tail',
+    az: 'Karmik quyruq',
+    tr: 'Karmik kuyruk',
+    ru: 'Кармический хвост',
+  },
+  'comfort-zone': {
+    en: 'Comfort zone',
+    az: 'Rahatlıq zonası',
+    tr: 'Konfor alanı',
+    ru: 'Зона комфорта',
+  },
+  sky: { en: 'Sky', az: 'Göy', tr: 'Gök', ru: 'Небо' },
+  earth: { en: 'Earth', az: 'Yer', tr: 'Yer', ru: 'Земля' },
+  'personal-purpose': {
+    en: 'Personal purpose',
+    az: 'Şəxsi təyinat',
+    tr: 'Kişisel amaç',
+    ru: 'Личное предназначение',
+  },
+  'social-purpose': {
+    en: 'Social purpose',
+    az: 'Sosial təyinat',
+    tr: 'Sosyal amaç',
+    ru: 'Социальное предназначение',
+  },
+  'spiritual-purpose': {
+    en: 'Spiritual purpose',
+    az: 'Mənəvi təyinat',
+    tr: 'Manevi amaç',
+    ru: 'Духовное предназначение',
+  },
+  'planetary-purpose': {
+    en: 'Planetary purpose',
+    az: 'Planetar təyinat',
+    tr: 'Gezegensel amaç',
+    ru: 'Планетарное предназначение',
+  },
+  'paternal-spiritual': {
+    en: "Father's line — spiritual",
+    az: 'Ata xətti — mənəvi',
+    tr: 'Baba çizgisi — manevi',
+    ru: 'Линия отца — духовная',
+  },
+  'paternal-material': {
+    en: "Father's line — material",
+    az: 'Ata xətti — maddi',
+    tr: 'Baba çizgisi — maddi',
+    ru: 'Линия отца — материальная',
+  },
+  'maternal-spiritual': {
+    en: "Mother's line — spiritual",
+    az: 'Ana xətti — mənəvi',
+    tr: 'Anne çizgisi — manevi',
+    ru: 'Линия матери — духовная',
+  },
+  'maternal-material': {
+    en: "Mother's line — material",
+    az: 'Ana xətti — maddi',
+    tr: 'Anne çizgisi — maddi',
+    ru: 'Линия матери — материальная',
+  },
+  'paternal-line': { en: "Father's line", az: 'Ata xətti', tr: 'Baba çizgisi', ru: 'Линия отца' },
+  'maternal-line': { en: "Mother's line", az: 'Ana xətti', tr: 'Anne çizgisi', ru: 'Линия матери' },
+  'ancestral-centre': {
+    en: 'Ancestral centre',
+    az: 'Nəsil mərkəzi',
+    tr: 'Soy merkezi',
+    ru: 'Родовой центр',
+  },
+  'line-entry': { en: 'Entry point', az: 'Giriş nöqtəsi', tr: 'Giriş noktası', ru: 'Точка входа' },
+  'line-toward-entry': {
+    en: 'Toward the entry',
+    az: 'Girişə doğru',
+    tr: 'Girişe doğru',
+    ru: 'К точке входа',
+  },
+  'line-core': {
+    en: 'Central energy',
+    az: 'Mərkəzi enerji',
+    tr: 'Merkezî enerji',
+    ru: 'Центральная энергия',
+  },
+  'line-toward-partner': {
+    en: 'Toward the partner',
+    az: 'Partnyora doğru',
+    tr: 'Partnere doğru',
+    ru: 'К партнёру',
+  },
+  'line-partner': {
+    en: 'Partner point',
+    az: 'Partnyor nöqtəsi',
+    tr: 'Partner noktası',
+    ru: 'Точка партнёра',
+  },
+  'chakra-sahasrara': {
+    en: 'Sahasrara (crown)',
+    az: 'Sahasrara (tac)',
+    tr: 'Sahasrara (taç)',
+    ru: 'Сахасрара (венец)',
+  },
+  'chakra-ajna': {
+    en: 'Ajna (third eye)',
+    az: 'Acna (üçüncü göz)',
+    tr: 'Ajna (üçüncü göz)',
+    ru: 'Аджна (третий глаз)',
+  },
+  'chakra-vishuddha': {
+    en: 'Vishuddha (throat)',
+    az: 'Vişuddha (boğaz)',
+    tr: 'Vişuddha (boğaz)',
+    ru: 'Вишудха (горло)',
+  },
+  'chakra-anahata': {
+    en: 'Anahata (heart)',
+    az: 'Anahata (ürək)',
+    tr: 'Anahata (kalp)',
+    ru: 'Анахата (сердце)',
+  },
+  'chakra-manipura': {
+    en: 'Manipura (solar plexus)',
+    az: 'Manipura (günəş kələfi)',
+    tr: 'Manipura (güneş sinirağı)',
+    ru: 'Манипура (солнечное сплетение)',
+  },
+  'chakra-svadhisthana': {
+    en: 'Svadhisthana (sacral)',
+    az: 'Svadhistana (sakral)',
+    tr: 'Svadhisthana (sakral)',
+    ru: 'Свадхистана (сакральная)',
+  },
+  'chakra-muladhara': {
+    en: 'Muladhara (root)',
+    az: 'Muladhara (kök)',
+    tr: 'Muladhara (kök)',
+    ru: 'Муладхара (корень)',
+  },
+};
+
+/** What each position governs — a noun clause following the label and a dash. */
+const MATRIX_FRAME: Record<MatrixPosition, LocalizedText> = {
+  day: {
+    en: 'who you are at core, your inborn portrait',
+    az: 'əsas kimliyiniz, anadangəlmə portretiniz',
+    tr: 'özünüzdeki temel kimlik, doğuştan portreniz',
+    ru: 'ваша сердцевина, врождённый портрет',
+  },
+  month: {
+    en: 'your innate talents and gifts',
+    az: 'anadangəlmə istedad və bacarıqlarınız',
+    tr: 'doğuştan yetenekleriniz ve armağanlarınız',
+    ru: 'ваши врождённые таланты и дары',
+  },
+  year: {
+    en: 'the ancestral programmes you inherit',
+    az: 'miras aldığınız nəsil proqramları',
+    tr: 'miras aldığınız soy programları',
+    ru: 'родовые программы, которые вы наследуете',
+  },
+  'karmic-tail': {
+    en: 'the task carried over from the past',
+    az: 'keçmişdən daşınan vəzifə',
+    tr: 'geçmişten taşınan görev',
+    ru: 'задача, перенесённая из прошлого',
+  },
+  'comfort-zone': {
+    en: 'the centre — the energy you rest in and return to',
+    az: 'mərkəz — dincəldiyiniz və qayıtdığınız enerji',
+    tr: 'merkez — dinlendiğiniz ve döndüğünüz enerji',
+    ru: 'центр — энергия, в которой вы отдыхаете и к которой возвращаетесь',
+  },
+  sky: {
+    en: 'the spiritual, vertical axis of your chart',
+    az: 'xəritənizin mənəvi, şaquli oxu',
+    tr: 'haritanızın manevi, dikey ekseni',
+    ru: 'духовная, вертикальная ось вашей карты',
+  },
+  earth: {
+    en: 'the material, horizontal axis of your chart',
+    az: 'xəritənizin maddi, üfüqi oxu',
+    tr: 'haritanızın maddi, yatay ekseni',
+    ru: 'материальная, горизонтальная ось вашей карты',
+  },
+  'personal-purpose': {
+    en: 'your task in the first half of life, up to about 40',
+    az: 'təxminən 40 yaşa qədər həyatın birinci yarısındakı vəzifəniz',
+    tr: 'yaklaşık 40 yaşına dek yaşamın ilk yarısındaki göreviniz',
+    ru: 'ваша задача в первой половине жизни, примерно до 40',
+  },
+  'social-purpose': {
+    en: 'your purpose among others, deepening after about 40',
+    az: 'təxminən 40 yaşdan sonra dərinləşən, insanlar arasındakı təyinatınız',
+    tr: 'yaklaşık 40 yaşından sonra derinleşen, toplum içindeki amacınız',
+    ru: 'ваше предназначение среди людей, крепнущее после 40',
+  },
+  'spiritual-purpose': {
+    en: 'your higher, soul-level purpose',
+    az: 'daha yüksək, ruh səviyyəsindəki təyinatınız',
+    tr: 'daha yüksek, ruh düzeyindeki amacınız',
+    ru: 'ваше высшее предназначение на уровне души',
+  },
+  'planetary-purpose': {
+    en: 'your widest purpose — your part in the whole',
+    az: 'ən geniş təyinatınız — bütövdəki payınız',
+    tr: 'en geniş amacınız — bütündeki payınız',
+    ru: 'ваше самое широкое предназначение — ваша часть в целом',
+  },
+  'paternal-spiritual': {
+    en: "the spiritual inheritance of your father's line",
+    az: 'ata xəttinizin mənəvi mirası',
+    tr: 'baba soyunuzun manevi mirası',
+    ru: 'духовное наследие вашей отцовской линии',
+  },
+  'paternal-material': {
+    en: "the material inheritance of your father's line",
+    az: 'ata xəttinizin maddi mirası',
+    tr: 'baba soyunuzun maddi mirası',
+    ru: 'материальное наследие вашей отцовской линии',
+  },
+  'maternal-spiritual': {
+    en: "the spiritual inheritance of your mother's line",
+    az: 'ana xəttinizin mənəvi mirası',
+    tr: 'anne soyunuzun manevi mirası',
+    ru: 'духовное наследие вашей материнской линии',
+  },
+  'maternal-material': {
+    en: "the material inheritance of your mother's line",
+    az: 'ana xəttinizin maddi mirası',
+    tr: 'anne soyunuzun maddi mirası',
+    ru: 'материальное наследие вашей материнской линии',
+  },
+  'paternal-line': {
+    en: "the overall theme passed down your father's line",
+    az: 'ata xəttiniz boyu ötürülən ümumi mövzu',
+    tr: 'baba soyunuz boyunca aktarılan genel tema',
+    ru: 'общая тема, передаваемая по линии отца',
+  },
+  'maternal-line': {
+    en: "the overall theme passed down your mother's line",
+    az: 'ana xəttiniz boyu ötürülən ümumi mövzu',
+    tr: 'anne soyunuz boyunca aktarılan genel tema',
+    ru: 'общая тема, передаваемая по линии матери',
+  },
+  'ancestral-centre': {
+    en: 'the core of your family inheritance, where both lines meet',
+    az: 'hər iki xəttin birləşdiyi ailə mirasınızın mərkəzi',
+    tr: 'iki çizginin buluştuğu aile mirasınızın merkezi',
+    ru: 'ядро семейного наследия, где сходятся обе линии',
+  },
+  'line-entry': {
+    en: 'how money and love first enter your life',
+    az: 'pul və sevginin həyatınıza ilk girişi',
+    tr: 'para ve sevginin yaşamınıza ilk girişi',
+    ru: 'как деньги и любовь впервые входят в вашу жизнь',
+  },
+  'line-toward-entry': {
+    en: 'what draws you toward earning and connection',
+    az: 'sizi qazanc və yaxınlığa çəkən şey',
+    tr: 'sizi kazanca ve bağa çeken şey',
+    ru: 'то, что влечёт вас к заработку и близости',
+  },
+  'line-core': {
+    en: 'the heart of your money-and-love line',
+    az: 'pul-sevgi xəttinizin qəlbi',
+    tr: 'para-sevgi çizginizin kalbi',
+    ru: 'сердце вашей линии денег и любви',
+  },
+  'line-toward-partner': {
+    en: 'how you move toward partnership and wealth',
+    az: 'tərəfdaşlığa və varlanmağa doğru hərəkətiniz',
+    tr: 'ortaklığa ve zenginliğe doğru hareketiniz',
+    ru: 'как вы движетесь к партнёрству и достатку',
+  },
+  'line-partner': {
+    en: 'what you seek and attract in a partner',
+    az: 'partnyorda axtardığınız və cəlb etdiyiniz şey',
+    tr: 'bir partnerde aradığınız ve çektiğiniz şey',
+    ru: 'то, что вы ищете и притягиваете в партнёре',
+  },
+  'chakra-sahasrara': {
+    en: 'the crown chakra — purpose, the head, and spiritual health',
+    az: 'tac çakrası — təyinat, baş və mənəvi sağlamlıq',
+    tr: 'taç çakrası — amaç, baş ve manevi sağlık',
+    ru: 'коронная чакра — предназначение, голова и духовное здоровье',
+  },
+  'chakra-ajna': {
+    en: 'the brow chakra — intuition, vision, and the nerves',
+    az: 'qaş çakrası — intuisiya, görüş və sinir sistemi',
+    tr: 'kaş çakrası — sezgi, görüş ve sinirler',
+    ru: 'чакра лба — интуиция, зрение и нервы',
+  },
+  'chakra-vishuddha': {
+    en: 'the throat chakra — expression, the throat, and the thyroid',
+    az: 'boğaz çakrası — ifadə, boğaz və qalxanabənzər vəzi',
+    tr: 'boğaz çakrası — ifade, boğaz ve tiroit',
+    ru: 'горловая чакра — самовыражение, горло и щитовидка',
+  },
+  'chakra-anahata': {
+    en: 'the heart chakra — love, the heart, and the lungs',
+    az: 'ürək çakrası — sevgi, ürək və ağciyərlər',
+    tr: 'kalp çakrası — sevgi, kalp ve akciğerler',
+    ru: 'сердечная чакра — любовь, сердце и лёгкие',
+  },
+  'chakra-manipura': {
+    en: 'the solar-plexus chakra — will, status, and digestion',
+    az: 'günəş kələfi çakrası — iradə, status və həzm',
+    tr: 'güneş sinirağı çakrası — irade, statü ve sindirim',
+    ru: 'чакра солнечного сплетения — воля, статус и пищеварение',
+  },
+  'chakra-svadhisthana': {
+    en: 'the sacral chakra — pleasure, money, and the reproductive system',
+    az: 'sakral çakra — həzz, pul və reproduktiv sistem',
+    tr: 'sakral çakra — haz, para ve üreme sistemi',
+    ru: 'сакральная чакра — удовольствие, деньги и репродуктивная система',
+  },
+  'chakra-muladhara': {
+    en: "the root chakra — security, survival, and the body's foundation",
+    az: 'kök çakrası — təhlükəsizlik, sağ qalma və bədənin təməli',
+    tr: 'kök çakrası — güvenlik, hayatta kalma ve bedenin temeli',
+    ru: 'корневая чакра — безопасность, выживание и опора тела',
+  },
+};
+
+function composeMatrix(
+  kind: MatrixSubjectKind,
+  arcana: number,
+  locale: InterpretationLocale,
+): string {
+  const name = ARCANA_NAME[arcana]![locale];
+  const meaning = ARCANA_MEANING[arcana]![locale];
+
+  if (kind === 'arcana') {
+    switch (locale) {
+      case 'en':
+        return `Arcana ${arcana} — ${name} — stands for ${meaning}. This is its base meaning, the theme it carries wherever it falls in your Matrix.`;
+      case 'az':
+        return `${arcana}. Arkan — ${name} — ${meaning} deməkdir. Bu onun əsas mənasıdır: Matrisin hansı nöqtəsinə düşsə, həmin mövzunu daşıyır.`;
+      case 'tr':
+        return `${arcana}. Arkan — ${name} — ${meaning} demektir. Bu, onun temel anlamıdır: Matris'te nereye düşerse düşsün taşıdığı tema.`;
+      case 'ru':
+        return `${arcana}-й Аркан — ${name} — это ${meaning}. Это его базовое значение — тема, которую он несёт, где бы ни выпал в вашей Матрице.`;
+    }
+  }
+
+  const label = MATRIX_LABEL[kind][locale];
+  const frame = MATRIX_FRAME[kind][locale];
+  switch (locale) {
+    case 'en':
+      return `${label} — ${frame}. Here Arcana ${arcana} (${name}) brings ${meaning}.`;
+    case 'az':
+      return `${label} — ${frame}. Burada ${arcana}. Arkan (${name}) ${meaning} gətirir.`;
+    case 'tr':
+      return `${label} — ${frame}. Burada ${arcana}. Arkan (${name}) ${meaning} getirir.`;
+    case 'ru':
+      return `${label} — ${frame}. Здесь ${arcana}-й Аркан (${name}) проявляется как ${meaning}.`;
+  }
+}
+
 /** One generated row, ready to be upserted into the `interpretation_texts` table. */
 export interface GeneratedInterpretation {
   category: InterpretationCategory;
@@ -1066,12 +1614,14 @@ export interface GeneratedInterpretation {
  * {@link SUPPORTED_LOCALES} locale:
  *
  * - astrology — the ten {@link INTERPRETED_BODIES} across all twelve signs, all
- *   twelve houses, and every major aspect between them (465 subjects), and
- * - numerology — all 185 subjects across the sixteen numerology kinds.
+ *   twelve houses, and every major aspect between them (465 subjects),
+ * - numerology — all 185 subjects across the sixteen numerology kinds, and
+ * - Matrix of Destiny — all 682 subjects (22 base arcana + 30 positions × 22).
  *
  * Mirrors the loop structure and value ranges of `listInterpretationSubjects()`
- * / `listNumerologySubjects()` (calc-engine) so the two describe the same
- * 650-subject set; see `seedContent.test.ts` for the parity check.
+ * / `listNumerologySubjects()` / `listMatrixSubjects()` (calc-engine) so the two
+ * describe the same 1,332-subject set; see `seedContent.test.ts` for the parity
+ * check.
  */
 export function generateSeedInterpretations(): GeneratedInterpretation[] {
   const rows: GeneratedInterpretation[] = [];
@@ -1129,6 +1679,27 @@ export function generateSeedInterpretations(): GeneratedInterpretation[] {
           subjectKey: numerologySubjectKey(kind, value),
           locale,
           content: composeNumerology(kind, value, locale),
+        });
+      }
+    }
+  }
+
+  // 'arcana' (base, #80) then the 30 named positions (#81). Object.keys is
+  // exactly the MatrixPosition set — MATRIX_LABEL is a Record over it, so TS
+  // guarantees none is missing — and matrixSubjectKey() + the parity test guard
+  // against any drift from calc-engine's listMatrixSubjects().
+  const matrixKinds: MatrixSubjectKind[] = [
+    'arcana',
+    ...(Object.keys(MATRIX_LABEL) as MatrixPosition[]),
+  ];
+  for (const kind of matrixKinds) {
+    for (const arcana of ARCANA_VALUES) {
+      for (const locale of SUPPORTED_LOCALES) {
+        rows.push({
+          category: 'matrix',
+          subjectKey: matrixSubjectKey(kind, arcana),
+          locale,
+          content: composeMatrix(kind, arcana, locale),
         });
       }
     }

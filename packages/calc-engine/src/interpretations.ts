@@ -1,5 +1,6 @@
 import { CalcEngineError } from './errors';
 import type { AspectType } from './aspects';
+import { ARCANA_VALUES, isArcana } from './matrix/reduce';
 import type { CelestialBody, ZodiacSign } from './planetary-positions';
 
 /**
@@ -118,12 +119,10 @@ export function aspectSubjectKey(
  *   signs, all 12 houses, and all 5 major aspects across every unordered pair
  *   of those planets (465 subjects), plus
  * - numerology (#57) — the 185 subjects {@link listNumerologySubjects}
- *   enumerates, merged in for issue #82 now that their seed content exists.
- *
- * Matrix of Destiny (#67) is deliberately still absent: its position list is
- * not fixed until #68 settles the Ladini method, so there is nothing to
- * enumerate yet and no content behind it. It joins here in the Matrix content
- * issues (#80/#81), the same way numerology did.
+ *   enumerates, merged in for issue #82 now that their seed content exists, and
+ * - Matrix of Destiny (#67) — the 682 subjects {@link listMatrixSubjects}
+ *   enumerates, merged in for the Matrix content issues (#80/#81) now that #68
+ *   has settled the Ladini position list and the seed content exists behind it.
  */
 export function listInterpretationSubjects(): InterpretationSubject[] {
   const subjects: InterpretationSubject[] = [];
@@ -149,6 +148,7 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
   }
 
   subjects.push(...listNumerologySubjects());
+  subjects.push(...listMatrixSubjects());
 
   return subjects;
 }
@@ -285,6 +285,133 @@ export function listNumerologySubjects(): InterpretationSubject[] {
   for (const kind of Object.keys(NUMEROLOGY_VALUE_RANGES) as NumerologyNumberKind[]) {
     for (const value of NUMEROLOGY_VALUE_RANGES[kind]) {
       subjects.push({ category: 'numerology', subjectKey: numerologySubjectKey(kind, value) });
+    }
+  }
+  return subjects;
+}
+
+/**
+ * The Matrix of Destiny positions that get their own interpretation text.
+ *
+ * `'arcana'` is the special "base" kind: the meaning an arcana carries wherever
+ * it appears (issue #80). The other thirty are the named positions a reader
+ * sees on the octagram and in the written breakdown (issue #81) — every one of
+ * them is a single labelled arcana in `formatMatrixDetails()` (mobile), so each
+ * (position, arcana) pair is one subject. The same arcana reads differently by
+ * position (the Emperor on the day point vs. on the father's line), so these are
+ * written per position rather than reused from the base text — exactly as the
+ * numerology positions are.
+ *
+ * The health map's *summary* row and the ancestral corners' inner/middle triples
+ * are intentionally not positions here: they are derived read-outs of the same
+ * arcana, not independently interpreted points, and the mobile breakdown shows
+ * them only as numbers.
+ */
+export type MatrixSubjectKind =
+  // #80 — the base meaning of each arcana.
+  | 'arcana'
+  // #81 — the core square (four cardinal points + centre).
+  | 'day'
+  | 'month'
+  | 'year'
+  | 'karmic-tail'
+  | 'comfort-zone'
+  // #81 — the purpose line (sky/earth axes and the four purposes).
+  | 'sky'
+  | 'earth'
+  | 'personal-purpose'
+  | 'social-purpose'
+  | 'spiritual-purpose'
+  | 'planetary-purpose'
+  // #81 — the ancestral square (four corners, two lines, the ancestral centre).
+  | 'paternal-spiritual'
+  | 'paternal-material'
+  | 'maternal-spiritual'
+  | 'maternal-material'
+  | 'paternal-line'
+  | 'maternal-line'
+  | 'ancestral-centre'
+  // #81 — the money/relationship line, read along its five points.
+  | 'line-entry'
+  | 'line-toward-entry'
+  | 'line-core'
+  | 'line-toward-partner'
+  | 'line-partner'
+  // #81 — the seven chakra rows of the health map, crown to root.
+  | 'chakra-sahasrara'
+  | 'chakra-ajna'
+  | 'chakra-vishuddha'
+  | 'chakra-anahata'
+  | 'chakra-manipura'
+  | 'chakra-svadhisthana'
+  | 'chakra-muladhara';
+
+/** Every Matrix subject kind, in enumeration order (base first, then #81 positions). */
+const MATRIX_SUBJECT_KINDS: readonly MatrixSubjectKind[] = [
+  'arcana',
+  'day',
+  'month',
+  'year',
+  'karmic-tail',
+  'comfort-zone',
+  'sky',
+  'earth',
+  'personal-purpose',
+  'social-purpose',
+  'spiritual-purpose',
+  'planetary-purpose',
+  'paternal-spiritual',
+  'paternal-material',
+  'maternal-spiritual',
+  'maternal-material',
+  'paternal-line',
+  'maternal-line',
+  'ancestral-centre',
+  'line-entry',
+  'line-toward-entry',
+  'line-core',
+  'line-toward-partner',
+  'line-partner',
+  'chakra-sahasrara',
+  'chakra-ajna',
+  'chakra-vishuddha',
+  'chakra-anahata',
+  'chakra-manipura',
+  'chakra-svadhisthana',
+  'chakra-muladhara',
+];
+
+/**
+ * Build the subject key for a Matrix interpretation, e.g. `arcana-13` (the base
+ * meaning of the 13th arcana) or `comfort-zone-13` (that arcana read at the
+ * centre). The arcana is always one of the 22 Major Arcana — the only values
+ * {@link reduceToArcana} can produce — so an out-of-range value is a caller bug,
+ * caught here rather than surfacing as a blank interpretation row later.
+ */
+export function matrixSubjectKey(kind: MatrixSubjectKind, arcana: number): string {
+  if (!isArcana(arcana)) {
+    throw new CalcEngineError(
+      'invalid_input',
+      `arcana must be within [1, 22], got ${arcana} (kind '${kind}')`,
+    );
+  }
+  return `${kind}-${arcana}`;
+}
+
+/**
+ * Enumerate every Matrix subject that needs interpretation text: 682 keys —
+ * the 22 base arcana meanings (#80) plus each of the 30 named positions across
+ * all 22 arcana (#81), 30 × 22 = 660. Category `matrix` throughout.
+ *
+ * Like {@link listNumerologySubjects}, this is the single source both the seed
+ * script (writes the content) and the parity test (checks nothing is missing)
+ * are driven from; it is merged into {@link listInterpretationSubjects}.
+ */
+export function listMatrixSubjects(): InterpretationSubject[] {
+  const subjects: InterpretationSubject[] = [];
+  for (const kind of MATRIX_SUBJECT_KINDS) {
+    for (const arcana of ARCANA_VALUES) {
+      subjects.push({ category: 'matrix', subjectKey: matrixSubjectKey(kind, arcana) });
     }
   }
   return subjects;
