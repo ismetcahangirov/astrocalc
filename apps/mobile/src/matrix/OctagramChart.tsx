@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { Platform } from 'react-native';
 import {
   Canvas,
   Circle,
@@ -15,7 +16,8 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import type { OctagramLayout, OctagramNode, Point } from './geometry';
+import { pointOnCircle, type OctagramLayout, type OctagramNode, type Point } from './geometry';
+import { arcanaColors } from './palette';
 import { chartTheme } from '../chart/theme';
 
 interface OctagramChartProps {
@@ -36,27 +38,52 @@ function discRadius(node: OctagramNode, size: number): number {
 }
 
 /**
+ * The age each of the eight outer points marks. Life runs clockwise from the
+ * left (west) vertex — 0 there, +10 years per point — the standard Matrix age
+ * scale every reference calculator prints around the figure. Keyed by the
+ * point's screen angle so it needs no extra field on the node.
+ */
+const AGE_BY_ANGLE: Readonly<Record<number, string>> = {
+  180: '0', // W
+  135: '10', // NW
+  90: '20', // N
+  45: '30', // NE
+  0: '40', // E
+  315: '50', // SE
+  270: '60', // S
+  225: '70', // SW
+};
+
+/**
  * Renders a precomputed {@link OctagramLayout} (`geometry.ts`) as the Matrix of
  * Destiny octagram: the two overlaid squares, the parental diagonals, spokes out
- * to the eight points, and a numbered disc at every position.
+ * to the eight points, a colour-coded numbered disc at every position, and the
+ * 0–70 age scale around the perimeter — the rich, multi-coloured figure the
+ * reference calculators draw. Disc colours come from {@link arcanaColors}.
  *
  * All the placement math already ran in `computeOctagramLayout` — this component
  * is pure presentation over flat point data, mirroring `NatalChartWheel`'s split
  * exactly.
  *
- * Unlike the natal-chart wheel, **no bundled glyph font is needed**: every value
- * here is an arcana number, which is plain ASCII, so `matchFont` (the system
- * font) is enough. The `AstroSymbols.ttf` subset carries zodiac and planet
- * glyphs, none of which appear on this figure.
+ * **No bundled glyph font is needed**: every value here is an arcana number,
+ * plain ASCII, so the system font via `matchFont` is enough — but note it is
+ * asked for by an explicit `fontFamily`, without which Android silently draws no
+ * text for a weighted style. The `AstroSymbols.ttf` subset carries zodiac and
+ * planet glyphs, none of which appear on this figure.
  */
 export function OctagramChart({ layout }: OctagramChartProps) {
   const { size, center } = layout;
 
+  // Android's `matchFont` needs an explicit family — without one, a weighted
+  // style resolves to nothing and the numbers silently don't draw. iOS is
+  // forgiving, but naming a family there too keeps the two platforms identical.
+  const fontFamily = Platform.select({ ios: 'Helvetica', default: 'sans-serif' });
   const arcanaFonts = {
-    1: matchFont({ fontSize: size * 0.055, fontWeight: '700' }),
-    2: matchFont({ fontSize: size * 0.045, fontWeight: '600' }),
-    3: matchFont({ fontSize: size * 0.033, fontWeight: '500' }),
+    1: matchFont({ fontFamily, fontSize: size * 0.055, fontWeight: '700' }),
+    2: matchFont({ fontFamily, fontSize: size * 0.045, fontWeight: '600' }),
+    3: matchFont({ fontFamily, fontSize: size * 0.033, fontWeight: '600' }),
   } as const;
+  const ageFont = matchFont({ fontFamily, fontSize: size * 0.03, fontWeight: '600' });
 
   // One-shot "reveal" on mount, driving a single 0→1 progress on the UI thread —
   // the same staged entrance the wheel uses: the structure draws in first, then
@@ -93,40 +120,50 @@ export function OctagramChart({ layout }: OctagramChartProps) {
     const font = arcanaFonts[node.emphasis];
     const label = String(node.arcana);
     const radius = discRadius(node, size);
-    // The two primary readings — the cardinals and the comfort zone — get a
-    // filled gold disc; everything else is outlined, so the eye lands on the
-    // points the method treats as primary rather than on all eighteen at once.
-    const filled = node.kind === 'cardinal' || node.kind === 'centre';
+    // Every disc is filled with its arcana's own colour, and its number drawn in
+    // the ink that colour was paired with for contrast — so the figure reads as
+    // the multi-coloured Matrix the reference calculators draw, with the number
+    // legible on every point rather than gold-on-gold.
+    const { fill, ink } = arcanaColors(node.arcana);
     const pos = font ? centered(font, label, node.point.x, node.point.y) : null;
 
     return (
       <Group key={node.key}>
+        <Circle cx={node.point.x} cy={node.point.y} r={radius} color={fill} />
+        {/* A soft light rim gives each disc a bead-like edge and lifts it off
+            the dark backdrop, whatever its fill. */}
         <Circle
           cx={node.point.x}
           cy={node.point.y}
           r={radius}
-          color={filled ? chartTheme.gold : chartTheme.disc}
+          style="stroke"
+          strokeWidth={1.3}
+          color="rgba(255, 255, 255, 0.55)"
         />
-        {!filled ? (
-          <Circle
-            cx={node.point.x}
-            cy={node.point.y}
-            r={radius}
-            style="stroke"
-            strokeWidth={1.1}
-            color={node.kind === 'arm' ? chartTheme.goldMuted : chartTheme.gold}
-          />
-        ) : null}
-        {font && pos ? (
-          <SkiaText
-            font={font}
-            text={label}
-            x={pos.x}
-            y={pos.y}
-            color={filled ? chartTheme.onGold : chartTheme.gold}
-          />
-        ) : null}
+        {font && pos ? <SkiaText font={font} text={label} x={pos.x} y={pos.y} color={ink} /> : null}
       </Group>
+    );
+  };
+
+  // The 0–70 age scale, one label just outside each of the eight outer points.
+  const renderAge = (node: OctagramNode) => {
+    const age = AGE_BY_ANGLE[node.angle];
+    if (!age || !ageFont) return null;
+    const at = pointOnCircle(
+      center,
+      layout.radius + discRadius(node, size) + size * 0.03,
+      node.angle,
+    );
+    const pos = centered(ageFont, age, at.x, at.y);
+    return (
+      <SkiaText
+        key={`age-${node.key}`}
+        font={ageFont}
+        text={age}
+        x={pos.x}
+        y={pos.y}
+        color={chartTheme.textMuted}
+      />
     );
   };
 
@@ -180,7 +217,10 @@ export function OctagramChart({ layout }: OctagramChartProps) {
         ))}
       </Group>
 
-      <Group opacity={outerOpacity}>{outerNodes.map(renderNode)}</Group>
+      <Group opacity={outerOpacity}>
+        {outerNodes.map(renderAge)}
+        {outerNodes.map(renderNode)}
+      </Group>
       <Group opacity={innerOpacity}>{innerNodes.map(renderNode)}</Group>
     </Canvas>
   );
