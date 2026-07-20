@@ -1,6 +1,7 @@
 import { CalcEngineError } from './errors';
 import type { GeoCoordinates } from './types';
 import { localTimeToUtc, type LocalDateTime } from './timezone';
+import { parseIsoDate } from './date-parsing';
 import {
   computePlanetaryPositions,
   type LunarNodeModel,
@@ -102,22 +103,11 @@ export interface NatalChart {
   aspects: Aspect[];
 }
 
-const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const TIME_PATTERN = /^(\d{2}):(\d{2})(?::(\d{2}))?$/;
 
 /** Noon is the standard "unknown birth time" convention — it minimises the
  * worst-case error of the fast-moving Moon (±6.5° rather than ±13°). */
 const UNKNOWN_TIME_HOUR = 12;
-
-/** Parse a strict `YYYY-MM-DD` date into its numeric parts, or throw. */
-function parseDate(birthDate: string): { year: number; month: number; day: number } {
-  const match = typeof birthDate === 'string' ? DATE_PATTERN.exec(birthDate) : null;
-  if (!match) {
-    throw new CalcEngineError('invalid_input', `birthDate must be 'YYYY-MM-DD', got: ${birthDate}`);
-  }
-  // The capture groups are guaranteed present and numeric by the regex.
-  return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
-}
 
 /** Parse a strict `HH:MM` / `HH:MM:SS` time into its numeric parts, or throw. */
 function parseTime(birthTime: string): { hour: number; minute: number; second: number } {
@@ -140,7 +130,7 @@ function parseTime(birthTime: string): { hour: number; minute: number; second: n
  * the noon convention when the time is unknown.
  */
 function toLocalDateTime(input: NatalChartInput): LocalDateTime {
-  const { year, month, day } = parseDate(input.birthDate);
+  const { year, month, day } = parseIsoDate(input.birthDate);
 
   if (!input.birthTimeKnown) {
     return { year, month, day, hour: UNKNOWN_TIME_HOUR, minute: 0, second: 0 };
