@@ -38,14 +38,25 @@ class CountingChartCache implements ChartResultCache {
   }
 }
 
-/** Wraps the in-memory numerology cache to count invalidations. */
+/**
+ * Wraps the in-memory numerology cache to count invalidations and, crucially,
+ * record the exact `owner` argument every `get`/`set` call is namespaced
+ * under. Two different subjects almost always hash to two different cache
+ * keys anyway (the key already includes name + birth date), so an
+ * input/output comparison alone would pass even if the service accidentally
+ * namespaced by `userId` instead of the subject `id` — `ownerIdsUsed` is what
+ * actually catches that.
+ */
 class CountingNumerologyResultCache implements NumerologyResultCache {
   readonly inner = new InMemoryNumerologyResultCache();
   invalidated: string[] = [];
+  ownerIdsUsed: string[] = [];
   get<T>(owner: string, key: NumerologyCacheKeyInput) {
+    this.ownerIdsUsed.push(owner);
     return this.inner.get<T>(owner, key);
   }
   set<T>(owner: string, key: NumerologyCacheKeyInput, value: T) {
+    this.ownerIdsUsed.push(owner);
     return this.inner.set(owner, key, value);
   }
   async invalidate(owner: string) {
@@ -222,6 +233,23 @@ describe('subjectsService — getNumerology', () => {
     // 6 + 3 + 4 = 13, a karmic-debt number, which reduces to 1+3 = 4.
     expect(first.profile.lifePath.value).toBe(4);
     expect(second.profile).toEqual(first.profile);
+  });
+
+  it('namespaces the cache under the subject id, not the userId', async () => {
+    // The direct regression guard for a userId-keyed cache: unlike comparing
+    // two different subjects' *results* (which would still differ even under
+    // that bug, since the cache key already encodes name + birth date), this
+    // inspects what the service actually passed as the cache's owner argument.
+    const { service, numerologyCache } = makeService();
+    const subject = await service.create('user-1', {
+      name: 'Grandma',
+      birthDate: '1950-03-04',
+    });
+
+    await service.getNumerology('user-1', subject.id, '2026-07-20');
+
+    expect(numerologyCache.ownerIdsUsed).toContain(subject.id);
+    expect(numerologyCache.ownerIdsUsed).not.toContain('user-1');
   });
 
   it('keys the cache by subject id: two subjects of the same user with different names/birth dates get different results', async () => {
