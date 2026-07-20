@@ -11,6 +11,7 @@ import { createTokenService } from '../auth/tokens';
 import { errorHandler } from '../auth/errorHandler';
 import { InMemoryChartResultCache } from '../chart/chartResultCache';
 import { InMemoryNumerologyResultCache } from '../numerology/numerologyResultCache';
+import { InMemoryMatrixResultCache } from '../matrix/matrixResultCache';
 import { InMemoryOrbConfigCache } from '../orbConfig/cache';
 import { InMemoryOrbConfigRepository } from '../orbConfig/repository';
 import { createOrbConfigService } from '../orbConfig/orbConfigService';
@@ -48,6 +49,7 @@ function makeApp(service: Partial<SubjectsService>) {
     remove: async () => undefined,
     getChart: async () => ({ chart: {} as never, interpretation: null }),
     getNumerology: async () => ({ profile: {} as never, interpretation: null }),
+    getMatrix: async () => ({ matrix: {} as never, interpretation: null }),
     ...service,
   };
   const app = express();
@@ -148,6 +150,7 @@ describe('GET /subjects/:id/numerology', () => {
       repo: new InMemorySubjectRepository(),
       chartCache: new InMemoryChartResultCache(),
       numerologyCache: new InMemoryNumerologyResultCache(),
+      matrixCache: new InMemoryMatrixResultCache(),
       orbConfig: createOrbConfigService({
         repo: new InMemoryOrbConfigRepository(),
         cache: new InMemoryOrbConfigCache(),
@@ -220,5 +223,84 @@ describe('GET /subjects/:id/numerology', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('invalid_request');
+  });
+});
+
+describe('GET /subjects/:id/matrix', () => {
+  // Same real-service setup as the numerology block above, so ownership
+  // isolation and the computed arcana are exercised end to end.
+  function buildRealApp() {
+    const service = createSubjectsService({
+      repo: new InMemorySubjectRepository(),
+      chartCache: new InMemoryChartResultCache(),
+      numerologyCache: new InMemoryNumerologyResultCache(),
+      matrixCache: new InMemoryMatrixResultCache(),
+      orbConfig: createOrbConfigService({
+        repo: new InMemoryOrbConfigRepository(),
+        cache: new InMemoryOrbConfigCache(),
+        config: { cacheTtlSeconds: 3600 },
+      }),
+      deriveTimezone: () => null,
+    });
+    const app = express();
+    app.use(express.json());
+    app.use('/subjects', createSubjectsRouter(service, tokenService));
+    app.use(errorHandler);
+    return { app, service };
+  }
+
+  it('rejects without a bearer token', async () => {
+    const { app } = buildRealApp();
+    const res = await request(app).get('/subjects/subject-1/matrix');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns the computed Matrix for the owner', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1990-11-22' });
+
+    const res = await request(app).get(`/subjects/${subject.id}/matrix`).set('Authorization', auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.interpretation).toBeNull();
+    // The method spec's §6 reference case: day 22 kept, centre 14.
+    expect(res.body.matrix.core).toMatchObject({ day: 22, centre: 14 });
+  });
+
+  it('returns 404 subject_not_found when a different user requests it', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1990-11-22' });
+    const { accessToken: otherUsersToken } = tokenService.issueTokens('user-2', 'session-2');
+
+    const res = await request(app)
+      .get(`/subjects/${subject.id}/matrix`)
+      .set('Authorization', `Bearer ${otherUsersToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('subject_not_found');
+  });
+
+  it('returns 422 incomplete_profile when the subject has no birthDate', async () => {
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'No birth date' });
+
+    const res = await request(app).get(`/subjects/${subject.id}/matrix`).set('Authorization', auth);
+
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('incomplete_profile');
+    expect(res.body.error.missing).toEqual(['birthDate']);
+  });
+
+  it('serves a subject with no coordinates, which could never produce a chart', async () => {
+    // The Matrix needs strictly less than the chart does. A saved person with a
+    // birth date but no birth place is unusable for `/natal-chart` and perfectly
+    // usable here — the behaviour the People list depends on.
+    const { app, service } = buildRealApp();
+    const subject = await service.create('user-1', { name: 'Grandma', birthDate: '1985-06-24' });
+
+    const res = await request(app).get(`/subjects/${subject.id}/matrix`).set('Authorization', auth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.matrix.core.day).toBe(6); // 24 -> 2+4
   });
 });

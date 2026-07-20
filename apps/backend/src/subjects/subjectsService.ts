@@ -1,4 +1,5 @@
 import {
+  computeDestinyMatrix,
   computeNatalChart,
   computeNumerologyProfile,
   DEFAULT_HOUSE_SYSTEM,
@@ -18,6 +19,10 @@ import {
   type NumerologyResultCache,
 } from '../numerology/numerologyResultCache';
 import type { NumerologyResponse } from '../numerology/numerologyService';
+import type { MatrixCacheKeyInput } from '../matrix/matrixCacheKey';
+import { matrixDataToInput } from '../matrix/matrixInput';
+import { getOrComputeMatrix, type MatrixResultCache } from '../matrix/matrixResultCache';
+import type { MatrixResponse } from '../matrix/matrixService';
 import type { OrbConfigService } from '../orbConfig/orbConfigService';
 import type { SubjectRepository } from './repository';
 import type { Subject, SubjectCreateInput, SubjectPatchData, SubjectUpdateInput } from './types';
@@ -32,12 +37,15 @@ export interface SubjectsService {
   getChart(userId: string, id: string): Promise<NatalChartResponse>;
   /** Compute (and cache) the numerology profile for a subject the caller owns. */
   getNumerology(userId: string, id: string, referenceDate: string): Promise<NumerologyResponse>;
+  /** Compute (and cache) the Matrix of Destiny for a subject the caller owns. */
+  getMatrix(userId: string, id: string): Promise<MatrixResponse>;
 }
 
 export interface SubjectsServiceDeps {
   repo: SubjectRepository;
   chartCache: ChartResultCache;
   numerologyCache: NumerologyResultCache;
+  matrixCache: MatrixResultCache;
   orbConfig: OrbConfigService;
   /** Coordinate → IANA timezone resolver; defaults to the real `geo-tz` lookup. */
   deriveTimezone?: BirthTimezoneResolver;
@@ -80,6 +88,17 @@ function patchTouchesNumerologyData(patch: SubjectUpdateInput): boolean {
 }
 
 /**
+ * Whether a patch changes the one field the Matrix calculation depends on.
+ * Narrower again than {@link patchTouchesNumerologyData}: the Matrix reads the
+ * birth date and nothing else, so a rename that must drop this subject's
+ * numerology numbers leaves their Matrix perfectly valid. Mirrors
+ * `profileService.ts`'s `MATRIX_DATA_FIELDS` for the same reason.
+ */
+function patchTouchesMatrixData(patch: SubjectUpdateInput): boolean {
+  return 'birthDate' in patch;
+}
+
+/**
  * CRUD + chart + numerology computation for saved subjects (#s2, #64). Every
  * method is scoped to the calling `userId`, so a user can only ever read or
  * mutate their own subjects. Like profiles, `birthPlaceTimezone` is derived
@@ -93,6 +112,7 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
     repo,
     chartCache,
     numerologyCache,
+    matrixCache,
     orbConfig,
     deriveTimezone = deriveBirthTimezone,
   } = deps;
@@ -131,6 +151,7 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
 
       if (patchTouchesBirthData(patch)) await chartCache.invalidate(id);
       if (patchTouchesNumerologyData(patch)) await numerologyCache.invalidate(id);
+      if (patchTouchesMatrixData(patch)) await matrixCache.invalidate(id);
       return updated;
     },
 
@@ -139,6 +160,7 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
       if (!deleted) throw new SubjectNotFoundError();
       await chartCache.invalidate(id);
       await numerologyCache.invalidate(id);
+      await matrixCache.invalidate(id);
     },
 
     async getChart(userId, id) {
@@ -173,6 +195,21 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
         computeNumerologyProfile(input),
       );
       return { profile, interpretation: null };
+    },
+
+    async getMatrix(userId, id) {
+      const subject = await repo.get(userId, id);
+      if (!subject) throw new SubjectNotFoundError();
+
+      const input = matrixDataToInput(subject);
+      const key: MatrixCacheKeyInput = { birthDate: input.birthDate };
+      // Namespaced by the subject id (never userId), exactly as `getChart` and
+      // `getNumerology` are — two subjects of the same user cache and
+      // invalidate their Matrices independently.
+      const matrix = await getOrComputeMatrix(matrixCache, id, key, async () =>
+        computeDestinyMatrix(input),
+      );
+      return { matrix, interpretation: null };
     },
   };
 }

@@ -12,6 +12,9 @@ export default function People() {
       onOpenSubjectNumerology={(id, name) =>
         router.push({ pathname: '/numerology', params: { subjectId: id, name } })
       }
+      onOpenSubjectMatrix={(id, name) =>
+        router.push({ pathname: '/matrix', params: { subjectId: id, name } })
+      }
       onAddSubject={() => router.push('/subject')}
       onEditSubject={(id) => router.push({ pathname: '/subject', params: { id } })}
     />

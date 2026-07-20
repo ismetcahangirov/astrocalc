@@ -6,6 +6,73 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Matrix of Destiny, end to end — #68–#75, completing `[EPIC] Matrix of
+  Destiny` (#67). Spec, calc-engine domain, backend slice, and the mobile
+  octagram.
+  **The research (#68) was the whole job.** The Matrix has no canonical
+  published standard and Ladini's own material is not on the open web in a form
+  that states the arithmetic, so
+  `docs/superpowers/specs/2026-07-20-matrix-of-destiny-ladini-method.md`
+  reconstructs it from three independent open-source implementations (in three
+  incompatible letter schemes, agreeing on every formula once normalised) and
+  from five live calculators that were driven and read. §7 of that document
+  lists **eight** places sources genuinely disagree, each with the adopted rule
+  and the rejected variant, so a future reader who finds a losing variant
+  recognises it as considered rather than missed.
+  Four decisions worth naming. **The reduction rule is a real fork**, not a
+  rounding difference: repeated digit-summing (adopted — every implementation,
+  every live calculator, every published worked example) versus subtracting 22,
+  which two sites actually implement. A chart computed under the wrong one is a
+  different chart throughout. Notably the *Ladini-branded* site is itself
+  unreliable here, describing the comfort zone as a flat digit sum of the whole
+  birth date, which does not reproduce its own method's output.
+  **The money line and the love line turned out to be the same five arcana**
+  under two schools' names — verified by normalising the letter schemes, not
+  assumed. They ship as one `moneyAndRelationships` field rather than two equal
+  ones, because presenting one finding as two independent ones would read as a
+  bug to anyone who compared them; both readings hang off the same keys in the
+  content epic.
+  **The health map's summary row is deliberately not implemented.** One source
+  publishes a formula, the implementations disagree, and one computes it with a
+  single-pass digit sum that is simply wrong past two digits. There was no
+  defensible answer, so nothing shipped — recorded rather than guessed.
+  And **`planetary` is flagged in its own doc comment as the weakest-supported
+  position** (two sources, one of them code; two implementations omit it
+  entirely), so it does not sit in the result looking as well-founded as `sky`.
+  Cross-validation is external rather than self-referential: five fixture cases
+  with full hand derivations, plus five further dates corroborated by three more
+  calculators — the second tier asserting *only* the positions those calculators
+  actually displayed, since filling in the rest from our own output would
+  launder it into something that looks like evidence. All ten passed on the
+  first run. Exhaustive 1900–2030 sweeps assert two independent structural
+  invariants that discriminate between candidate formulas rather than restating
+  them: the money line's entry point is always a multiple of 3, and the social
+  purpose can never be 1, 2 or 13.
+  One genuine trap the cross-check surfaced and now has a regression test: the
+  ancestral centre sums the four corners **flat**, while the social purpose
+  reduces its two diagonal pairs **first** — same four numbers, different
+  answers (5 vs 14 for 1990-04-12). Collapsing either into the other would look
+  like a harmless simplification.
+  Backend mirrors the numerology slice with one deliberate difference: the cache
+  key is the **birth date and nothing else** — no reference date (nothing here
+  turns over with the calendar, unlike Personal Year/Month), no name, no place.
+  That makes it the narrowest of the three invalidation triggers, so a name
+  correction no longer drops a still-valid Matrix and a birth-place edit does
+  not either. `GET /matrix` takes no query parameters at all, because a
+  `referenceDate` knob would document something that does nothing.
+  Mobile reuses the wheel's proven split — pure `geometry.ts`, a Skia component
+  that only draws — with no glyph font needed (arcana are ASCII). The written
+  breakdown beneath is not a fallback: an octagram tells a first-time viewer
+  nothing about which point is which, and the purposes, the line and the chakra
+  map have no agreed place on the figure at all, so they exist only below it.
+  Reading sections stay empty until #76, as the chart and numerology did.
+  Note the Matrix needs strictly *less* data than either sibling — a birth date,
+  with no time, place or name — so a saved person who can produce neither a
+  chart nor numbers still gets a full Matrix; the People list relies on that.
+  884 tests green (calc-engine 367, backend 341, mobile 176), three typechecks,
+  lint and format clean. The octagram's *rendering* is not covered — this repo
+  excludes `.tsx` from Vitest by design and verifies it in the dev client — so
+  the layout math is unit-tested and the component itself is not.
 - Silent forced re-login every 15 minutes — #86 (p0). `authedFetch()` attached
   the stored access token and returned the server's answer unchanged, so once
   the 15-minute access-token TTL elapsed **every** authenticated screen failed

@@ -106,6 +106,25 @@ export class IncompleteNumerologyProfileError extends AuthError {
   }
 }
 
+/**
+ * The profile is missing the birth date the Matrix of Destiny needs (#73).
+ * Mirrors {@link IncompleteProfileError}'s code and shape so a client can
+ * handle all three the same way.
+ *
+ * Its `missing` list can only ever be `['birthDate']` — the Matrix reads no
+ * other field — but the array shape is kept rather than collapsed to a bare
+ * error, so the mobile client's existing `incomplete_profile` handling reads
+ * one payload shape across the chart, numerology and the Matrix.
+ */
+export class IncompleteMatrixProfileError extends AuthError {
+  constructor(missing: string[]) {
+    super('incomplete_profile', 'Profile is missing the birth date required for the Matrix', 422, {
+      missing,
+    });
+    this.name = 'IncompleteMatrixProfileError';
+  }
+}
+
 /** A saved subject (#s2) doesn't exist, or doesn't belong to the caller. */
 export class SubjectNotFoundError extends AuthError {
   constructor(message = 'That person could not be found.') {

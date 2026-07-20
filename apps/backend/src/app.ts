@@ -43,6 +43,10 @@ import {
   type NumerologyResultCache,
 } from './numerology/numerologyResultCache';
 import { RedisNumerologyResultCache } from './numerology/redisNumerologyResultCache';
+import { createMatrixService } from './matrix/matrixService';
+import { createMatrixRouter } from './matrix/matrixRoute';
+import { InMemoryMatrixResultCache, type MatrixResultCache } from './matrix/matrixResultCache';
+import { RedisMatrixResultCache } from './matrix/redisMatrixResultCache';
 import { createSubjectsService } from './subjects/subjectsService';
 import { createSubjectsRouter } from './subjects/subjectsRoute';
 import { DrizzleSubjectRepository } from './db/drizzleSubjectRepository';
@@ -159,7 +163,17 @@ export function createApp(env: Env): Express {
   // Numerology results cache separately (#64) — a `fullName` edit must drop the
   // cached numbers without discarding the still-valid chart, and vice versa.
   const numerologyCache = buildNumerologyResultCache(redis, env);
-  const profileService = createProfileService({ repo, cache: chartCache, numerologyCache });
+  // The Matrix caches separately again (#73) — it depends on the birth date and
+  // nothing else, so a `fullName` edit that must drop the numerology numbers
+  // has no bearing on it, and neither does a birth-*place* edit that drops the
+  // chart. Three narrow caches beat one wide one that over-invalidates.
+  const matrixCache = buildMatrixResultCache(redis, env);
+  const profileService = createProfileService({
+    repo,
+    cache: chartCache,
+    numerologyCache,
+    matrixCache,
+  });
 
   // Account deletion & GDPR data export (#9). The inline-queue fallback needs
   // `processExport`, and the service needs the queue — resolve the cycle with a
@@ -286,13 +300,14 @@ export function createApp(env: Env): Express {
   });
   app.use('/natal-chart', createNatalChartRouter(natalChartService, tokenService));
 
-  // Saved subjects (#s2, #64): charts and numerology profiles for other people.
-  // Reuses the same chart cache, numerology cache (each namespaced per subject)
-  // and orb config as the user's own chart/numerology.
+  // Saved subjects (#s2, #64, #73): charts, numerology profiles and Matrices for
+  // other people. Reuses the same chart, numerology and Matrix caches (each
+  // namespaced per subject) and orb config as the user's own results.
   const subjectsService = createSubjectsService({
     repo: new DrizzleSubjectRepository(db),
     chartCache,
     numerologyCache,
+    matrixCache,
     orbConfig: orbConfigService,
   });
   app.use('/subjects', createSubjectsRouter(subjectsService, tokenService));
@@ -301,6 +316,12 @@ export function createApp(env: Env): Express {
   // month so the personal-year/month cycle numbers cannot be served stale.
   const numerologyService = createNumerologyService({ repo, cache: numerologyCache });
   app.use('/numerology', createNumerologyRouter(numerologyService, tokenService));
+
+  // Matrix of Destiny (#73): the same cache/port shape again, but keyed by the
+  // birth date alone — no reference date, no name, no place. See
+  // `matrix/matrixCacheKey.ts` for why that is the whole key.
+  const matrixService = createMatrixService({ repo, cache: matrixCache });
+  app.use('/matrix', createMatrixRouter(matrixService, tokenService));
 
   // Terminal error handler — must be registered last.
   app.use(errorHandler);
@@ -432,6 +453,26 @@ function buildNumerologyResultCache(redis: RedisClient | null, env: Env): Numero
       'Cached profiles will NOT persist or be shared across instances.',
   );
   return new InMemoryNumerologyResultCache();
+}
+
+/**
+ * Use the shared Upstash Redis Matrix-result cache when configured; otherwise a
+ * per-process in-memory fallback (local dev/tests only — cached Matrices would
+ * NOT be shared across instances or survive a restart, hence the warning).
+ */
+function buildMatrixResultCache(redis: RedisClient | null, env: Env): MatrixResultCache {
+  if (redis) {
+    return new RedisMatrixResultCache(
+      redis,
+      env.MATRIX_CACHE_TTL_SECONDS === 0 ? undefined : env.MATRIX_CACHE_TTL_SECONDS,
+    );
+  }
+
+  console.warn(
+    '[matrix] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory Matrix result cache. ' +
+      'Cached Matrices will NOT persist or be shared across instances.',
+  );
+  return new InMemoryMatrixResultCache();
 }
 
 /**

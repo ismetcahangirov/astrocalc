@@ -3,13 +3,16 @@ import type { Profile, ProfileUpdateInput } from '../auth/types';
 import { deriveBirthTimezone, type BirthTimezoneResolver } from '../geocoding/birthTimezone';
 import {
   BIRTH_DATA_FIELDS,
+  MATRIX_DATA_FIELDS,
   NoopChartCacheInvalidator,
   NUMEROLOGY_DATA_FIELDS,
   touchesBirthData,
+  touchesMatrixData,
   touchesNumerologyData,
   type ChartCacheInvalidator,
 } from './chartCacheInvalidator';
 import type { NumerologyResultCache } from '../numerology/numerologyResultCache';
+import type { MatrixResultCache } from '../matrix/matrixResultCache';
 
 export interface ProfileService {
   getProfile(userId: string): Promise<Profile>;
@@ -25,6 +28,11 @@ export interface ProfileServiceDeps {
    * `NUMEROLOGY_DATA_FIELDS`. Also defaults to a no-op.
    */
   numerologyCache?: Pick<NumerologyResultCache, 'invalidate'>;
+  /**
+   * Matrix result cache (#73), invalidated on its own narrower trigger again —
+   * see `MATRIX_DATA_FIELDS`. Also defaults to a no-op.
+   */
+  matrixCache?: Pick<MatrixResultCache, 'invalidate'>;
   /**
    * Resolves a birth place's IANA timezone from its coordinates. Injectable so
    * tests don't pull in `geo-tz`; defaults to the real `geo-tz`-backed lookup.
@@ -65,14 +73,16 @@ function withDerivedTimezone(
  * computed natal chart/matrix cache is invalidated (see #7's acceptance
  * criteria and `chartCacheInvalidator.ts` for the EPIC 3 / #19 dependency).
  * The numerology cache (#64) is invalidated on its own, narrower trigger — a
- * `fullName` or `birthDate` change — so neither cache is dropped for an edit
- * that cannot have affected it.
+ * `fullName` or `birthDate` change — and the Matrix cache (#73) on a narrower
+ * one still: `birthDate` alone. No cache is dropped for an edit that cannot
+ * have affected it, which is the whole reason there are three of them.
  */
 export function createProfileService(deps: ProfileServiceDeps): ProfileService {
   const {
     repo,
     cache = new NoopChartCacheInvalidator(),
     numerologyCache = new NoopChartCacheInvalidator(),
+    matrixCache = new NoopChartCacheInvalidator(),
     deriveTimezone = deriveBirthTimezone,
   } = deps;
 
@@ -90,7 +100,8 @@ export function createProfileService(deps: ProfileServiceDeps): ProfileService {
       // numerology-relevant but not birth-relevant, so gating this on
       // `touchesBirthData` alone would leave a name-only edit serving the old
       // numbers forever.
-      const needsBefore = touchesBirthData(patch) || touchesNumerologyData(patch);
+      const needsBefore =
+        touchesBirthData(patch) || touchesNumerologyData(patch) || touchesMatrixData(patch);
       const before = needsBefore ? await repo.getProfile(userId) : null;
       const patchToApply = withDerivedTimezone(patch, before, deriveTimezone);
       const updated = await repo.updateProfile(userId, patchToApply);
@@ -101,6 +112,10 @@ export function createProfileService(deps: ProfileServiceDeps): ProfileService {
 
       if (before && NUMEROLOGY_DATA_FIELDS.some((field) => before[field] !== updated[field])) {
         await numerologyCache.invalidate(userId);
+      }
+
+      if (before && MATRIX_DATA_FIELDS.some((field) => before[field] !== updated[field])) {
+        await matrixCache.invalidate(userId);
       }
 
       return updated;

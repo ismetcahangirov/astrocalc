@@ -145,6 +145,7 @@ const en = {
   'people.empty': 'No saved people yet. Add someone to see their chart.',
   'people.viewChart': 'View chart',
   'people.viewNumbers': 'Numbers',
+  'people.viewMatrix': 'Matrix',
   'people.edit': 'Edit',
   'people.delete': 'Delete',
   'people.noBirthData': 'Birth details incomplete',
@@ -217,6 +218,28 @@ const en = {
   'numerology.fullNameHint':
     'The complete name on your birth certificate, including middle names. Your numerology is calculated letter by letter from it, so it may differ from the display name above.',
   'numerology.fullNameTooLong': 'Full birth name must be 200 characters or fewer.',
+
+  'matrix.title': 'Your Matrix',
+  'matrix.subtitle': 'The octagram of your Matrix of Destiny, calculated from your date of birth.',
+  'matrix.coreTitle': 'The core square',
+  'matrix.ancestralTitle': 'Ancestral square',
+  'matrix.purposesTitle': 'Your purpose',
+  'matrix.moneyTitle': 'Money and relationships',
+  // Both readings are taken from the same five arcana — see `matrix/lines.ts`.
+  // Said plainly on screen so the section isn't misread as money-only.
+  'matrix.moneyNote':
+    'These five arcana carry both readings — how money comes to you, and how you enter relationships.',
+  'matrix.healthTitle': 'Health map',
+  'matrix.physical': 'Physical',
+  'matrix.energy': 'Energy',
+  'matrix.emotional': 'Emotional',
+  'matrix.missingData': 'Add your date of birth to your profile to see your Matrix.',
+  'matrix.missingDataCta': 'Go to my profile',
+  'matrix.loadError': "Couldn't load your Matrix. Please try again.",
+  'matrix.retry': 'Try again',
+  'matrix.offlineNotice':
+    "You're viewing a Matrix computed on this device. Reconnect for your full reading.",
+  'matrix.readingTitle': 'Your Reading',
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -361,6 +384,7 @@ const az: Record<keyof typeof en, string> = {
   'people.empty': 'Hələ saxlanan şəxs yoxdur. Xartını görmək üçün kimisə əlavə edin.',
   'people.viewChart': 'Xartı gör',
   'people.viewNumbers': 'Rəqəmlər',
+  'people.viewMatrix': 'Matris',
   'people.edit': 'Redaktə et',
   'people.delete': 'Sil',
   'people.noBirthData': 'Doğum məlumatları natamamdır',
@@ -434,6 +458,26 @@ const az: Record<keyof typeof en, string> = {
   'numerology.fullNameHint':
     'Doğum haqqında şəhadətnamənizdəki tam ad, ata adı da daxil olmaqla. Numerologiyanız hərf-hərf bu addan hesablanır, ona görə də yuxarıdakı görünən addan fərqlənə bilər.',
   'numerology.fullNameTooLong': 'Tam doğum adı 200 simvoldan çox ola bilməz.',
+
+  'matrix.title': 'Sizin Matrisiniz',
+  'matrix.subtitle': 'Doğum tarixinizdən hesablanmış Tale Matrisinizin oktaqramı.',
+  'matrix.coreTitle': 'Əsas kvadrat',
+  'matrix.ancestralTitle': 'Nəsil kvadratı',
+  'matrix.purposesTitle': 'Təyinatınız',
+  'matrix.moneyTitle': 'Pul və münasibətlər',
+  'matrix.moneyNote':
+    'Bu beş arkan hər iki oxunuşu daşıyır — pulun sizə necə gəldiyini və münasibətlərə necə girdiyinizi.',
+  'matrix.healthTitle': 'Sağlamlıq xəritəsi',
+  'matrix.physical': 'Fizika',
+  'matrix.energy': 'Enerji',
+  'matrix.emotional': 'Emosiya',
+  'matrix.missingData': 'Matrisinizi görmək üçün profilinizə doğum tarixinizi əlavə edin.',
+  'matrix.missingDataCta': 'Profilimə keç',
+  'matrix.loadError': 'Matrisiniz yüklənmədi. Yenidən cəhd edin.',
+  'matrix.retry': 'Yenidən cəhd et',
+  'matrix.offlineNotice':
+    'Bu cihazda hesablanmış matrisə baxırsınız. Tam şərh üçün internetə qoşulun.',
+  'matrix.readingTitle': 'Sizin Şərhiniz',
 };
 
 export type TranslationKey = keyof typeof en;

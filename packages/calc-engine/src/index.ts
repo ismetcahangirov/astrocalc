@@ -72,3 +72,21 @@ export {
   type Challenge,
   type LifePeriod,
 } from './numerology';
+export {
+  computeDestinyMatrix,
+  MATRIX_SCHEMA_VERSION,
+  ARCANA_COUNT,
+  ARCANA_VALUES,
+  CHAKRA_ORDER,
+  isArcana,
+  type MatrixInput,
+  type DestinyMatrix,
+  type Arcana,
+  type CoreSquare,
+  type AncestralCorner,
+  type AncestralSquare,
+  type Purposes,
+  type MoneyAndRelationshipLine,
+  type ChakraName,
+  type ChakraRow,
+} from './matrix';

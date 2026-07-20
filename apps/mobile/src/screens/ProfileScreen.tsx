@@ -136,6 +136,8 @@ interface ProfileScreenProps {
   onViewChart?: () => void;
   /** Called to navigate to the numerology result screen (#66), when offered. */
   onViewNumerology?: () => void;
+  /** Called to navigate to the Matrix of Destiny screen (#75), when offered. */
+  onViewMatrix?: () => void;
   /** Called to navigate to the People list (#s2), when offered. */
   onViewPeople?: () => void;
 }
@@ -144,6 +146,7 @@ export function ProfileScreen({
   onManageAccount,
   onViewChart,
   onViewNumerology,
+  onViewMatrix,
   onViewPeople,
 }: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
@@ -385,6 +388,16 @@ export function ProfileScreen({
           style={styles.manageAccountLink}
         >
           <Text style={styles.manageAccountLinkText}>{t('numerology.title')}</Text>
+        </Pressable>
+      ) : null}
+
+      {onViewMatrix ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewMatrix}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('matrix.title')}</Text>
         </Pressable>
       ) : null}
 
