@@ -6,6 +6,11 @@ export const SUPPORTED_LOCALES: readonly { code: Locale; label: string }[] = [
 ];
 
 const en = {
+  'launch.unreachable':
+    "Couldn't reach the server. You're still signed in — check your connection.",
+  'launch.retry': 'Try again',
+  'launch.signIn': 'Sign in with a different account',
+
   'login.title': 'AstroCalc',
   'login.subtitle': 'Sign in to save your charts and readings',
   'login.continueWithGoogle': 'Continue with Google',
@@ -215,6 +220,11 @@ const en = {
 } as const;
 
 const az: Record<keyof typeof en, string> = {
+  'launch.unreachable':
+    'Serverə qoşulmaq mümkün olmadı. Hesabınızdan çıxmamısınız — bağlantınızı yoxlayın.',
+  'launch.retry': 'Yenidən cəhd et',
+  'launch.signIn': 'Başqa hesabla daxil ol',
+
   'login.title': 'AstroCalc',
   'login.subtitle': 'Xəritələrinizi və şərhlərinizi saxlamaq üçün daxil olun',
   'login.continueWithGoogle': 'Google ilə davam et',

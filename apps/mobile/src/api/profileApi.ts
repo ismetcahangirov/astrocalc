@@ -1,8 +1,6 @@
-import { config } from '../config';
-import { getAccessToken } from '../auth/tokenStorage';
-import { ApiError } from './authApi';
+import { authedFetch, ApiError } from './httpClient';
 
-export { ApiError } from './authApi';
+export { ApiError } from './httpClient';
 
 export interface Profile {
   userId: string;
@@ -44,20 +42,6 @@ export interface ProfileUpdateInput {
   birthPlaceTimezone?: string | null;
   /** Set when the onboarding flow is exited — normally or via "finish later". */
   completeOnboarding?: boolean;
-}
-
-async function authedFetch(path: string, init: RequestInit): Promise<Response> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) throw new ApiError('unauthorized', 'You need to sign in again.');
-
-  try {
-    return await fetch(`${config.apiBaseUrl}${path}`, {
-      ...init,
-      headers: { ...(init.headers ?? {}), Authorization: `Bearer ${accessToken}` },
-    });
-  } catch {
-    throw new ApiError('network_error', 'Could not reach the server. Check your connection.');
-  }
 }
 
 async function parseProfileResponse(res: Response): Promise<Profile> {
