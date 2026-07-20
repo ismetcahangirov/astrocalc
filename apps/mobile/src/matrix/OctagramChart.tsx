@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, type ReactElement } from 'react';
 import { Platform } from 'react-native';
 import {
   Canvas,
@@ -24,6 +24,10 @@ import { chartTheme } from '../chart/theme';
 interface OctagramChartProps {
   /** Precomputed via `computeOctagramLayout()` — this component only draws it. */
   layout: OctagramLayout;
+  /** Localized caption for the paternal (NW–SE) diagonal. */
+  maleLineLabel?: string;
+  /** Localized caption for the maternal (NE–SW) diagonal. */
+  femaleLineLabel?: string;
 }
 
 /** Skia doesn't auto-centre text on a point; offset by the glyph's own measured box. */
@@ -38,22 +42,8 @@ function discRadius(node: OctagramNode, size: number): number {
   return size * byEmphasis[node.emphasis];
 }
 
-/**
- * The age each of the eight outer points marks. Life runs clockwise from the
- * left (west) vertex — 0 there, +10 years per point — the standard Matrix age
- * scale every reference calculator prints around the figure. Keyed by the
- * point's screen angle so it needs no extra field on the node.
- */
-const AGE_BY_ANGLE: Readonly<Record<number, string>> = {
-  180: '0', // W
-  135: '10', // NW
-  90: '20', // N
-  45: '30', // NE
-  0: '40', // E
-  315: '50', // SE
-  270: '60', // S
-  225: '70', // SW
-};
+/** Colour of the half-decade age numbers, dimmer than the decade ones. */
+const AGE_MINOR = 'rgba(185, 180, 199, 0.5)';
 
 /** The money ("$") and love ("♥") marks on the money/relationship line. */
 const MONEY_GREEN = '#3FB56B';
@@ -95,7 +85,11 @@ function heartPath(cx: number, cy: number, w: number): string {
  * text for a weighted style. The `AstroSymbols.ttf` subset carries zodiac and
  * planet glyphs, none of which appear on this figure.
  */
-export function OctagramChart({ layout }: OctagramChartProps) {
+export function OctagramChart({
+  layout,
+  maleLineLabel = 'male generation line',
+  femaleLineLabel = 'female generation line',
+}: OctagramChartProps) {
   const { size, center } = layout;
 
   // Android's `matchFont` needs an explicit family — without one, a weighted
@@ -108,6 +102,8 @@ export function OctagramChart({ layout }: OctagramChartProps) {
     3: matchFont({ fontFamily, fontSize: size * 0.033, fontWeight: '600' }),
   } as const;
   const ageFont = matchFont({ fontFamily, fontSize: size * 0.03, fontWeight: '600' });
+  const tickLabelFont = matchFont({ fontFamily, fontSize: size * 0.021, fontWeight: '500' });
+  const genFont = matchFont({ fontFamily, fontSize: size * 0.023, fontWeight: '500' });
   const markFont = matchFont({ fontFamily, fontSize: size * 0.05, fontWeight: '700' });
 
   // One-shot "reveal" on mount, driving a single 0→1 progress on the UI thread —
@@ -174,25 +170,79 @@ export function OctagramChart({ layout }: OctagramChartProps) {
     );
   };
 
-  // The 0–70 age scale, one label just outside each of the eight outer points.
-  const renderAge = (node: OctagramNode) => {
-    const age = AGE_BY_ANGLE[node.angle];
-    if (!age || !ageFont) return null;
-    const at = pointOnCircle(
-      center,
-      layout.radius + discRadius(node, size) + size * 0.03,
-      node.angle,
-    );
-    const pos = centered(ageFont, age, at.x, at.y);
+  // The age scale around the perimeter: a fine tick every year, a longer tick and
+  // a number at each half-decade, longest and brightest at each decade. Age runs
+  // clockwise from the west vertex (0); one full turn is 80 years, so 1 year =
+  // 4.5°. This is the ruler every reference figure prints outside the octagram.
+  const ageTickInner = layout.radius + size * 0.055;
+  const ageLabelR = layout.radius + size * 0.1;
+  const renderAgeScale = (): ReactElement[] => {
+    const items: ReactElement[] = [];
+    for (let a = 0; a < 80; a++) {
+      const angle = 180 - a * 4.5;
+      const decade = a % 10 === 0;
+      const half = a % 5 === 0;
+      const len = size * (decade ? 0.03 : half ? 0.022 : 0.013);
+      items.push(
+        <Line
+          key={`tick-${a}`}
+          p1={pointOnCircle(center, ageTickInner, angle)}
+          p2={pointOnCircle(center, ageTickInner + len, angle)}
+          color={decade ? chartTheme.goldMuted : chartTheme.goldFaint}
+          strokeWidth={decade ? 1 : 0.6}
+        />,
+      );
+      const font = decade ? ageFont : tickLabelFont;
+      if (half && font) {
+        const at = pointOnCircle(center, ageLabelR, angle);
+        const pos = centered(font, String(a), at.x, at.y);
+        items.push(
+          <SkiaText
+            key={`age-${a}`}
+            font={font}
+            text={String(a)}
+            x={pos.x}
+            y={pos.y}
+            color={decade ? chartTheme.textMuted : AGE_MINOR}
+          />,
+        );
+      }
+    }
+    return items;
+  };
+
+  // The two diagonals name the parental "generation lines" — male on the paternal
+  // (NW–SE) diagonal, female on the maternal (NE–SW) one — each rotated to run
+  // along its line, as the reference figures label them.
+  const renderGenerationLabels = (): ReactElement | null => {
+    if (!genFont) return null;
+    const male = pointOnCircle(center, layout.radius * 0.6, 135); // NW arm
+    const female = pointOnCircle(center, layout.radius * 0.6, 45); // NE arm
+    const malePos = centered(genFont, maleLineLabel, male.x, male.y);
+    const femalePos = centered(genFont, femaleLineLabel, female.x, female.y);
     return (
-      <SkiaText
-        key={`age-${node.key}`}
-        font={ageFont}
-        text={age}
-        x={pos.x}
-        y={pos.y}
-        color={chartTheme.textMuted}
-      />
+      <>
+        {/* NW–SE diagonal is a "\" — the label slants with it (clockwise 45°). */}
+        <Group transform={[{ rotate: Math.PI / 4 }]} origin={male}>
+          <SkiaText
+            font={genFont}
+            text={maleLineLabel}
+            x={malePos.x}
+            y={malePos.y}
+            color={chartTheme.textMuted}
+          />
+        </Group>
+        {/* NE–SW diagonal is a "/" — the label slants the other way. */}
+        <Group transform={[{ rotate: -Math.PI / 4 }]} origin={female}>
+          <SkiaText
+            font={genFont}
+            text={femaleLineLabel}
+            x={femalePos.x}
+            y={femalePos.y}
+            color={chartTheme.textMuted}
+          />
+        </Group>
+      </>
     );
   };
 
@@ -271,12 +321,13 @@ export function OctagramChart({ layout }: OctagramChartProps) {
             strokeWidth={1.1}
           />
         ))}
+
+        {/* The age ruler around the perimeter — outside the discs, so it lives
+            in the structure layer. */}
+        {renderAgeScale()}
       </Group>
 
-      <Group opacity={outerOpacity}>
-        {outerNodes.map(renderAge)}
-        {outerNodes.map(renderNode)}
-      </Group>
+      <Group opacity={outerOpacity}>{outerNodes.map(renderNode)}</Group>
       <Group opacity={innerOpacity}>
         {innerNodes.map(renderNode)}
         {renderMark('$', MONEY_GREEN, layout.moneyMark)}
@@ -284,6 +335,9 @@ export function OctagramChart({ layout }: OctagramChartProps) {
           path={heartPath(layout.loveMark.x, layout.loveMark.y, size * 0.05)}
           color={LOVE_RED}
         />
+        {/* The generation-line names cross the arm discs, so they are drawn last
+            to stay legible over them — as the reference figures show them. */}
+        {renderGenerationLabels()}
       </Group>
     </Canvas>
   );
