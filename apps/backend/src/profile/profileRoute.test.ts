@@ -120,6 +120,63 @@ describe('PATCH /profile', () => {
     });
   });
 
+  it('accepts and returns fullName', async () => {
+    const { app, accessToken } = await buildApp();
+
+    const res = await request(app)
+      .patch('/profile')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fullName: 'Çingiz Əliyev' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.fullName).toBe('Çingiz Əliyev');
+  });
+
+  it('keeps fullName separate from displayName', async () => {
+    const { app, accessToken } = await buildApp();
+
+    const res = await request(app)
+      .patch('/profile')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ fullName: 'Ada Augusta Byron King', displayName: 'Ada' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.fullName).toBe('Ada Augusta Byron King');
+    expect(res.body.displayName).toBe('Ada');
+  });
+
+  it('leaves fullName untouched when only displayName is patched', async () => {
+    const { app, accessToken } = await buildApp();
+    const auth = `Bearer ${accessToken}`;
+
+    await request(app).patch('/profile').set('Authorization', auth).send({
+      fullName: 'Ada Augusta Byron King',
+    });
+
+    const res = await request(app)
+      .patch('/profile')
+      .set('Authorization', auth)
+      .send({ displayName: 'Ada Lovelace' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.displayName).toBe('Ada Lovelace');
+    expect(res.body.fullName).toBe('Ada Augusta Byron King');
+  });
+
+  it('rejects a fullName that is empty or too long', async () => {
+    const { app, accessToken } = await buildApp();
+
+    for (const fullName of ['', 'x'.repeat(121)]) {
+      const res = await request(app)
+        .patch('/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ fullName });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('invalid_request');
+    }
+  });
+
   it('rejects a malformed birthDate', async () => {
     const { app, accessToken } = await buildApp();
 

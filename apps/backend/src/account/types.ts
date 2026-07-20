@@ -46,6 +46,7 @@ export interface UserDataExport {
   };
   profile: {
     displayName: string | null;
+    fullName: string | null;
     locale: string | null;
     birthDate: string | null;
     birthTime: string | null;

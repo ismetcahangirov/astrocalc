@@ -39,6 +39,11 @@ export const profiles = pgTable('profiles', {
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
   displayName: text('display_name'),
+  // The full birth name, as numerology needs it. Deliberately separate from
+  // `displayName`, which is seeded from the Google account and is usually a
+  // first name or a nickname — computing Expression/Soul Urge/Personality from
+  // that would produce numbers that are wrong but look right.
+  fullName: text('full_name'),
   avatarUrl: text('avatar_url'),
   locale: text('locale'),
   birthDate: date('birth_date', { mode: 'string' }),

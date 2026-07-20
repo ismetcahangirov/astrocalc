@@ -7,6 +7,7 @@ import type { TokenService } from '../auth/tokens';
 
 const patchSchema = z.object({
   displayName: z.string().min(1).max(200).nullable().optional(),
+  fullName: z.string().trim().min(1).max(120).nullable().optional(),
   avatarUrl: z.string().url().max(2048).nullable().optional(),
   locale: z.string().min(2).max(10).nullable().optional(),
   birthDate: z

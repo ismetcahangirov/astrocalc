@@ -70,6 +70,8 @@ export class InMemoryUserRepository implements UserRepository {
     this.profiles.set(user.id, {
       userId: user.id,
       displayName: input.displayName,
+      // Never seeded from the Google display name — see `Profile.fullName`.
+      fullName: null,
       avatarUrl: input.avatarUrl,
       locale: input.locale,
       ...BLANK_ONBOARDING_FIELDS,
@@ -89,6 +91,7 @@ export class InMemoryUserRepository implements UserRepository {
     this.profiles.set(user.id, {
       userId: user.id,
       displayName: null,
+      fullName: null,
       avatarUrl: null,
       locale: null,
       ...BLANK_ONBOARDING_FIELDS,
@@ -151,4 +154,4 @@ const BLANK_ONBOARDING_FIELDS = {
   birthPlaceLng: null,
   birthPlaceTimezone: null,
   onboardingCompletedAt: null,
-} satisfies Omit<Profile, 'userId' | 'displayName' | 'avatarUrl' | 'locale'>;
+} satisfies Omit<Profile, 'userId' | 'displayName' | 'fullName' | 'avatarUrl' | 'locale'>;

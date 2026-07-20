@@ -53,6 +53,8 @@ export interface User {
 export interface Profile {
   userId: string;
   displayName: string | null;
+  /** Full birth name — numerology's input. Never derived from `displayName`. */
+  fullName: string | null;
   avatarUrl: string | null;
   locale: string | null;
   birthDate: string | null;
@@ -68,6 +70,7 @@ export interface Profile {
 /** Fields the onboarding flow (and later the profile-edit screen, #7) may update, one step (or all) at a time. */
 export interface ProfileUpdateInput {
   displayName?: string | null;
+  fullName?: string | null;
   avatarUrl?: string | null;
   locale?: string | null;
   birthDate?: string | null;
