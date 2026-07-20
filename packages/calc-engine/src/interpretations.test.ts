@@ -115,10 +115,18 @@ describe('listNumerologySubjects', () => {
     expect(new Set(subjects.map((s) => s.subjectKey)).size).toBe(subjects.length);
   });
 
-  it('is NOT folded into listInterpretationSubjects yet (see #82)', () => {
-    const astrology = listInterpretationSubjects();
-    expect(astrology).toHaveLength(465);
-    expect(astrology.some((s) => s.category === 'numerology')).toBe(false);
+  it('is folded into listInterpretationSubjects as of #82, on top of the 465 astrology subjects', () => {
+    const all = listInterpretationSubjects();
+    // 465 astrology + 185 numerology = 650. Matrix is still absent (its
+    // position list is not fixed until #68), so nothing beyond these two.
+    expect(all).toHaveLength(650);
+    expect(all.filter((s) => s.category === 'numerology')).toHaveLength(185);
+    expect(all.some((s) => s.category === 'matrix')).toBe(false);
+    // Every numerology subject listNumerologySubjects() enumerates is present.
+    const foldedKeys = new Set(
+      all.filter((s) => s.category === 'numerology').map((s) => s.subjectKey),
+    );
+    expect(subjects.every((s) => foldedKeys.has(s.subjectKey))).toBe(true);
   });
 
   it('excludes master numbers the formulas cannot reach', () => {

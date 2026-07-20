@@ -6,6 +6,29 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Numerology interpretation content — #77, #78, #79 (content) + #82 (seed +
+  parity), the numerology half of `[EPIC] Numerology and Matrix interpretation
+  content` (#76). All **185 numerology subject keys × 4 locales (az/tr/en/ru) =
+  740 rows** of original text: the core four (Life Path, Expression, Soul Urge,
+  Personality), the extended/cycle numbers (Birthday 1–31, Maturity, Personal
+  Year/Month), and Pinnacles 1–4 / Challenges 1–4. Written per position, not
+  once per number: a 7 Life Path and a 7 Personal Year are different sentences,
+  because each number's meaning is woven with a position-specific frame (the
+  same compositional approach the astrology baseline uses). Challenges carry
+  their own lesson phrasing so 0 reads as a genuine value, and the four Pinnacle
+  positions differ by life stage (early → late).
+  **#82 folds `listNumerologySubjects()` into `listInterpretationSubjects()`**
+  now that content exists behind every key, so the backend seed-parity test and
+  the admin completeness checklist both enumerate numerology — a key with no
+  text in any locale now fails the test instead of surfacing as a blank section.
+  The required set went 465 → 650 subjects (1,860 → 2,600 rows); the calc-engine
+  guard test that asserted numerology was *not* yet folded in was flipped, and
+  the service/route/seed count expectations updated to `+185`.
+  **Matrix content (#80/#81) deliberately not touched.** It has no authoritative
+  key list in code yet — the position set is not fixed until #68's Ladini method
+  settles the enumerator — so seeding it would mean inventing a scheme #68 owns.
+  It joins the same way numerology just did, once that lands. calc-engine 371,
+  backend 347 green; eslint + prettier clean.
 - Matrix health-map summary row — follow-up to #75. The one position #67 shipped
   incomplete. Re-examining the sources showed the disagreement was narrower than
   first read: the two upper summary cells are a column sum in every source, and

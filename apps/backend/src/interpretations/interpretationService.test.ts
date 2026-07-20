@@ -135,8 +135,9 @@ describe('createInterpretationService', () => {
     it('reports every required subject/locale combination as missing on an empty store', async () => {
       const { service } = buildService();
       const missing = await service.listMissing();
-      // 10 planets x 12 signs + 10 planets x 12 houses + 45 pairs x 5 aspects, x4 locales.
-      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5) * 4);
+      // 10 planets x 12 signs + 10 planets x 12 houses + 45 pairs x 5 aspects (465)
+      // + 185 numerology subjects (folded in by #82), x4 locales.
+      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5 + 185) * 4);
     });
 
     it('shrinks as rows are added and is empty once everything is seeded', async () => {

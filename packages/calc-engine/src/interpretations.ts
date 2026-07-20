@@ -112,9 +112,18 @@ export function aspectSubjectKey(
  * Enumerate every (category, subjectKey) combination that must have
  * interpretation text in every {@link SUPPORTED_LOCALES} locale. This is the
  * single source of truth both the seed script (writes the content) and a
- * parity test (verifies nothing is missing) are driven from — the
- * ten {@link INTERPRETED_BODIES} planets across all 12 signs, all 12 houses,
- * and all 5 major aspects across every unordered pair of those planets.
+ * parity test (verifies nothing is missing) are driven from:
+ *
+ * - astrology (#18) — the ten {@link INTERPRETED_BODIES} planets across all 12
+ *   signs, all 12 houses, and all 5 major aspects across every unordered pair
+ *   of those planets (465 subjects), plus
+ * - numerology (#57) — the 185 subjects {@link listNumerologySubjects}
+ *   enumerates, merged in for issue #82 now that their seed content exists.
+ *
+ * Matrix of Destiny (#67) is deliberately still absent: its position list is
+ * not fixed until #68 settles the Ladini method, so there is nothing to
+ * enumerate yet and no content behind it. It joins here in the Matrix content
+ * issues (#80/#81), the same way numerology did.
  */
 export function listInterpretationSubjects(): InterpretationSubject[] {
   const subjects: InterpretationSubject[] = [];
@@ -138,6 +147,8 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
       }
     }
   }
+
+  subjects.push(...listNumerologySubjects());
 
   return subjects;
 }
@@ -262,10 +273,12 @@ export function numerologySubjectKey(kind: NumerologyNumberKind, value: number):
  * (personal-year) + 9 (personal-month) + 10 + 10 + 11 + 10 (pinnacles 1–4) + 9
  * + 9 + 9 + 9 (challenges 1–4) = 185.
  *
- * Deliberately **not** merged into {@link listInterpretationSubjects} yet. That
- * function drives the backend seed-parity test and the admin completeness
- * check, both of which would fail the moment these keys appear with no content
- * behind them. Merging is issue #82, once the numerology text exists.
+ * Merged into {@link listInterpretationSubjects} as of issue #82, now that the
+ * numerology seed content (#77/#78/#79) exists behind every key — the backend
+ * seed-parity test and the admin completeness check both enumerate these and
+ * would fail on any key with no content, which is exactly the guarantee we
+ * want. Kept as its own function so callers that need only the numerology
+ * subset (and the count comment above) do not have to filter the full list.
  */
 export function listNumerologySubjects(): InterpretationSubject[] {
   const subjects: InterpretationSubject[] = [];
