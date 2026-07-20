@@ -50,10 +50,13 @@ export {
   listInterpretationSubjects,
   numerologySubjectKey,
   listNumerologySubjects,
+  matrixSubjectKey,
+  listMatrixSubjects,
   type InterpretationLocale,
   type InterpretationCategory,
   type InterpretationSubject,
   type NumerologyNumberKind,
+  type MatrixSubjectKind,
 } from './interpretations';
 export {
   computeNatalChart,

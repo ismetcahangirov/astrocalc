@@ -6,6 +6,32 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Matrix interpretation content — #80 (22 arcana base meanings) + #81
+  (position-specific meanings), the Matrix half of `[EPIC] Numerology and Matrix
+  interpretation content` (#76), which this completes. **682 Matrix subject keys
+  × 4 locales (az/tr/en/ru) = 2,728 rows.** #68 (the Ladini method spec) and the
+  Matrix calc-engine domain (#67) were already merged, so the position list was
+  settled — the only thing missing was the interpretation *enumerator*, the
+  Matrix analog of `listNumerologySubjects()`. Added `listMatrixSubjects()` +
+  `matrixSubjectKey()` + a 31-member `MatrixSubjectKind` (the `arcana` base for
+  #80, plus the 30 named octagram positions for #81) and folded it into
+  `listInterpretationSubjects()`, exactly as numerology was.
+  **The 30 positions are precisely the ones `formatMatrixDetails()` (mobile)
+  labels** — the 5 core points, 6 purposes, 7 ancestral positions, the 5-point
+  money/relationship line, and the 7 chakra rows — so every value the breakdown
+  shows has a reading behind it. Written per position, not once per arcana: the
+  Emperor on the day point ("your inborn portrait") and on the father's line
+  ("the material inheritance of your father's line") are different sentences off
+  the same arcana meaning, the same compositional approach the astrology and
+  numerology baselines use. The health-map *summary* row and the ancestral
+  corners' inner/middle triples are deliberately not keyed — they are derived
+  read-outs of arcana already covered, shown only as numbers, not independently
+  interpreted points.
+  Required set 650 → **1,332 subjects (2,600 → 5,328 rows)**; the calc-engine
+  guard that asserted Matrix was absent from `listInterpretationSubjects()` was
+  flipped, and the service/route/seed count expectations updated to `+682`.
+  calc-engine 377, backend 352 green; eslint + prettier clean. With #77–#82 all
+  landed, epic #76 is complete.
 - Numerology interpretation content — #77, #78, #79 (content) + #82 (seed +
   parity), the numerology half of `[EPIC] Numerology and Matrix interpretation
   content` (#76). All **185 numerology subject keys × 4 locales (az/tr/en/ru) =
