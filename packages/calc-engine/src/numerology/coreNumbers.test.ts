@@ -108,13 +108,9 @@ describe('nameSums', () => {
 
   it('agrees with the three name-derived numbers', () => {
     const sums = nameSums('Mehriban Yaqubova');
-    expect(expressionNumber('Mehriban Yaqubova').value).toBe(
-      reduceForTest(sums.letterSum),
-    );
+    expect(expressionNumber('Mehriban Yaqubova').value).toBe(reduceForTest(sums.letterSum));
     expect(soulUrgeNumber('Mehriban Yaqubova').value).toBe(reduceForTest(sums.vowelSum));
-    expect(personalityNumber('Mehriban Yaqubova').value).toBe(
-      reduceForTest(sums.consonantSum),
-    );
+    expect(personalityNumber('Mehriban Yaqubova').value).toBe(reduceForTest(sums.consonantSum));
   });
 });
 

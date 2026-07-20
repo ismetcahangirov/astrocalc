@@ -48,10 +48,8 @@ describe('computeNumerologyProfile', () => {
     expect(onTheDay.currentAge).toBe(36);
   });
 
-  it('agrees with the individual functions it composes', () => {
-    expect(profile.expression).toEqual(profile.expression);
-    const direct = computeNumerologyProfile(INPUT);
-    expect(direct).toEqual(profile);
+  it('is deterministic for the same input', () => {
+    expect(computeNumerologyProfile(INPUT)).toEqual(profile);
   });
 
   it('is JSON-serialisable with no loss', () => {

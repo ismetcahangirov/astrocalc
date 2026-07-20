@@ -35,10 +35,21 @@ Challenges.
 
 **Calculation first, content second.** The calculation code for both features is
 a few hundred lines. The interpretation content is roughly 1600 original texts
-(~410 subject keys × 4 locales) — by volume, ~80% of the work. Screens ship
+(~405 subject keys × 4 locales) — by volume, ~80% of the work. Screens ship
 with the reading section empty (exactly as the natal chart's "Your Reading" is
 today) and the content lands as its own epic. This keeps content authoring off
 the critical path for shipping working calculations.
+
+**Only reachable subject keys are enumerated.** Numerology's key count settled at
+**185**, not the ~189 first estimated, because several master numbers cannot
+occur at the positions they were first assigned. Life Path sums three reduced
+1–9 components (max 27), so 33 is impossible; Pinnacles 1, 2 and 4 sum two such
+components (max 18), so only 11 survives; Pinnacle 3 sums two Pinnacles (max
+22), so 22 is reachable but 33 is not. Enumerating an unreachable key would ask
+the content epic to write text that can never display, and would make the admin
+completeness checklist permanently unsatisfiable. An exhaustive sweep over
+1900–2030 confirmed the enumerated ranges match the values the formulas
+actually produce, exactly.
 
 **No shared "calculation plugin" abstraction.** Both features mirror the
 natal-chart shape end to end — pure function in `calc-engine`, route + service +
@@ -127,12 +138,15 @@ Depends on Epic A's item 1 (#58).
 
 ## Epic C — Interpretation content (#76, M2)
 
-~410 subject keys × 4 locales (az/tr/en/ru). Split by block so each is a
-finishable unit:
+~405 subject keys × 4 locales (az/tr/en/ru) — 185 numerology, plus the Matrix
+keys, which are estimated until #68 fixes the position list. Split by block so
+each is a finishable unit:
 
-1. **(#77)** Numerology — core four (48 keys).
+1. **(#77)** Numerology — core four (47 keys: Life Path 11, the three
+   name-derived numbers 12 each).
 2. **(#78)** Numerology — extended and cycles (61 keys).
-3. **(#79)** Numerology — Pinnacles and Challenges (80 keys).
+3. **(#79)** Numerology — Pinnacles and Challenges (77 keys: 10 + 10 + 11 + 10
+   Pinnacles, 9 × 4 Challenges).
 4. **(#80)** Matrix — the 22 arcana, base meanings.
 5. **(#81)** Matrix — position-specific meanings.
 6. **(#82)** Seed script + `listInterpretationSubjects()` parity test extended

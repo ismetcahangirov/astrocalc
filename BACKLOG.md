@@ -6,6 +6,32 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Numerology calculation engine — #58–#63, closing the calc-engine half of
+  `[EPIC] Numerology` (#57). New `packages/calc-engine/src/numerology/`:
+  `reduce.ts` (digit reduction preserving masters 11/22/33 and recording karmic
+  debt 13/14/16/19 — including at intermediate steps, so 49→13→4 reports the
+  debt), `alphabet.ts` (AZ/TR/RU romanization + the Pythagorean letter table +
+  a documented Y-adjacency rule for vowel/consonant splitting),
+  `coreNumbers.ts` (Life Path, Expression, Soul Urge, Personality),
+  `cycleNumbers.ts` (Birthday, Maturity, Personal Year/Month),
+  `periods.ts` (four Pinnacles and four Challenges with age ranges), and
+  `computeNumerologyProfile()` + `NUMEROLOGY_SCHEMA_VERSION`, mirroring
+  `computeNatalChart()`. Pure and RN-safe, so device and backend agree.
+  Also extracted a shared calendar-aware `parseIsoDate` (`date-parsing.ts`),
+  now used by `natal-chart.ts` too — it is stricter than the regex it replaced,
+  rejecting `1990-02-30`. Interpretation categories widened beyond astrology
+  (#58) with `listNumerologySubjects()` kept **separate** from
+  `listInterpretationSubjects()`: the latter drives the backend seed-parity test
+  and the admin completeness check, so folding 185 contentless keys into it
+  would have failed CI immediately — merging is #82.
+  Two findings worth recording: **8 subject keys were dropped as unreachable**
+  (Life Path 33, and the master numbers Pinnacles 1/2/4 cannot produce), taking
+  the count from 193 to 185, verified by an exhaustive 1900–2030 sweep that
+  matched the enumerated ranges exactly; and the reference-fixture suite
+  (`__fixtures__/reference-numerology.ts`, three hand-computed cases across
+  Latin, Azerbaijani and Cyrillic names, each carrying its own working) passed
+  with no discrepancy. 240 tests green. Deliberately not included: backend
+  route, mobile screen (#64–#66) and any interpretation text (#76).
 - Numerology + Matrix of Destiny roadmap — Spec 3
   (`docs/superpowers/specs/2026-07-20-numerology-and-matrix-roadmap-design.md`),
   #56. Two of the four calculation domains README promises had **no
