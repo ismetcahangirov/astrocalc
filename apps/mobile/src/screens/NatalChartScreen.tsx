@@ -194,6 +194,20 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
             </>
           ) : null}
 
+          {details.houses.length > 0 ? (
+            <>
+              <Text style={styles.subTitle}>{t('natalChart.housesTitle')}</Text>
+              {details.houses.map((h) => (
+                <View key={h.house} style={styles.detailRow}>
+                  <Text style={styles.detailName}>
+                    {t('natalChart.houseAbbrev')} {h.house}
+                  </Text>
+                  <Text style={styles.detailValue}>{h.position}</Text>
+                </View>
+              ))}
+            </>
+          ) : null}
+
           {details.aspects.length > 0 ? (
             <>
               <Text style={styles.subTitle}>{t('natalChart.aspectsTitle')}</Text>

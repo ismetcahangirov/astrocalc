@@ -94,6 +94,13 @@ describe('formatChartDetails', () => {
     ]);
   });
 
+  it('lists all 12 house cusps with their sign', () => {
+    const { houses } = formatChartDetails(makeChart(), 'en', LABELS);
+    expect(houses).toHaveLength(12);
+    expect(houses[0]).toEqual({ house: 1, position: '0°00′ Aries' });
+    expect(houses[11].house).toBe(12);
+  });
+
   it('formats aspects with orb and motion, null motion when undetermined', () => {
     const { aspects } = formatChartDetails(makeChart(), 'en', LABELS);
     expect(aspects[0]).toMatchObject({
@@ -109,8 +116,9 @@ describe('formatChartDetails', () => {
   it('omits houses and angles when the birth time is unknown', () => {
     const chart = makeChart();
     (chart as { houses: unknown }).houses = null;
-    const { planets, angles } = formatChartDetails(chart, 'en', LABELS);
+    const { planets, angles, houses } = formatChartDetails(chart, 'en', LABELS);
     expect(angles).toEqual([]);
+    expect(houses).toEqual([]);
     expect(planets.every((p) => p.house === null)).toBe(true);
   });
 });

@@ -133,6 +133,12 @@ export interface AngleDetail {
   position: string;
 }
 
+export interface HouseDetail {
+  house: number;
+  /** The sign + degree the house cusp falls on, e.g. `19°14′ Libra`. */
+  position: string;
+}
+
 export interface AspectDetail {
   key: string;
   bodyA: string;
@@ -147,6 +153,8 @@ export interface AspectDetail {
 export interface ChartDetails {
   planets: PlanetDetail[];
   angles: AngleDetail[];
+  /** The 12 house cusps and the sign each falls on (empty when the birth time is unknown). */
+  houses: HouseDetail[];
   aspects: AspectDetail[];
 }
 
@@ -183,6 +191,11 @@ export function formatChartDetails(
       ]
     : [];
 
+  const houses: HouseDetail[] = (chart.houses?.cusps ?? []).map((cusp) => ({
+    house: cusp.house,
+    position: `${formatDegree(cusp.degree)} ${signNames[cusp.sign]}`,
+  }));
+
   const aspects: AspectDetail[] = chart.aspects.map((a, i) => ({
     key: `${a.bodyA}-${a.bodyB}-${a.type}-${i}`,
     bodyA: bodyNames[a.bodyA],
@@ -192,5 +205,5 @@ export function formatChartDetails(
     motion: a.applying == null ? null : a.applying ? applying.applying : applying.separating,
   }));
 
-  return { planets, angles, aspects };
+  return { planets, angles, houses, aspects };
 }
