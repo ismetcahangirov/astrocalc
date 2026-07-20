@@ -166,8 +166,31 @@ export type NumerologyNumberKind =
   | 'challenge-3'
   | 'challenge-4';
 
-/** Values that carry master numbers: 1–9 plus 11, 22, 33. */
+/**
+ * Values that carry master numbers: 1–9 plus 11, 22, 33. Only valid for kinds
+ * whose formula can actually sum high enough to reach 33 — name-derived
+ * numbers (expression, soul-urge, personality) are unbounded, and maturity
+ * sums a life path (max 22) with an expression (max 33), so 33 is reachable
+ * there too.
+ */
 const MASTER_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22, 33];
+/**
+ * Masters reachable from Life Path, which sums three already-reduced 1–9
+ * components (month + day + year), for a max of 27. 22 fits; 33 (which needs
+ * a component sum of at least 33) does not.
+ */
+const LIFE_PATH_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22];
+/**
+ * Masters reachable by Pinnacles 1, 2 and 4, each of which sums two
+ * already-reduced 1–9 components for a max of 18. Only 11 fits under that
+ * ceiling; 22 and 33 do not.
+ */
+const PINNACLE_PAIR_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11];
+/**
+ * Masters reachable by Pinnacle 3, which sums Pinnacles 1 and 2 — each in
+ * {1..9, 11} — for a max of 11 + 11 = 22. 22 fits; 33 does not.
+ */
+const PINNACLE_THIRD_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22];
 /** Values reduced to a single digit: 1–9. */
 const SINGLE_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Challenges uniquely include 0, and never exceed 8. */
@@ -177,7 +200,7 @@ const BIRTHDAY_RANGE: readonly number[] = Array.from({ length: 31 }, (_, i) => i
 
 /** The values each numerology kind can take — also the enumeration order. */
 const NUMEROLOGY_VALUE_RANGES: Record<NumerologyNumberKind, readonly number[]> = {
-  'life-path': MASTER_RANGE,
+  'life-path': LIFE_PATH_RANGE,
   expression: MASTER_RANGE,
   'soul-urge': MASTER_RANGE,
   personality: MASTER_RANGE,
@@ -185,19 +208,24 @@ const NUMEROLOGY_VALUE_RANGES: Record<NumerologyNumberKind, readonly number[]> =
   maturity: MASTER_RANGE,
   'personal-year': SINGLE_RANGE,
   'personal-month': SINGLE_RANGE,
-  'pinnacle-1': MASTER_RANGE,
-  'pinnacle-2': MASTER_RANGE,
-  'pinnacle-3': MASTER_RANGE,
-  'pinnacle-4': MASTER_RANGE,
+  'pinnacle-1': PINNACLE_PAIR_RANGE,
+  'pinnacle-2': PINNACLE_PAIR_RANGE,
+  'pinnacle-3': PINNACLE_THIRD_RANGE,
+  'pinnacle-4': PINNACLE_PAIR_RANGE,
   'challenge-1': CHALLENGE_RANGE,
   'challenge-2': CHALLENGE_RANGE,
   'challenge-3': CHALLENGE_RANGE,
   'challenge-4': CHALLENGE_RANGE,
 };
 
-/** `'pinnacle'`/`'challenge'` without a position index still have a known range. */
+/**
+ * `'pinnacle'`/`'challenge'` without a position index still have a known
+ * range. Pinnacle uses the widest of the three pinnacle ranges
+ * ({@link PINNACLE_THIRD_RANGE}, which includes 22) so a caller passing the
+ * loose kind is never rejected for a value that is valid at some position.
+ */
 function rangeForLooseKind(kind: string): readonly number[] | null {
-  if (kind === 'pinnacle') return MASTER_RANGE;
+  if (kind === 'pinnacle') return PINNACLE_THIRD_RANGE;
   if (kind === 'challenge') return CHALLENGE_RANGE;
   return null;
 }
@@ -222,9 +250,14 @@ export function numerologySubjectKey(kind: string, value: number): string {
 }
 
 /**
- * Enumerate every numerology subject that needs interpretation text: 193 keys
- * (60 core life-path/expression/soul-urge/personality/maturity + 31 birthday +
- * 18 personal-year/personal-month cycles + 48 pinnacles + 36 challenges).
+ * Enumerate every numerology subject that needs interpretation text: 185 keys.
+ * Life Path and the pinnacles use narrower ranges than the other master-number
+ * kinds because their formulas cannot reach every master number (see
+ * {@link LIFE_PATH_RANGE}, {@link PINNACLE_PAIR_RANGE},
+ * {@link PINNACLE_THIRD_RANGE}) — 11 (life-path) + 12 (expression) + 12
+ * (soul-urge) + 12 (personality) + 31 (birthday) + 12 (maturity) + 9
+ * (personal-year) + 9 (personal-month) + 10 + 10 + 11 + 10 (pinnacles 1–4) + 9
+ * + 9 + 9 + 9 (challenges 1–4) = 185.
  *
  * Deliberately **not** merged into {@link listInterpretationSubjects} yet. That
  * function drives the backend seed-parity test and the admin completeness
