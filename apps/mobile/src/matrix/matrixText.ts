@@ -120,6 +120,12 @@ const CHAKRA_LABELS: Record<Locale, Record<ChakraName, string>> = {
   },
 };
 
+/** Label for the summary ("key") row beneath the seven chakras, per locale. */
+const SUMMARY_LABEL: Record<Locale, string> = {
+  en: 'Summary',
+  az: 'Yekun',
+};
+
 /** One labelled arcana. */
 export interface MatrixRow {
   key: string;
@@ -144,6 +150,8 @@ export interface MatrixDetails {
   /** The five arcana both the money and the relationship reading are taken from. */
   moneyAndRelationships: MatrixRow[];
   health: MatrixChakraRow[];
+  /** The summary ("key") row totalling each health column. Shares the chakra-row shape but has no chakra. */
+  healthSummary: MatrixChakraRow;
 }
 
 /** Build the localized detail rows for a Matrix. */
@@ -198,5 +206,12 @@ export function formatMatrixDetails(matrix: DestinyMatrix, locale: Locale): Matr
       energy: String(r.energy),
       emotional: String(r.emotional),
     })),
+    healthSummary: {
+      key: 'summary',
+      label: SUMMARY_LABEL[locale],
+      physical: String(matrix.healthSummary.physical),
+      energy: String(matrix.healthSummary.energy),
+      emotional: String(matrix.healthSummary.emotional),
+    },
   };
 }

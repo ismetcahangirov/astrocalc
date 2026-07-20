@@ -50,6 +50,33 @@ export interface ChakraRow {
   emotional: Arcana;
 }
 
+/**
+ * The summary ("Ключ") row of the health map: each of the three columns summed
+ * across all seven chakras and reduced.
+ *
+ * The spec's §5.2 originally left this out because the sources disagree — but
+ * the disagreement is narrower than it first looked. The two upper cells
+ * (physical and energy) are a column sum in *every* source. Only the third cell
+ * has two candidate definitions:
+ *
+ *  a. the emotional column summed and reduced, like the other two;
+ *  b. `physical(summary) + energy(summary)`.
+ *
+ * Both reference code implementations use **(a)** — every summary cell is
+ * `reduce(sum of its own column)`, uniformly — and that is what the live
+ * calculators actually run. (b) comes from a single prose source. So (a) is
+ * adopted here: it has the stronger evidence and is internally consistent, each
+ * cell being "the total of the column above it".
+ */
+export interface HealthSummary {
+  /** Sum of all seven physical cells, reduced. */
+  physical: Arcana;
+  /** Sum of all seven energy cells, reduced. */
+  energy: Arcana;
+  /** Sum of all seven emotional cells, reduced — variant (a), not `physical + energy`. */
+  emotional: Arcana;
+}
+
 /** The seven chakras, crown to root — also the row order of the health map. */
 export type ChakraName =
   'sahasrara' | 'ajna' | 'vishuddha' | 'anahata' | 'manipura' | 'svadhisthana' | 'muladhara';
@@ -103,12 +130,7 @@ export function computeMoneyAndRelationshipLine(core: CoreSquare): MoneyAndRelat
  * consume the *reduced* value, not the raw sum. Every source and implementation
  * chains it that way.
  *
- * Deliberately absent: the summary ("Ключ") row. Only one source publishes a
- * formula for it, the implementations disagree, and one computes it with a
- * single-pass digit sum that is simply wrong once the total exceeds two digits
- * (154 → 4 + 15 = 19, rather than 1 + 5 + 4 = 10). With no defensible answer
- * available, nothing is shipped rather than a guess that would look
- * authoritative on screen. This is the one place the method is left incomplete.
+ * The summary ("Ключ") row that totals these seven is {@link computeHealthSummary}.
  */
 export function computeHealthMap(core: CoreSquare): ChakraRow[] {
   const row = (chakra: ChakraName, physical: Arcana, energy: Arcana): ChakraRow => ({
@@ -134,4 +156,24 @@ export function computeHealthMap(core: CoreSquare): ChakraRow[] {
     row('svadhisthana', sumArcana(core.year, core.centre), sumArcana(core.sum, core.centre)),
     row('muladhara', core.year, core.sum),
   ];
+}
+
+/**
+ * Compute the summary ("Ключ") row: each column of the health map summed across
+ * all seven chakras and reduced.
+ *
+ * Variant (a) throughout — see {@link HealthSummary}. Every cell is the total of
+ * its own column, so `emotional` is the emotional column summed, **not**
+ * `physical + energy`. The sum of seven arcana is at most 154, which always
+ * reduces back into 1–22, so no cell can escape the range.
+ *
+ * Takes the already-computed rows rather than recomputing them, so the summary
+ * can never drift from the map it summarises.
+ */
+export function computeHealthSummary(rows: ChakraRow[]): HealthSummary {
+  return {
+    physical: sumArcana(...rows.map((r) => r.physical)),
+    energy: sumArcana(...rows.map((r) => r.energy)),
+    emotional: sumArcana(...rows.map((r) => r.emotional)),
+  };
 }

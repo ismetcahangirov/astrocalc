@@ -27,6 +27,7 @@ describe('computeDestinyMatrix', () => {
     expect(matrix.purposes).toBeDefined();
     expect(matrix.moneyAndRelationships).toBeDefined();
     expect(matrix.health).toHaveLength(7);
+    expect(matrix.healthSummary).toBeDefined();
   });
 
   it('is deterministic — the same date always gives the same Matrix', () => {

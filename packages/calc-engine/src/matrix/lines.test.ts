@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { computeCoreSquare } from './core';
-import { CHAKRA_ORDER, computeHealthMap, computeMoneyAndRelationshipLine } from './lines';
+import {
+  CHAKRA_ORDER,
+  computeHealthMap,
+  computeHealthSummary,
+  computeMoneyAndRelationshipLine,
+} from './lines';
 import { isArcana, sumArcana } from './reduce';
 
 /** 1990-11-22: day 22, month 11, year 19, sum 7, centre 14. */
@@ -105,6 +110,56 @@ describe('computeHealthMap', () => {
           for (const value of [row.physical, row.energy, row.emotional]) {
             expect(isArcana(value), `${iso} ${row.chakra} -> ${value}`).toBe(true);
           }
+        }
+      }
+    }
+  });
+});
+
+describe('computeHealthSummary', () => {
+  it('totals each column across all seven chakras and reduces', () => {
+    // 1990-11-22, hand-summed from the health map:
+    //   physical: 22+4+9+5+14+6+19 = 79 -> 16
+    //   energy:   11+18+7+21+14+21+7 = 99 -> 18
+    //   emotional: 6+22+16+8+10+9+8 = 79 -> 16
+    const summary = computeHealthSummary(computeHealthMap(CORE));
+    expect(summary).toEqual({ physical: 16, energy: 18, emotional: 16 });
+  });
+
+  it('matches the totals two live calculators print for 1979-07-29', () => {
+    // The external check that settles variant (a): beloesolnce.ru and
+    // gadalkindom.ru both print 14 / 12 / 8 for this date. If the third cell
+    // were `physical + energy` (the rejected variant b) it would be
+    // reduce(14+12) = 8 here by coincidence — so this date does NOT
+    // discriminate the two, which is exactly why the next test exists.
+    const summary = computeHealthSummary(computeHealthMap(computeCoreSquare('1979-07-29')));
+    expect(summary).toEqual({ physical: 14, energy: 12, emotional: 8 });
+  });
+
+  it('sums the emotional COLUMN, not physical+energy of the summary', () => {
+    // The one real divergence in this row. For 1990-11-22 the two rules give
+    // different answers, so this pins variant (a) down:
+    //   (a) emotional column summed = 16
+    //   (b) reduce(physical 16 + energy 18) = reduce(34) = 7
+    const rows = computeHealthMap(CORE);
+    const summary = computeHealthSummary(rows);
+    expect(summary.emotional).toBe(16);
+    expect(summary.emotional).not.toBe(sumArcana(summary.physical, summary.energy));
+  });
+
+  it('produces only valid arcana across an exhaustive sweep', () => {
+    // Seven arcana of at most 22 sum to at most 154, which always reduces back
+    // into 1-22 — asserted rather than assumed.
+    for (let year = 1900; year <= 2030; year++) {
+      for (const [month, day] of [
+        [1, 1],
+        [6, 22],
+        [12, 31],
+      ] as const) {
+        const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const summary = computeHealthSummary(computeHealthMap(computeCoreSquare(iso)));
+        for (const value of [summary.physical, summary.energy, summary.emotional]) {
+          expect(isArcana(value), `${iso} -> ${value}`).toBe(true);
         }
       }
     }

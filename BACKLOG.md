@@ -6,6 +6,21 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Matrix health-map summary row — follow-up to #75. The one position #67 shipped
+  incomplete. Re-examining the sources showed the disagreement was narrower than
+  first read: the two upper summary cells are a column sum in every source, and
+  only the third had two candidates. Both reference *code* implementations use
+  variant (a) — every summary cell is `reduce(sum of its own column)`, so the
+  emotional cell is the emotional column's total, not `physical + energy` — and
+  that is what the live calculators run; (b) came from one prose source. Adopted
+  (a). Confirmed externally: 1979-07-29 computes to 14/12/8, exactly what
+  `beloesolnce.ru` and `gadalkindom.ru` print. The discriminating fixture is
+  1990-11-22 (a gives 16, b would give 7), since on the 1979 date the two rules
+  agree by coincidence. `MATRIX_SCHEMA_VERSION` bumped to 2. calc-engine 371,
+  backend 341, mobile 178 green; the spec's §5.2 and §7 updated to record the
+  decision. The one thing left behind on purpose: the single-pass digit-sum bug
+  one implementation has — this engine loops, so its totals are correct where
+  that one's are not.
 - Matrix of Destiny, end to end — #68–#75, completing `[EPIC] Matrix of
   Destiny` (#67). Spec, calc-engine domain, backend slice, and the mobile
   octagram.

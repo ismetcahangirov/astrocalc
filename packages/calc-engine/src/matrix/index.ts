@@ -2,8 +2,10 @@ import { computeAncestralSquare, type AncestralSquare } from './ancestral';
 import { computeCoreSquare, type CoreSquare } from './core';
 import {
   computeHealthMap,
+  computeHealthSummary,
   computeMoneyAndRelationshipLine,
   type ChakraRow,
+  type HealthSummary,
   type MoneyAndRelationshipLine,
 } from './lines';
 import { computePurposes, type Purposes } from './purposes';
@@ -28,8 +30,11 @@ import { computePurposes, type Purposes } from './purposes';
  * of the on-device calculation.
  */
 
-/** Version of the {@link DestinyMatrix} shape, bumped on any breaking change. */
-export const MATRIX_SCHEMA_VERSION = 1;
+/**
+ * Version of the {@link DestinyMatrix} shape, bumped on any breaking change.
+ * v2 added the health-map summary row ({@link DestinyMatrix.healthSummary}).
+ */
+export const MATRIX_SCHEMA_VERSION = 2;
 
 export interface MatrixInput {
   /** Civil birth date, `YYYY-MM-DD`. The only input the Matrix takes. */
@@ -63,6 +68,8 @@ export interface DestinyMatrix {
    * physical/energy/emotional split.
    */
   health: ChakraRow[];
+  /** The summary ("Ключ") row: each health column totalled across the seven chakras. */
+  healthSummary: HealthSummary;
 }
 
 /**
@@ -80,6 +87,7 @@ export interface DestinyMatrix {
 export function computeDestinyMatrix(input: MatrixInput): DestinyMatrix {
   const core = computeCoreSquare(input.birthDate);
   const ancestral = computeAncestralSquare(core);
+  const health = computeHealthMap(core);
 
   return {
     schemaVersion: MATRIX_SCHEMA_VERSION,
@@ -88,7 +96,8 @@ export function computeDestinyMatrix(input: MatrixInput): DestinyMatrix {
     ancestral,
     purposes: computePurposes(core, ancestral),
     moneyAndRelationships: computeMoneyAndRelationshipLine(core),
-    health: computeHealthMap(core),
+    health,
+    healthSummary: computeHealthSummary(health),
   };
 }
 
@@ -101,5 +110,6 @@ export {
   CHAKRA_ORDER,
   type ChakraName,
   type ChakraRow,
+  type HealthSummary,
   type MoneyAndRelationshipLine,
 } from './lines';

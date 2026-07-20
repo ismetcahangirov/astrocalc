@@ -307,12 +307,28 @@ described as sitting on the Svadhisthana row.
 a single value; its own *methodology* page contradicts both, and the code agrees
 with the methodology page. Treated as an error on that one page.
 
-**The summary ("Ключ") row is deliberately not implemented.** Only one source
-publishes a formula for it, the implementations disagree, and one of them
-computes it with a single-pass digit sum that is simply wrong for three-digit
-sums (`154 → 4 + 15 = 19`, not `1+5+4 = 10`). There is no defensible answer to
-ship, so nothing is shipped. This is the one place the method is left incomplete,
-and it is recorded rather than guessed.
+**The summary ("Ключ") row is implemented as variant (a):** each of the three
+columns summed across all seven chakras and reduced, so `emotional` is the
+emotional column's total rather than `physical + energy` of the summary itself.
+
+This was originally left out as undecidable, but the disagreement is narrower
+than it first read. The two upper cells are a column sum in *every* source; only
+the third cell has two candidates — (a) the emotional column summed, or (b)
+`physical(summary) + energy(summary)`. Both reference *code* implementations use
+(a) uniformly (every summary cell is `reduce(sum of its own column)`), and that
+is what the live calculators run; (b) comes from a single prose source. So (a)
+is adopted, with the stronger evidence and internal consistency.
+
+Confirmed externally: for 1979-07-29 the computed summary is 14 / 12 / 8, which
+is exactly what `beloesolnce.ru` and `gadalkindom.ru` print. (One caveat worth
+recording: on *that* date (a) and (b) happen to agree, because
+`reduce(14 + 12) = 8` equals the emotional column total by coincidence — so the
+discriminating fixture is 1990-11-22, where (a) gives 16 and (b) would give 7.)
+
+The one thing still **not** carried over is the single-pass digit-sum bug one
+implementation has (`154 → 4 + 15 = 19` instead of `1+5+4 = 10`): this engine's
+`reduceToArcana` loops, so its totals are correct where that implementation's are
+not.
 
 ## 6. Worked reference cases
 
@@ -400,7 +416,7 @@ variant recognises it as considered and rejected rather than missed.
 | 3 | Money vs relationship line | one line, both readings | two separate lines with identical values (§5.1) |
 | 4 | Planetary purpose | `social + spiritual` | omitted entirely by two implementations (§4) |
 | 5 | Svadhisthana row | `C+E` / `D+E` | one ring further out (§5.2) |
-| 6 | Health summary row | not implemented | three mutually inconsistent formulas (§5.2) |
+| 6 | Health summary row | column sums, reduced (variant a) | third cell as `physical + energy` (variant b); a single-pass digit sum (§5.2) |
 | 7 | Relationship line inputs | one person's date | both partners' dates — a different feature (§5.1) |
 | 8 | Corner letter naming | compass directions | the H/I letter assignment is swapped between sources; cosmetic only (§3) |
 
@@ -420,6 +436,7 @@ Two sources are flagged as unreliable rather than merely divergent:
   site publishes output categories and no formulas; the book excerpts reachable
   all stop before the calculation chapter. Everything here is reconstruction, and
   should be re-examined if a primary source surfaces.
-- **The health summary row** (§5.2) is left unimplemented.
+- **The health summary row** (§5.2) is implemented as variant (a); the
+  losing variant (b) and the single-pass-reduction bug are recorded there.
 - **Interpretation content** is out of scope entirely — this document defines
   what the numbers *are*, never what they mean. That is epic #76.
