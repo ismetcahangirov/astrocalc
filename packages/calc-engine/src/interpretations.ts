@@ -16,10 +16,12 @@ export const SUPPORTED_LOCALES: readonly InterpretationLocale[] = ['az', 'tr', '
 export const FALLBACK_LOCALE: InterpretationLocale = 'en';
 
 /**
- * The three kinds of computed placement this feature writes interpretation
- * text for (see issue #18's acceptance criteria).
+ * The kinds of computed result AstroCalc writes interpretation text for.
+ * The first three are natal-chart placements (#18); `numerology` and `matrix`
+ * were added for the numerology (#57) and Matrix of Destiny (#67) epics.
  */
-export type InterpretationCategory = 'planet-sign' | 'planet-house' | 'aspect';
+export type InterpretationCategory =
+  'planet-sign' | 'planet-house' | 'aspect' | 'numerology' | 'matrix';
 
 const SIGNS: readonly ZodiacSign[] = [
   'Aries',
@@ -137,5 +139,104 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
     }
   }
 
+  return subjects;
+}
+
+/**
+ * The numerology numbers that get their own interpretation text. Each kind has
+ * its own valid value range, because the same digit means different things in
+ * different positions — a 7 Life Path and a 7 Personal Year are unrelated
+ * readings, so they are separate subjects rather than one shared "7" text.
+ */
+export type NumerologyNumberKind =
+  | 'life-path'
+  | 'expression'
+  | 'soul-urge'
+  | 'personality'
+  | 'birthday'
+  | 'maturity'
+  | 'personal-year'
+  | 'personal-month'
+  | 'pinnacle-1'
+  | 'pinnacle-2'
+  | 'pinnacle-3'
+  | 'pinnacle-4'
+  | 'challenge-1'
+  | 'challenge-2'
+  | 'challenge-3'
+  | 'challenge-4';
+
+/** Values that carry master numbers: 1–9 plus 11, 22, 33. */
+const MASTER_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 22, 33];
+/** Values reduced to a single digit: 1–9. */
+const SINGLE_RANGE: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+/** Challenges uniquely include 0, and never exceed 8. */
+const CHALLENGE_RANGE: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+/** Birthday is the raw day of the month, never reduced. */
+const BIRTHDAY_RANGE: readonly number[] = Array.from({ length: 31 }, (_, i) => i + 1);
+
+/** The values each numerology kind can take — also the enumeration order. */
+const NUMEROLOGY_VALUE_RANGES: Record<NumerologyNumberKind, readonly number[]> = {
+  'life-path': MASTER_RANGE,
+  expression: MASTER_RANGE,
+  'soul-urge': MASTER_RANGE,
+  personality: MASTER_RANGE,
+  birthday: BIRTHDAY_RANGE,
+  maturity: MASTER_RANGE,
+  'personal-year': SINGLE_RANGE,
+  'personal-month': SINGLE_RANGE,
+  'pinnacle-1': MASTER_RANGE,
+  'pinnacle-2': MASTER_RANGE,
+  'pinnacle-3': MASTER_RANGE,
+  'pinnacle-4': MASTER_RANGE,
+  'challenge-1': CHALLENGE_RANGE,
+  'challenge-2': CHALLENGE_RANGE,
+  'challenge-3': CHALLENGE_RANGE,
+  'challenge-4': CHALLENGE_RANGE,
+};
+
+/** `'pinnacle'`/`'challenge'` without a position index still have a known range. */
+function rangeForLooseKind(kind: string): readonly number[] | null {
+  if (kind === 'pinnacle') return MASTER_RANGE;
+  if (kind === 'challenge') return CHALLENGE_RANGE;
+  return null;
+}
+
+/**
+ * Build the subject key for a numerology number, e.g. `life-path-7`.
+ * Accepts the unsuffixed `pinnacle`/`challenge` kinds too, so callers that
+ * do not care about the position can pass `'challenge'` and a value.
+ */
+export function numerologySubjectKey(kind: string, value: number): string {
+  const range = NUMEROLOGY_VALUE_RANGES[kind as NumerologyNumberKind] ?? rangeForLooseKind(kind);
+  if (!range) {
+    throw new CalcEngineError('invalid_input', `unknown numerology kind: ${kind}`);
+  }
+  if (!range.includes(value)) {
+    throw new CalcEngineError(
+      'invalid_input',
+      `value ${value} is not valid for numerology kind '${kind}'`,
+    );
+  }
+  return `${kind}-${value}`;
+}
+
+/**
+ * Enumerate every numerology subject that needs interpretation text: 193 keys
+ * (60 core life-path/expression/soul-urge/personality/maturity + 31 birthday +
+ * 18 personal-year/personal-month cycles + 48 pinnacles + 36 challenges).
+ *
+ * Deliberately **not** merged into {@link listInterpretationSubjects} yet. That
+ * function drives the backend seed-parity test and the admin completeness
+ * check, both of which would fail the moment these keys appear with no content
+ * behind them. Merging is issue #82, once the numerology text exists.
+ */
+export function listNumerologySubjects(): InterpretationSubject[] {
+  const subjects: InterpretationSubject[] = [];
+  for (const kind of Object.keys(NUMEROLOGY_VALUE_RANGES) as NumerologyNumberKind[]) {
+    for (const value of NUMEROLOGY_VALUE_RANGES[kind]) {
+      subjects.push({ category: 'numerology', subjectKey: numerologySubjectKey(kind, value) });
+    }
+  }
   return subjects;
 }

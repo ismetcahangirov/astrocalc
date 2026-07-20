@@ -48,9 +48,12 @@ export {
   planetHouseSubjectKey,
   aspectSubjectKey,
   listInterpretationSubjects,
+  numerologySubjectKey,
+  listNumerologySubjects,
   type InterpretationLocale,
   type InterpretationCategory,
   type InterpretationSubject,
+  type NumerologyNumberKind,
 } from './interpretations';
 export {
   computeNatalChart,
