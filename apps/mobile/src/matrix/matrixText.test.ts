@@ -69,6 +69,22 @@ describe('formatMatrixDetails', () => {
     }
   });
 
+  it('renders the health summary row with the column totals', () => {
+    // 1990-11-22: physical 16, energy 18, emotional 16.
+    const details = formatMatrixDetails(MATRIX, 'en');
+    expect(details.healthSummary.key).toBe('summary');
+    expect([
+      details.healthSummary.physical,
+      details.healthSummary.energy,
+      details.healthSummary.emotional,
+    ]).toEqual(['16', '18', '16']);
+  });
+
+  it('labels the summary row differently in each locale', () => {
+    expect(formatMatrixDetails(MATRIX, 'en').healthSummary.label).toBe('Summary');
+    expect(formatMatrixDetails(MATRIX, 'az').healthSummary.label).toBe('Yekun');
+  });
+
   it.each(LOCALES)('gives every row a non-empty label in %s', (locale) => {
     const details = formatMatrixDetails(MATRIX, locale);
     const rows = [

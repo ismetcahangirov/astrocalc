@@ -193,6 +193,9 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
           {details.health.map((row) => (
             <ChakraLine key={row.key} row={row} />
           ))}
+          {/* The summary row totals each column; emphasised so it reads as a
+              total rather than an eighth chakra. */}
+          <ChakraLine row={details.healthSummary} emphasised />
         </>
       ) : null}
 
@@ -212,10 +215,10 @@ function ValueRow({ row }: { row: MatrixRow }) {
 }
 
 /** One chakra row: three numbers under the physical/energy/emotional columns. */
-function ChakraLine({ row }: { row: MatrixChakraRow }) {
+function ChakraLine({ row, emphasised = false }: { row: MatrixChakraRow; emphasised?: boolean }) {
   return (
-    <View style={styles.chakraRow}>
-      <Text style={styles.chakraName}>{row.label}</Text>
+    <View style={[styles.chakraRow, emphasised && styles.summaryRow]}>
+      <Text style={emphasised ? styles.summaryName : styles.chakraName}>{row.label}</Text>
       <Text style={styles.chakraCell}>{row.physical}</Text>
       <Text style={styles.chakraCell}>{row.energy}</Text>
       <Text style={styles.chakraCell}>{row.emotional}</Text>
@@ -265,6 +268,8 @@ const styles = StyleSheet.create({
   },
   chakraName: { color: '#F4F1FA', fontSize: 14, fontWeight: '600', flex: 1 },
   chakraCell: { color: GOLD, fontSize: 14, width: 52, textAlign: 'center' },
+  summaryRow: { borderBottomWidth: 0, borderTopWidth: 1, borderTopColor: '#3A3352', marginTop: 2 },
+  summaryName: { color: GOLD, fontSize: 14, fontWeight: '700', flex: 1 },
   error: { color: '#F2A2A2', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   retryButton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10 },
   retryButtonText: { color: GOLD, fontSize: 15, fontWeight: '600' },

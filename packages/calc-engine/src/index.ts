@@ -89,4 +89,5 @@ export {
   type MoneyAndRelationshipLine,
   type ChakraName,
   type ChakraRow,
+  type HealthSummary,
 } from './matrix';
