@@ -16,10 +16,12 @@ export const SUPPORTED_LOCALES: readonly InterpretationLocale[] = ['az', 'tr', '
 export const FALLBACK_LOCALE: InterpretationLocale = 'en';
 
 /**
- * The three kinds of computed placement this feature writes interpretation
- * text for (see issue #18's acceptance criteria).
+ * The kinds of computed result AstroCalc writes interpretation text for.
+ * The first three are natal-chart placements (#18); `numerology` and `matrix`
+ * were added for the numerology (#57) and Matrix of Destiny (#67) epics.
  */
-export type InterpretationCategory = 'planet-sign' | 'planet-house' | 'aspect';
+export type InterpretationCategory =
+  'planet-sign' | 'planet-house' | 'aspect' | 'numerology' | 'matrix';
 
 const SIGNS: readonly ZodiacSign[] = [
   'Aries',
@@ -137,5 +139,140 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
     }
   }
 
+  return subjects;
+}
+
+/**
+ * The numerology numbers that get their own interpretation text. Each kind has
+ * its own valid value range, because the same digit means different things in
+ * different positions — a 7 Life Path and a 7 Personal Year are unrelated
+ * readings, so they are separate subjects rather than one shared "7" text.
+ */
+export type NumerologyNumberKind =
+  | 'life-path'
+  | 'expression'
+  | 'soul-urge'
+  | 'personality'
+  | 'birthday'
+  | 'maturity'
+  | 'personal-year'
+  | 'personal-month'
+  | 'pinnacle-1'
+  | 'pinnacle-2'
+  | 'pinnacle-3'
+  | 'pinnacle-4'
+  | 'challenge-1'
+  | 'challenge-2'
+  | 'challenge-3'
+  | 'challenge-4';
+
+/** Every value a full reduction can land on before master numbers are considered. */
+const DIGITS_1_9: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+/**
+ * Values that carry master numbers: 1–9 plus 11, 22, 33. Only valid for kinds
+ * whose formula can actually sum high enough to reach 33 — name-derived
+ * numbers (expression, soul-urge, personality) are unbounded, and maturity
+ * sums a life path (max 22) with an expression (max 33), so 33 is reachable
+ * there too.
+ */
+const MASTER_RANGE: readonly number[] = [...DIGITS_1_9, 11, 22, 33];
+/**
+ * Masters reachable from Life Path, which sums three already-reduced 1–9
+ * components (month + day + year), for a max of 27. 22 fits; 33 (which needs
+ * a component sum of at least 33) does not.
+ *
+ * Textually identical to {@link PINNACLE_THIRD_RANGE} today, but derived from
+ * an unrelated formula (a 3-component sum vs. a sum of two pinnacles) — do
+ * not merge them, or an independent domain fact changing would silently move
+ * the other.
+ */
+const LIFE_PATH_RANGE: readonly number[] = [...DIGITS_1_9, 11, 22];
+/**
+ * Masters reachable by Pinnacles 1, 2 and 4, each of which sums two
+ * already-reduced 1–9 components for a max of 18. Only 11 fits under that
+ * ceiling; 22 and 33 do not.
+ */
+const PINNACLE_PAIR_RANGE: readonly number[] = [...DIGITS_1_9, 11];
+/**
+ * Masters reachable by Pinnacle 3, which sums Pinnacles 1 and 2 — each in
+ * {1..9, 11} — for a max of 11 + 11 = 22. 22 fits; 33 does not.
+ *
+ * Textually identical to {@link LIFE_PATH_RANGE} today, but derived from an
+ * unrelated formula — see that constant's comment for why they stay separate.
+ */
+const PINNACLE_THIRD_RANGE: readonly number[] = [...DIGITS_1_9, 11, 22];
+/** Values reduced to a single digit: 1–9. */
+const SINGLE_RANGE: readonly number[] = DIGITS_1_9;
+/** Challenges uniquely include 0, and never exceed 8. */
+const CHALLENGE_RANGE: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+/** Birthday is the raw day of the month, never reduced. */
+const BIRTHDAY_RANGE: readonly number[] = Array.from({ length: 31 }, (_, i) => i + 1);
+
+/** The values each numerology kind can take — also the enumeration order. */
+const NUMEROLOGY_VALUE_RANGES: Record<NumerologyNumberKind, readonly number[]> = {
+  'life-path': LIFE_PATH_RANGE,
+  expression: MASTER_RANGE,
+  'soul-urge': MASTER_RANGE,
+  personality: MASTER_RANGE,
+  birthday: BIRTHDAY_RANGE,
+  maturity: MASTER_RANGE,
+  'personal-year': SINGLE_RANGE,
+  'personal-month': SINGLE_RANGE,
+  'pinnacle-1': PINNACLE_PAIR_RANGE,
+  'pinnacle-2': PINNACLE_PAIR_RANGE,
+  'pinnacle-3': PINNACLE_THIRD_RANGE,
+  'pinnacle-4': PINNACLE_PAIR_RANGE,
+  'challenge-1': CHALLENGE_RANGE,
+  'challenge-2': CHALLENGE_RANGE,
+  'challenge-3': CHALLENGE_RANGE,
+  'challenge-4': CHALLENGE_RANGE,
+};
+
+/**
+ * Build the subject key for a numerology number, e.g. `life-path-7`. `kind`
+ * is always position-indexed (`pinnacle-1`…`pinnacle-4`,
+ * `challenge-1`…`challenge-4`) — there is no unsuffixed `'pinnacle'`/
+ * `'challenge'` alias, because every real caller (the planned `pinnacles()`
+ * and `challenges()` compute functions) always knows its position, and a
+ * loose `'pinnacle'` kind would read confusingly like the exact kind
+ * `'pinnacle-1'` once the value is appended.
+ */
+export function numerologySubjectKey(kind: NumerologyNumberKind, value: number): string {
+  const range = NUMEROLOGY_VALUE_RANGES[kind];
+  if (!range) {
+    throw new CalcEngineError('invalid_input', `unknown numerology kind: ${kind}`);
+  }
+  if (!range.includes(value)) {
+    throw new CalcEngineError(
+      'invalid_input',
+      `value ${value} is not valid for numerology kind '${kind}'`,
+    );
+  }
+  return `${kind}-${value}`;
+}
+
+/**
+ * Enumerate every numerology subject that needs interpretation text: 185 keys.
+ * Life Path and the pinnacles use narrower ranges than the other master-number
+ * kinds because their formulas cannot reach every master number (see
+ * {@link LIFE_PATH_RANGE}, {@link PINNACLE_PAIR_RANGE},
+ * {@link PINNACLE_THIRD_RANGE}) — 11 (life-path) + 12 (expression) + 12
+ * (soul-urge) + 12 (personality) + 31 (birthday) + 12 (maturity) + 9
+ * (personal-year) + 9 (personal-month) + 10 + 10 + 11 + 10 (pinnacles 1–4) + 9
+ * + 9 + 9 + 9 (challenges 1–4) = 185.
+ *
+ * Deliberately **not** merged into {@link listInterpretationSubjects} yet. That
+ * function drives the backend seed-parity test and the admin completeness
+ * check, both of which would fail the moment these keys appear with no content
+ * behind them. Merging is issue #82, once the numerology text exists.
+ */
+export function listNumerologySubjects(): InterpretationSubject[] {
+  const subjects: InterpretationSubject[] = [];
+  for (const kind of Object.keys(NUMEROLOGY_VALUE_RANGES) as NumerologyNumberKind[]) {
+    for (const value of NUMEROLOGY_VALUE_RANGES[kind]) {
+      subjects.push({ category: 'numerology', subjectKey: numerologySubjectKey(kind, value) });
+    }
+  }
   return subjects;
 }

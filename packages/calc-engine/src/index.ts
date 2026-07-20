@@ -48,9 +48,12 @@ export {
   planetHouseSubjectKey,
   aspectSubjectKey,
   listInterpretationSubjects,
+  numerologySubjectKey,
+  listNumerologySubjects,
   type InterpretationLocale,
   type InterpretationCategory,
   type InterpretationSubject,
+  type NumerologyNumberKind,
 } from './interpretations';
 export {
   computeNatalChart,
@@ -59,3 +62,13 @@ export {
   type NatalChartOptions,
   type NatalChart,
 } from './natal-chart';
+export {
+  computeNumerologyProfile,
+  NUMEROLOGY_SCHEMA_VERSION,
+  type NumerologyInput,
+  type NumerologyProfile,
+  type NumerologyNumber,
+  type Pinnacle,
+  type Challenge,
+  type LifePeriod,
+} from './numerology';
