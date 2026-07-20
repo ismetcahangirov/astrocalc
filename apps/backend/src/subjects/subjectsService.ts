@@ -13,7 +13,10 @@ import type { NatalChartResponse } from '../chart/natalChartService';
 import { deriveBirthTimezone, type BirthTimezoneResolver } from '../geocoding/birthTimezone';
 import type { NumerologyCacheKeyInput } from '../numerology/numerologyCacheKey';
 import { numerologyDataToInput } from '../numerology/numerologyInput';
-import { getOrComputeNumerology, type NumerologyResultCache } from '../numerology/numerologyResultCache';
+import {
+  getOrComputeNumerology,
+  type NumerologyResultCache,
+} from '../numerology/numerologyResultCache';
 import type { NumerologyResponse } from '../numerology/numerologyService';
 import type { OrbConfigService } from '../orbConfig/orbConfigService';
 import type { SubjectRepository } from './repository';
@@ -86,8 +89,13 @@ function patchTouchesNumerologyData(patch: SubjectUpdateInput): boolean {
  * depend on changes.
  */
 export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsService {
-  const { repo, chartCache, numerologyCache, orbConfig, deriveTimezone = deriveBirthTimezone } =
-    deps;
+  const {
+    repo,
+    chartCache,
+    numerologyCache,
+    orbConfig,
+    deriveTimezone = deriveBirthTimezone,
+  } = deps;
 
   return {
     async list(userId) {

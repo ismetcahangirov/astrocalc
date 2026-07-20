@@ -284,9 +284,9 @@ describe('subjectsService — getNumerology', () => {
     const { service } = makeService();
     const subject = await service.create('user-1', { name: 'Blank' });
 
-    await expect(service.getNumerology('user-1', subject.id, '2026-07-20')).rejects.toMatchObject(
-      { code: 'incomplete_profile' },
-    );
+    await expect(service.getNumerology('user-1', subject.id, '2026-07-20')).rejects.toMatchObject({
+      code: 'incomplete_profile',
+    });
   });
 });
 
