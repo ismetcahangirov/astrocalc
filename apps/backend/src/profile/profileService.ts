@@ -4,9 +4,12 @@ import { deriveBirthTimezone, type BirthTimezoneResolver } from '../geocoding/bi
 import {
   BIRTH_DATA_FIELDS,
   NoopChartCacheInvalidator,
+  NUMEROLOGY_DATA_FIELDS,
   touchesBirthData,
+  touchesNumerologyData,
   type ChartCacheInvalidator,
 } from './chartCacheInvalidator';
+import type { NumerologyResultCache } from '../numerology/numerologyResultCache';
 
 export interface ProfileService {
   getProfile(userId: string): Promise<Profile>;
@@ -17,6 +20,11 @@ export interface ProfileServiceDeps {
   repo: Pick<UserRepository, 'getProfile' | 'updateProfile'>;
   /** Defaults to a no-op — see `chartCacheInvalidator.ts` for why. */
   cache?: ChartCacheInvalidator;
+  /**
+   * Numerology result cache (#64), invalidated independently of `cache` — see
+   * `NUMEROLOGY_DATA_FIELDS`. Also defaults to a no-op.
+   */
+  numerologyCache?: Pick<NumerologyResultCache, 'invalidate'>;
   /**
    * Resolves a birth place's IANA timezone from its coordinates. Injectable so
    * tests don't pull in `geo-tz`; defaults to the real `geo-tz`-backed lookup.
@@ -56,11 +64,15 @@ function withDerivedTimezone(
  * Whenever a patch actually changes a birth-relevant field, the previously
  * computed natal chart/matrix cache is invalidated (see #7's acceptance
  * criteria and `chartCacheInvalidator.ts` for the EPIC 3 / #19 dependency).
+ * The numerology cache (#64) is invalidated on its own, narrower trigger — a
+ * `fullName` or `birthDate` change — so neither cache is dropped for an edit
+ * that cannot have affected it.
  */
 export function createProfileService(deps: ProfileServiceDeps): ProfileService {
   const {
     repo,
     cache = new NoopChartCacheInvalidator(),
+    numerologyCache = new NoopChartCacheInvalidator(),
     deriveTimezone = deriveBirthTimezone,
   } = deps;
 
@@ -72,12 +84,23 @@ export function createProfileService(deps: ProfileServiceDeps): ProfileService {
     },
 
     async updateProfile(userId: string, patch: ProfileUpdateInput): Promise<Profile> {
-      const before = touchesBirthData(patch) ? await repo.getProfile(userId) : null;
+      // `before` is needed to tell an actual change from a no-op re-send (the
+      // onboarding flow re-sends the whole form on its final step). Fetch it
+      // when the patch touches *either* cache's inputs — `fullName` is
+      // numerology-relevant but not birth-relevant, so gating this on
+      // `touchesBirthData` alone would leave a name-only edit serving the old
+      // numbers forever.
+      const needsBefore = touchesBirthData(patch) || touchesNumerologyData(patch);
+      const before = needsBefore ? await repo.getProfile(userId) : null;
       const patchToApply = withDerivedTimezone(patch, before, deriveTimezone);
       const updated = await repo.updateProfile(userId, patchToApply);
 
       if (before && BIRTH_DATA_FIELDS.some((field) => before[field] !== updated[field])) {
         await cache.invalidate(userId);
+      }
+
+      if (before && NUMEROLOGY_DATA_FIELDS.some((field) => before[field] !== updated[field])) {
+        await numerologyCache.invalidate(userId);
       }
 
       return updated;

@@ -7,6 +7,7 @@ export default function Profile() {
     <ProfileScreen
       onManageAccount={() => router.push('/account')}
       onViewChart={() => router.push('/natal-chart')}
+      onViewNumerology={() => router.push('/numerology')}
       onViewPeople={() => router.push('/people')}
     />
   );

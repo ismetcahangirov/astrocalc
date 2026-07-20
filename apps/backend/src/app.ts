@@ -36,6 +36,13 @@ import { createOrbConfigService } from './orbConfig/orbConfigService';
 import { createOrbConfigRouter } from './orbConfig/orbConfigRoute';
 import { createNatalChartService } from './chart/natalChartService';
 import { createNatalChartRouter } from './chart/natalChartRoute';
+import { createNumerologyService } from './numerology/numerologyService';
+import { createNumerologyRouter } from './numerology/numerologyRoute';
+import {
+  InMemoryNumerologyResultCache,
+  type NumerologyResultCache,
+} from './numerology/numerologyResultCache';
+import { RedisNumerologyResultCache } from './numerology/redisNumerologyResultCache';
 import { createSubjectsService } from './subjects/subjectsService';
 import { createSubjectsRouter } from './subjects/subjectsRoute';
 import { DrizzleSubjectRepository } from './db/drizzleSubjectRepository';
@@ -149,7 +156,10 @@ export function createApp(env: Env): Express {
   // `ChartCacheInvalidator`, so it doubles as `profileService`'s invalidation
   // port: a birth-data edit drops every chart cached for that user.
   const chartCache = buildChartResultCache(redis, env);
-  const profileService = createProfileService({ repo, cache: chartCache });
+  // Numerology results cache separately (#64) — a `fullName` edit must drop the
+  // cached numbers without discarding the still-valid chart, and vice versa.
+  const numerologyCache = buildNumerologyResultCache(redis, env);
+  const profileService = createProfileService({ repo, cache: chartCache, numerologyCache });
 
   // Account deletion & GDPR data export (#9). The inline-queue fallback needs
   // `processExport`, and the service needs the queue — resolve the cycle with a
@@ -276,14 +286,21 @@ export function createApp(env: Env): Express {
   });
   app.use('/natal-chart', createNatalChartRouter(natalChartService, tokenService));
 
-  // Saved subjects (#s2): charts for other people. Reuses the same chart cache
-  // (namespaced per subject) and orb config as the user's own chart.
+  // Saved subjects (#s2, #64): charts and numerology profiles for other people.
+  // Reuses the same chart cache, numerology cache (each namespaced per subject)
+  // and orb config as the user's own chart/numerology.
   const subjectsService = createSubjectsService({
     repo: new DrizzleSubjectRepository(db),
     chartCache,
+    numerologyCache,
     orbConfig: orbConfigService,
   });
   app.use('/subjects', createSubjectsRouter(subjectsService, tokenService));
+
+  // Numerology (#64): same cache/port shape as the natal chart, but keyed by
+  // month so the personal-year/month cycle numbers cannot be served stale.
+  const numerologyService = createNumerologyService({ repo, cache: numerologyCache });
+  app.use('/numerology', createNumerologyRouter(numerologyService, tokenService));
 
   // Terminal error handler — must be registered last.
   app.use(errorHandler);
@@ -394,6 +411,27 @@ function buildChartResultCache(redis: RedisClient | null, env: Env): ChartResult
       'Cached charts will NOT persist or be shared across instances.',
   );
   return new InMemoryChartResultCache();
+}
+
+/**
+ * Use the shared Upstash Redis numerology-result cache when configured;
+ * otherwise a per-process in-memory fallback (local dev/tests only — cached
+ * profiles would NOT be shared across instances or survive a restart, hence
+ * the warning).
+ */
+function buildNumerologyResultCache(redis: RedisClient | null, env: Env): NumerologyResultCache {
+  if (redis) {
+    return new RedisNumerologyResultCache(
+      redis,
+      env.NUMEROLOGY_CACHE_TTL_SECONDS === 0 ? undefined : env.NUMEROLOGY_CACHE_TTL_SECONDS,
+    );
+  }
+
+  console.warn(
+    '[numerology] UPSTASH_REDIS_REST_URL/TOKEN not set — using in-memory numerology result cache. ' +
+      'Cached profiles will NOT persist or be shared across instances.',
+  );
+  return new InMemoryNumerologyResultCache();
 }
 
 /**

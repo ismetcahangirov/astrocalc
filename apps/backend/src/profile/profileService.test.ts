@@ -11,8 +11,14 @@ function build() {
       invalidated.push(userId);
     },
   };
-  const service = createProfileService({ repo, cache });
-  return { repo, service, invalidated };
+  const numerologyInvalidated: string[] = [];
+  const numerologyCache: ChartCacheInvalidator = {
+    async invalidate(userId: string) {
+      numerologyInvalidated.push(userId);
+    },
+  };
+  const service = createProfileService({ repo, cache, numerologyCache });
+  return { repo, service, invalidated, numerologyInvalidated };
 }
 
 async function createUser(repo: InMemoryUserRepository) {
@@ -97,6 +103,62 @@ describe('createProfileService.updateProfile — chart cache invalidation', () =
         birthDate: '1990-05-12',
       },
     );
+  });
+});
+
+describe('createProfileService.updateProfile — numerology cache invalidation', () => {
+  it('invalidates the numerology cache when fullName changes, without touching the chart cache', async () => {
+    // The regression this guards: `fullName` is not a birth-relevant field, so
+    // the chart-cache change detection does not see it at all. A user who
+    // corrects their name must stop seeing the old numbers — while their
+    // (unaffected, expensive) chart stays cached.
+    const { repo, service, invalidated, numerologyInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { fullName: 'Augusta Ada King' });
+
+    expect(numerologyInvalidated).toEqual([userId]);
+    expect(invalidated).toEqual([]);
+  });
+
+  it('invalidates both caches when birthDate changes — the one field they share', async () => {
+    const { repo, service, invalidated, numerologyInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthDate: '1990-05-12' });
+
+    expect(numerologyInvalidated).toEqual([userId]);
+    expect(invalidated).toEqual([userId]);
+  });
+
+  it('does not invalidate the numerology cache for a birth-only field like birthPlaceName', async () => {
+    const { repo, service, numerologyInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { birthTime: '10:30', birthTimeKnown: true });
+
+    expect(numerologyInvalidated).toEqual([]);
+  });
+
+  it('does not invalidate when fullName is resent with its existing value', async () => {
+    const { repo, service, numerologyInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { fullName: 'Ada Lovelace' });
+    numerologyInvalidated.length = 0; // reset after the initial (real) change
+
+    await service.updateProfile(userId, { fullName: 'Ada Lovelace' });
+
+    expect(numerologyInvalidated).toEqual([]);
+  });
+
+  it('does not invalidate when only a nickname-ish field changes', async () => {
+    const { repo, service, numerologyInvalidated } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { displayName: 'Ada L.' });
+
+    expect(numerologyInvalidated).toEqual([]);
   });
 });
 

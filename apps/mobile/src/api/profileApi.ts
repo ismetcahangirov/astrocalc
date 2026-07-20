@@ -7,6 +7,13 @@ export { ApiError } from './authApi';
 export interface Profile {
   userId: string;
   displayName: string | null;
+  /**
+   * The full name on the birth certificate — distinct from `displayName`, and
+   * the sole letter input to the numerology Expression/Soul Urge/Personality
+   * numbers. Never seeded from the Google display name (see the backend's
+   * `Profile.fullName`), so it is null until the user types it.
+   */
+  fullName: string | null;
   avatarUrl: string | null;
   locale: string | null;
   birthDate: string | null;
@@ -25,6 +32,7 @@ export interface Profile {
  */
 export interface ProfileUpdateInput {
   displayName?: string | null;
+  fullName?: string | null;
   avatarUrl?: string | null;
   locale?: string | null;
   birthDate?: string | null;

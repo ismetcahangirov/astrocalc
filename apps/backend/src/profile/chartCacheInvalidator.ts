@@ -33,3 +33,22 @@ export const BIRTH_DATA_FIELDS = [
 export function touchesBirthData(patch: ProfileUpdateInput): boolean {
   return BIRTH_DATA_FIELDS.some((field) => field in patch);
 }
+
+/**
+ * Numerology-relevant fields (#64): changing either makes a cached numerology
+ * profile stale. Deliberately a *separate* list from {@link BIRTH_DATA_FIELDS}
+ * rather than an addition to it — the two caches go stale for different
+ * reasons. `fullName` feeds every name-derived number but has no bearing on a
+ * chart, so folding it into `BIRTH_DATA_FIELDS` would throw away an expensive,
+ * still-correct chart computation every time a user fixed a typo in their name.
+ * `birthDate` is the one field both lists share.
+ */
+export const NUMEROLOGY_DATA_FIELDS = [
+  'fullName',
+  'birthDate',
+] as const satisfies readonly (keyof ProfileUpdateInput)[];
+
+/** Whether a patch sets any field the numerology calculation depends on. */
+export function touchesNumerologyData(patch: ProfileUpdateInput): boolean {
+  return NUMEROLOGY_DATA_FIELDS.some((field) => field in patch);
+}

@@ -25,6 +25,7 @@ function toProfile(row: ProfileRow): Profile {
   return {
     userId: row.userId,
     displayName: row.displayName,
+    fullName: row.fullName,
     avatarUrl: row.avatarUrl,
     locale: row.locale,
     birthDate: row.birthDate,
@@ -68,6 +69,7 @@ export class DrizzleUserRepository implements UserRepository {
     await this.db.insert(profiles).values({
       userId: userRow.id,
       displayName: null,
+      fullName: null,
       avatarUrl: null,
       locale: null,
     });
@@ -88,6 +90,8 @@ export class DrizzleUserRepository implements UserRepository {
     await this.db.insert(profiles).values({
       userId: userRow.id,
       displayName: input.displayName,
+      // Never seeded from the Google display name — see `Profile.fullName`.
+      fullName: null,
       avatarUrl: input.avatarUrl,
       locale: input.locale,
     });

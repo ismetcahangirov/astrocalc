@@ -24,9 +24,19 @@ function chartReady(x: BirthPlaceish): boolean {
   return !!x.birthDate && x.birthPlaceLat != null && x.birthPlaceLng != null;
 }
 
+/**
+ * Numerology needs strictly less than the chart does: a name and a birth *date*,
+ * with no place or time, so a person with no coordinates can still have numbers.
+ * (A subject's `name` is what the backend scores, standing in for `fullName`.)
+ */
+function numerologyReady(subject: Subject): boolean {
+  return !!subject.birthDate && subject.name.trim() !== '';
+}
+
 interface PeopleScreenProps {
   onOpenSelfChart: () => void;
   onOpenSubjectChart: (id: string, name: string) => void;
+  onOpenSubjectNumerology?: (id: string, name: string) => void;
   onAddSubject: () => void;
   onEditSubject: (id: string) => void;
 }
@@ -40,6 +50,7 @@ interface PeopleScreenProps {
 export function PeopleScreen({
   onOpenSelfChart,
   onOpenSubjectChart,
+  onOpenSubjectNumerology,
   onAddSubject,
   onEditSubject,
 }: PeopleScreenProps) {
@@ -150,6 +161,18 @@ export function PeopleScreen({
               )}
             </Pressable>
             <View style={styles.rowButtons}>
+              {/* Numbers joins edit/delete in the row's existing secondary-action
+                  strip: the row body is already the "open the chart" tap target,
+                  so a second destination belongs beside the other row actions. */}
+              {onOpenSubjectNumerology && numerologyReady(subject) ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onOpenSubjectNumerology(subject.id, subject.name)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.numerologyText}>{t('people.viewNumbers')}</Text>
+                </Pressable>
+              ) : null}
               <Pressable
                 accessibilityRole="button"
                 onPress={() => onEditSubject(subject.id)}
@@ -223,6 +246,7 @@ const styles = StyleSheet.create({
   rowAction: { color: GOLD, fontSize: 13, fontWeight: '600', marginTop: 6 },
   rowMuted: { color: MUTED, fontSize: 12, marginTop: 6 },
   rowButtons: { flexDirection: 'row', gap: 18, marginTop: 12 },
+  numerologyText: { color: GOLD, fontSize: 13, fontWeight: '600' },
   editText: { color: '#B9B4C7', fontSize: 13, fontWeight: '600' },
   deleteText: { color: '#F2A2A2', fontSize: 13, fontWeight: '600' },
   empty: { color: MUTED, fontSize: 14, textAlign: 'center', marginVertical: 12 },

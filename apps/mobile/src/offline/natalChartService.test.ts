@@ -29,6 +29,7 @@ function memoryStore(): KeyValueStore {
 const PROFILE: Profile = {
   userId: 'u1',
   displayName: 'Test',
+  fullName: 'Test Person',
   avatarUrl: null,
   locale: 'en',
   birthDate: '2007-03-15',

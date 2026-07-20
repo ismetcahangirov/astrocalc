@@ -6,6 +6,37 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Numerology backend and mobile screen — #64–#66, completing
+  `[EPIC] Numerology` (#57). Backend: `apps/backend/src/numerology/` mirroring
+  the natal-chart module shape — `GET /numerology` and
+  `GET /subjects/:id/numerology` (owner-scoped, 404 on a subject you do not
+  own), a service factory, and a cache whose key is scoped to the **month**
+  (`YYYY-MM`) rather than the day, so the Personal Year/Month cycle numbers
+  cannot be served stale into the next month while every request within a month
+  still hits. Mobile: API client, a pure offline service (no local cache —
+  numerology has no server-derived inputs and the cycle numbers turn over
+  nightly, so caching would only add staleness), a locale-driven
+  `numerologyText.ts` formatter, and a `NumerologyScreen` reachable from both
+  the profile and each saved person.
+  **The prerequisite that shaped this work:** the profile had no full-name
+  field. `displayName` is nullable and seeded from the Google account, so it is
+  usually a first name — and Expression/Soul Urge/Personality are computed from
+  every letter of the *full birth name*. Computing from a nickname would produce
+  numbers that are wrong but look right, the same silent-corruption class as the
+  timezone bug. So a nullable `profiles.full_name` column was added
+  (migration `0002_lyrical_iron_man.sql`, **generated but not applied** — that
+  is a live-database call), threaded through both repository implementations and
+  the GDPR export, with a form field and hint on the profile screen and an
+  actionable prompt (not a red error) when it is missing.
+  Two bugs found and fixed during the work: profile writes were **not**
+  invalidating cached numerology at all — a name-only patch never even fetched
+  the before-snapshot, so a user correcting their name kept their old numbers
+  indefinitely; and returning from the profile edit left the numerology screen
+  showing its stale "add your full name" prompt, fixed by switching to
+  `useFocusEffect`. 292 backend + 113 mobile tests green. Deliberately not
+  included: any interpretation text (#76) and any Pro/Free gating (no
+  entitlement mechanism exists in this codebase yet — the `interpretation: null`
+  seam matches the natal chart's).
 - Numerology calculation engine — #58–#63, closing the calc-engine half of
   `[EPIC] Numerology` (#57). New `packages/calc-engine/src/numerology/`:
   `reduce.ts` (digit reduction preserving masters 11/22/33 and recording karmic

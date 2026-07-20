@@ -1,5 +1,6 @@
 import {
   computeNatalChart,
+  computeNumerologyProfile,
   DEFAULT_HOUSE_SYSTEM,
   type NatalChartInput,
   type OrbConfig,
@@ -10,6 +11,13 @@ import type { ChartCacheKeyInput } from '../chart/chartCacheKey';
 import { getOrComputeChart, type ChartResultCache } from '../chart/chartResultCache';
 import type { NatalChartResponse } from '../chart/natalChartService';
 import { deriveBirthTimezone, type BirthTimezoneResolver } from '../geocoding/birthTimezone';
+import type { NumerologyCacheKeyInput } from '../numerology/numerologyCacheKey';
+import { numerologyDataToInput } from '../numerology/numerologyInput';
+import {
+  getOrComputeNumerology,
+  type NumerologyResultCache,
+} from '../numerology/numerologyResultCache';
+import type { NumerologyResponse } from '../numerology/numerologyService';
 import type { OrbConfigService } from '../orbConfig/orbConfigService';
 import type { SubjectRepository } from './repository';
 import type { Subject, SubjectCreateInput, SubjectPatchData, SubjectUpdateInput } from './types';
@@ -22,11 +30,14 @@ export interface SubjectsService {
   remove(userId: string, id: string): Promise<void>;
   /** Compute (and cache) the chart for a subject the caller owns. */
   getChart(userId: string, id: string): Promise<NatalChartResponse>;
+  /** Compute (and cache) the numerology profile for a subject the caller owns. */
+  getNumerology(userId: string, id: string, referenceDate: string): Promise<NumerologyResponse>;
 }
 
 export interface SubjectsServiceDeps {
   repo: SubjectRepository;
   chartCache: ChartResultCache;
+  numerologyCache: NumerologyResultCache;
   orbConfig: OrbConfigService;
   /** Coordinate → IANA timezone resolver; defaults to the real `geo-tz` lookup. */
   deriveTimezone?: BirthTimezoneResolver;
@@ -55,14 +66,36 @@ function patchTouchesBirthData(patch: SubjectUpdateInput): boolean {
 }
 
 /**
- * CRUD + chart computation for saved subjects (#s2). Every method is scoped to
- * the calling `userId`, so a user can only ever read or mutate their own
- * subjects. Like profiles, `birthPlaceTimezone` is derived server-side from the
- * coordinates (never trusted from the client), and a subject's cached chart —
- * namespaced under its own id — is invalidated whenever its birth data changes.
+ * Whether a patch changes a field the numerology calculation depends on. A
+ * deliberately separate, narrower trigger than {@link patchTouchesBirthData} —
+ * numerology also depends on `name` (the birth name), which the chart does
+ * not, and does not depend on birth *place*, which the chart does. Mirrors
+ * `profileService.ts`'s `touchesNumerologyData`/`NUMEROLOGY_DATA_FIELDS` split
+ * for the same reason: folding this into the birth-data check would either
+ * drop a still-valid chart on a name-only edit, or leave stale numerology
+ * numbers served forever after a rename.
+ */
+function patchTouchesNumerologyData(patch: SubjectUpdateInput): boolean {
+  return 'name' in patch || 'birthDate' in patch;
+}
+
+/**
+ * CRUD + chart + numerology computation for saved subjects (#s2, #64). Every
+ * method is scoped to the calling `userId`, so a user can only ever read or
+ * mutate their own subjects. Like profiles, `birthPlaceTimezone` is derived
+ * server-side from the coordinates (never trusted from the client), and a
+ * subject's cached chart and cached numerology — each namespaced under its own
+ * id, never `userId` — are invalidated independently whenever the data they
+ * depend on changes.
  */
 export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsService {
-  const { repo, chartCache, orbConfig, deriveTimezone = deriveBirthTimezone } = deps;
+  const {
+    repo,
+    chartCache,
+    numerologyCache,
+    orbConfig,
+    deriveTimezone = deriveBirthTimezone,
+  } = deps;
 
   return {
     async list(userId) {
@@ -97,6 +130,7 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
       if (!updated) throw new SubjectNotFoundError();
 
       if (patchTouchesBirthData(patch)) await chartCache.invalidate(id);
+      if (patchTouchesNumerologyData(patch)) await numerologyCache.invalidate(id);
       return updated;
     },
 
@@ -104,6 +138,7 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
       const deleted = await repo.delete(userId, id);
       if (!deleted) throw new SubjectNotFoundError();
       await chartCache.invalidate(id);
+      await numerologyCache.invalidate(id);
     },
 
     async getChart(userId, id) {
@@ -119,6 +154,25 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
         computeNatalChart(input, { houseSystem: DEFAULT_HOUSE_SYSTEM, orbs }),
       );
       return { chart, interpretation: null };
+    },
+
+    async getNumerology(userId, id, referenceDate) {
+      const subject = await repo.get(userId, id);
+      if (!subject) throw new SubjectNotFoundError();
+
+      const input = numerologyDataToInput(subject, referenceDate);
+      const key: NumerologyCacheKeyInput = {
+        fullName: input.fullName,
+        birthDate: input.birthDate,
+        referenceMonth: referenceDate.slice(0, 7),
+      };
+      // Cache is namespaced by the subject id (never userId) — that is what lets
+      // two subjects belonging to the same user cache and invalidate their
+      // numerology independently, exactly as `getChart` does above.
+      const profile = await getOrComputeNumerology(numerologyCache, id, key, async () =>
+        computeNumerologyProfile(input),
+      );
+      return { profile, interpretation: null };
     },
   };
 }

@@ -9,6 +9,9 @@ export default function People() {
       onOpenSubjectChart={(id, name) =>
         router.push({ pathname: '/natal-chart', params: { subjectId: id, name } })
       }
+      onOpenSubjectNumerology={(id, name) =>
+        router.push({ pathname: '/numerology', params: { subjectId: id, name } })
+      }
       onAddSubject={() => router.push('/subject')}
       onEditSubject={(id) => router.push({ pathname: '/subject', params: { id } })}
     />

@@ -88,6 +88,7 @@ export class InMemoryAccountRepository implements AccountRepository {
       profile: profile
         ? {
             displayName: profile.displayName,
+            fullName: profile.fullName,
             locale: profile.locale,
             birthDate: profile.birthDate,
             birthTime: profile.birthTime,

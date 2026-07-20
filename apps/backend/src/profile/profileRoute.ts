@@ -7,6 +7,11 @@ import type { TokenService } from '../auth/tokens';
 
 const patchSchema = z.object({
   displayName: z.string().min(1).max(200).nullable().optional(),
+  // Same 200-char ceiling as displayName: multi-part patronymic and compound
+  // family names run long, and a rejected name is a worse failure here than a
+  // long one. Trimmed because leading whitespace would otherwise ride along
+  // into the numerology letter sum as a no-op.
+  fullName: z.string().trim().min(1).max(200).nullable().optional(),
   avatarUrl: z.string().url().max(2048).nullable().optional(),
   locale: z.string().min(2).max(10).nullable().optional(),
   birthDate: z
