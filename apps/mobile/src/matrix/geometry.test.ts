@@ -201,4 +201,47 @@ describe('computeOctagramLayout', () => {
       }
     }
   });
+
+  it('places the chakra health points on the two central axes (§5.2)', () => {
+    const l = layout();
+    const at = (key: string) => l.nodes.find((n) => n.key === key)!;
+    const cell = (name: string) => MATRIX.health.find((r) => r.chakra === name)!;
+
+    // Physical column → the horizontal axis (same y as the centre); energy
+    // column → the vertical axis (same x as the centre).
+    for (const name of ['ajna', 'vishuddha', 'anahata', 'svadhisthana']) {
+      const physical = at(`chakra.${name}.physical`);
+      expect(physical.kind).toBe('axis');
+      expect(physical.point.y).toBeCloseTo(l.center.y);
+      expect(physical.arcana).toBe(cell(name).physical);
+
+      const energy = at(`chakra.${name}.energy`);
+      expect(energy.point.x).toBeCloseTo(l.center.x);
+      expect(energy.arcana).toBe(cell(name).energy);
+    }
+
+    // The crown arm steps inward: ajna (0.75) outside vishuddha (0.5) outside
+    // anahata (0.25).
+    const d = (key: string) => distance(at(key).point, l.center);
+    expect(d('chakra.ajna.physical')).toBeGreaterThan(d('chakra.vishuddha.physical'));
+    expect(d('chakra.vishuddha.physical')).toBeGreaterThan(d('chakra.anahata.physical'));
+  });
+
+  it('draws the money/relationship line between the Svadhisthana points, marked $ and ♥', () => {
+    const l = layout();
+    expect(l.moneyLine).toHaveLength(1);
+    const [seg] = l.moneyLine;
+    const ends = [seg!.from, seg!.to];
+    // One end sits east on the horizontal (partner, C+E), the other south on the
+    // vertical (entry, D+E) — where §5.1 says the line's ends lie.
+    expect(ends.some((p) => p.x > l.center.x && Math.abs(p.y - l.center.y) < 1)).toBe(true);
+    expect(ends.some((p) => p.y > l.center.y && Math.abs(p.x - l.center.x) < 1)).toBe(true);
+
+    // The two marks are distinct and both fall in the SE quadrant.
+    expect(l.moneyMark).not.toEqual(l.loveMark);
+    for (const m of [l.moneyMark, l.loveMark]) {
+      expect(m.x).toBeGreaterThan(l.center.x);
+      expect(m.y).toBeGreaterThan(l.center.y);
+    }
+  });
 });

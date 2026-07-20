@@ -5,6 +5,7 @@ import {
   Circle,
   Group,
   Line,
+  Path,
   Text as SkiaText,
   matchFont,
   type SkFont,
@@ -54,6 +55,29 @@ const AGE_BY_ANGLE: Readonly<Record<number, string>> = {
   225: '70', // SW
 };
 
+/** The money ("$") and love ("♥") marks on the money/relationship line. */
+const MONEY_GREEN = '#3FB56B';
+const LOVE_RED = '#E5484D';
+
+/**
+ * An SVG heart path centred on `(cx, cy)`, `w` wide — drawn as a shape rather
+ * than the "♥" glyph, which the system font has no glyph for on Android (it
+ * renders as tofu).
+ */
+function heartPath(cx: number, cy: number, w: number): string {
+  const r = w / 4;
+  const top = cy - w * 0.28;
+  const cleft = cy - w * 0.06;
+  const bottom = cy + w * 0.42;
+  return (
+    `M ${cx} ${bottom} ` +
+    `C ${cx - w * 0.5} ${cy} ${cx - w * 0.5} ${top} ${cx - r} ${top} ` +
+    `C ${cx - r * 0.4} ${top} ${cx} ${cleft} ${cx} ${cleft} ` +
+    `C ${cx} ${cleft} ${cx + r * 0.4} ${top} ${cx + r} ${top} ` +
+    `C ${cx + w * 0.5} ${top} ${cx + w * 0.5} ${cy} ${cx} ${bottom} Z`
+  );
+}
+
 /**
  * Renders a precomputed {@link OctagramLayout} (`geometry.ts`) as the Matrix of
  * Destiny octagram: the two overlaid squares, the parental diagonals, spokes out
@@ -84,6 +108,7 @@ export function OctagramChart({ layout }: OctagramChartProps) {
     3: matchFont({ fontFamily, fontSize: size * 0.033, fontWeight: '600' }),
   } as const;
   const ageFont = matchFont({ fontFamily, fontSize: size * 0.03, fontWeight: '600' });
+  const markFont = matchFont({ fontFamily, fontSize: size * 0.05, fontWeight: '700' });
 
   // One-shot "reveal" on mount, driving a single 0→1 progress on the UI thread —
   // the same staged entrance the wheel uses: the structure draws in first, then
@@ -110,7 +135,11 @@ export function OctagramChart({ layout }: OctagramChartProps) {
     () => ({
       outerNodes: layout.nodes.filter((n) => n.kind === 'cardinal' || n.kind === 'diagonal'),
       innerNodes: layout.nodes.filter(
-        (n) => n.kind === 'arm' || n.kind === 'centre' || n.kind === 'ancestralCentre',
+        (n) =>
+          n.kind === 'arm' ||
+          n.kind === 'centre' ||
+          n.kind === 'ancestralCentre' ||
+          n.kind === 'axis',
       ),
     }),
     [layout.nodes],
@@ -167,6 +196,22 @@ export function OctagramChart({ layout }: OctagramChartProps) {
     );
   };
 
+  // The "$" and "♥" marks flanking the money/relationship line's core.
+  const renderMark = (glyph: string, color: string, at: Point) => {
+    if (!markFont) return null;
+    const pos = centered(markFont, glyph, at.x, at.y);
+    return (
+      <SkiaText
+        key={`mark-${glyph}`}
+        font={markFont}
+        text={glyph}
+        x={pos.x}
+        y={pos.y}
+        color={color}
+      />
+    );
+  };
+
   return (
     <Canvas style={{ width: size, height: size }}>
       <Group opacity={structureOpacity} transform={structureTransform} origin={center}>
@@ -215,13 +260,31 @@ export function OctagramChart({ layout }: OctagramChartProps) {
             strokeWidth={1.2}
           />
         ))}
+
+        {/* The money/relationship line, drawn along the SE diagonal. */}
+        {layout.moneyLine.map((seg, i) => (
+          <Line
+            key={`money-${i}`}
+            p1={seg.from}
+            p2={seg.to}
+            color="rgba(228, 185, 91, 0.5)"
+            strokeWidth={1.1}
+          />
+        ))}
       </Group>
 
       <Group opacity={outerOpacity}>
         {outerNodes.map(renderAge)}
         {outerNodes.map(renderNode)}
       </Group>
-      <Group opacity={innerOpacity}>{innerNodes.map(renderNode)}</Group>
+      <Group opacity={innerOpacity}>
+        {innerNodes.map(renderNode)}
+        {renderMark('$', MONEY_GREEN, layout.moneyMark)}
+        <Path
+          path={heartPath(layout.loveMark.x, layout.loveMark.y, size * 0.05)}
+          color={LOVE_RED}
+        />
+      </Group>
     </Canvas>
   );
 }
