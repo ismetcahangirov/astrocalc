@@ -266,6 +266,7 @@ describe('GET /interpretations/admin/missing', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.count).toBe((10 * 12 + 10 * 12 + 45 * 5) * 4);
+    // 465 astrology + 185 numerology subjects (folded in by #82), x4 locales.
+    expect(res.body.count).toBe((10 * 12 + 10 * 12 + 45 * 5 + 185) * 4);
   });
 });

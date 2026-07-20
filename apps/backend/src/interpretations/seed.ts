@@ -5,11 +5,11 @@ import { generateSeedInterpretations } from './seedContent';
 import type { InterpretationRepository } from './repository';
 
 /**
- * Backfill every (category, subjectKey, locale) row the ten interpreted
- * planets require with the template-generated baseline content from
- * `seedContent.ts` (#18's "remaining work": populate all 465 combinations x 4
- * languages). Only writes rows that don't already exist, so re-running this
- * — or a previous admin edit via the `PUT` endpoint — is never clobbered.
+ * Backfill every (category, subjectKey, locale) row `listInterpretationSubjects()`
+ * requires with the template-generated baseline content from `seedContent.ts` —
+ * 465 astrology combinations (#18) plus 185 numerology subjects (#76's content
+ * epic), x 4 languages. Only writes rows that don't already exist, so re-running
+ * this — or a previous admin edit via the `PUT` endpoint — is never clobbered.
  */
 export async function seedInterpretations(
   repo: Pick<InterpretationRepository, 'listAll' | 'upsert'>,
