@@ -62,3 +62,13 @@ export {
   type NatalChartOptions,
   type NatalChart,
 } from './natal-chart';
+export {
+  computeNumerologyProfile,
+  NUMEROLOGY_SCHEMA_VERSION,
+  type NumerologyInput,
+  type NumerologyProfile,
+  type NumerologyNumber,
+  type Pinnacle,
+  type Challenge,
+  type LifePeriod,
+} from './numerology';
