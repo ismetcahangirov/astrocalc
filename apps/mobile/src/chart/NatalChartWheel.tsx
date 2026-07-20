@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { Platform } from 'react-native';
 import {
   Canvas,
   Circle,
@@ -63,13 +64,21 @@ export function NatalChartWheel({ layout }: NatalChartWheelProps) {
   // system fonts don't include, so they render blank with `matchFont`. Load a
   // tiny bundled subset font (see assets/fonts/AstroSymbols.ttf) that has them.
   // House numbers and the retrograde "R" are plain ASCII, so they keep the
-  // system font.
+  // system font — but `matchFont` must be given an explicit family, or on
+  // Android a weighted style (the "R") resolves to nothing and draws blank.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const glyphSource = require('../../assets/fonts/AstroSymbols.ttf');
+  const systemFamily = Platform.select({ ios: 'Helvetica', default: 'sans-serif' });
   const signFont = useFont(glyphSource, size * 0.05);
   const planetFont = useFont(glyphSource, size * 0.05);
-  const houseFont = useMemo(() => matchFont({ fontSize: size * 0.028 }), [size]);
-  const retroFont = useMemo(() => matchFont({ fontSize: size * 0.022, fontWeight: '700' }), [size]);
+  const houseFont = useMemo(
+    () => matchFont({ fontFamily: systemFamily, fontSize: size * 0.028 }),
+    [size, systemFamily],
+  );
+  const retroFont = useMemo(
+    () => matchFont({ fontFamily: systemFamily, fontSize: size * 0.022, fontWeight: '700' }),
+    [size, systemFamily],
+  );
 
   // One-shot "reveal" on mount, driving a single 0→1 progress on the UI thread:
   // the ring/signs fade + scale in, then the aspect chords draw on, then the

@@ -1,4 +1,4 @@
-import type { DestinyMatrix } from '@astrocalc/calc-engine';
+import type { ChakraName, DestinyMatrix } from '@astrocalc/calc-engine';
 
 /**
  * Pure, framework-independent geometry for the Matrix of Destiny "octagram".
@@ -46,7 +46,9 @@ export type OctagramNodeKind =
   /** The personal centre (comfort zone). */
   | 'centre'
   /** The ancestral centre, sitting just below the personal one. */
-  | 'ancestralCentre';
+  | 'ancestralCentre'
+  /** A chakra health point on one of the two central axes (§5.2). */
+  | 'axis';
 
 /** One placed arcana, ready to draw. */
 export interface OctagramNode {
@@ -116,6 +118,16 @@ export interface OctagramLayout {
   parentalLines: Segment[];
   /** Spokes from the centre out to each of the eight outer points. */
   spokes: Segment[];
+  /**
+   * The money/relationship line as a polyline, entry → toEntry → core →
+   * toPartner → partner, bowing through the SE quadrant (§5.1). Its two ends are
+   * the Svadhisthana chakra points, which is exactly where the method says the
+   * line sits, so a renderer draws it over points already placed on the axes.
+   */
+  moneyLine: Segment[];
+  /** Where to draw the money ("$") and love ("♥") marks on that line. */
+  moneyMark: Point;
+  loveMark: Point;
 }
 
 const DEG = Math.PI / 180;
@@ -160,12 +172,14 @@ function closedPath(points: Point[]): Segment[] {
  * The result is deterministic and side-effect free, so a renderer can compute it
  * once in a `useMemo` and simply draw the returned points.
  *
- * Only the positions with a place on the figure are laid out here: the four
- * cardinals, the four ancestral corners and their arm points, and the two
- * centres. The purposes, the money/relationship line and the chakra map have no
- * agreed position on the octagram itself and are rendered as the written
- * breakdown beneath it (`matrixText.ts`) — putting them on the figure would mean
- * inventing a placement the method does not define.
+ * Laid out here are every position the Ladini method fixes a place for: the
+ * four cardinals, the four ancestral corners with their arm points, the two
+ * centres, the chakra health cross on the two axes (§5.2), and the
+ * money/relationship line on the SE diagonal (§5.1). The **purposes** are the
+ * one block left to the written breakdown (`matrixText.ts`): the method gives
+ * them no agreed position on the figure — two of the three reference
+ * implementations do not even draw `planetary` — so placing them here would
+ * mean inventing coordinates rather than reading them off the method.
  */
 export function computeOctagramLayout(
   matrix: DestinyMatrix,
@@ -245,6 +259,63 @@ export function computeOctagramLayout(
     label: ancestralCentrePoint,
   });
 
+  // --- The chakra health cross (§5.2) ---
+  // The physical column lies on the horizontal (earth) axis, the energy column
+  // on the vertical (sky) axis, each a recursive bisection of its crown arm:
+  // vishuddha at the arm's midpoint, ajna outward of it, anahata inward. The
+  // crown/root ends (sahasrara, muladhara) and manipura already exist as the
+  // cardinals and the centre, so only the interior points are added here.
+  const chakra = (name: ChakraName) => matrix.health.find((r) => r.chakra === name)!;
+  const axisPoints: { key: string; arcana: number; angle: number; r: number }[] = [
+    // Physical → horizontal axis; the crown arm is the west side (A = day).
+    { key: 'chakra.ajna.physical', arcana: chakra('ajna').physical, angle: 180, r: radius * 0.75 },
+    {
+      key: 'chakra.vishuddha.physical',
+      arcana: chakra('vishuddha').physical,
+      angle: 180,
+      r: radius * 0.5,
+    },
+    {
+      key: 'chakra.anahata.physical',
+      arcana: chakra('anahata').physical,
+      angle: 180,
+      r: radius * 0.25,
+    },
+    {
+      key: 'chakra.svadhisthana.physical',
+      arcana: chakra('svadhisthana').physical,
+      angle: 0,
+      r: radius * 0.5,
+    },
+    // Energy → vertical axis; the crown arm is the north side (B = month).
+    { key: 'chakra.ajna.energy', arcana: chakra('ajna').energy, angle: 90, r: radius * 0.75 },
+    {
+      key: 'chakra.vishuddha.energy',
+      arcana: chakra('vishuddha').energy,
+      angle: 90,
+      r: radius * 0.5,
+    },
+    { key: 'chakra.anahata.energy', arcana: chakra('anahata').energy, angle: 90, r: radius * 0.25 },
+    {
+      key: 'chakra.svadhisthana.energy',
+      arcana: chakra('svadhisthana').energy,
+      angle: 270,
+      r: radius * 0.5,
+    },
+  ];
+  for (const p of axisPoints) place(p.key, p.arcana, 'axis', p.angle, p.r, 3);
+
+  // --- The money/relationship line (§5.1) ---
+  // Its ends are the two Svadhisthana points already placed — partner (C+E) at
+  // the east 0.5 mark, entry (D+E) at the south 0.5 mark — which is exactly
+  // where the method says the line sits, so it is drawn as one segment across
+  // the SE quadrant between them. The five arcana it carries are read in the
+  // breakdown; on the figure the line is marked only with "$" (money) and "♥"
+  // (love), the two readings the same points hold, kept clear of the busy
+  // centre so they stay legible.
+  const entryPt = pointOnCircle(center, radius * 0.5, 270); // svadhisthana.energy
+  const partnerPt = pointOnCircle(center, radius * 0.5, 0); // svadhisthana.physical
+
   // --- Structure ---
   const byKey = (key: string) => nodes.find((n) => n.key === key)!.point;
 
@@ -263,5 +334,11 @@ export function computeOctagramLayout(
       { from: byKey('ancestral.maternalSpiritual'), to: byKey('ancestral.maternalMaterial') },
     ],
     spokes: [...cardinalPoints, ...diagonalPoints].map((to) => ({ from: center, to })),
+    moneyLine: [{ from: entryPt, to: partnerPt }],
+    // The two marks sit out on the SE diagonal, clear of the dense centre —
+    // money toward the east end of the line, love toward the south end, the
+    // arrangement the reference figures use.
+    moneyMark: pointOnCircle(center, radius * 0.42, 330),
+    loveMark: pointOnCircle(center, radius * 0.42, 300),
   };
 }
