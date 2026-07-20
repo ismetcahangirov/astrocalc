@@ -6,6 +6,33 @@ and the related issue/PR numbers.
 
 ## 2026-07-20
 
+- Silent forced re-login every 15 minutes — #86 (p0). `authedFetch()` attached
+  the stored access token and returned the server's answer unchanged, so once
+  the 15-minute access-token TTL elapsed **every** authenticated screen failed
+  with `invalid or expired access token` and the user was pushed back to
+  sign-in. Both halves of the fix already existed and had simply never been
+  connected: the backend's rotating `POST /auth/refresh` (#5) and the mobile
+  `getRefreshToken()`, which was dead code. `authedFetch` now refreshes once on
+  a 401 and retries the original request, sharing a single in-flight refresh
+  promise — the backend rotates *and* replay-checks refresh tokens, so two
+  concurrent refreshes would present an already-spent token and be read as a
+  stolen-token replay, revoking the whole session. The rotated pair is
+  persisted, and a refresh the backend rejects clears the tokens and surfaces
+  `unauthorized`.
+  **Two failure modes deliberately kept non-destructive:** a refresh that
+  cannot reach the server throws `network_error` with the session intact
+  (losing your login for riding through a tunnel is the same bug in a
+  different costume), and a 5xx from the refresh endpoint throws a new
+  `server_error` rather than signing the user out for the backend's fault.
+  Two further findings fixed along the way: `profileApi.ts` carried its own
+  copy of `authedFetch`, so the profile screens — including the launch gate —
+  would have kept failing after the shared client learned to refresh; it now
+  uses the shared one. And the launch gate in `app/index.tsx` caught *every*
+  error from its first profile fetch and signed the user out, which after this
+  change would have meant a cold start while offline still costing a login. It
+  now signs out only on `unauthorized` (`src/auth/sessionGate.ts`) and offers
+  retry plus a manual sign-in otherwise. 25 new tests, 138 mobile tests green;
+  backend (292) and calc-engine (240) untouched and green.
 - Numerology backend and mobile screen — #64–#66, completing
   `[EPIC] Numerology` (#57). Backend: `apps/backend/src/numerology/` mirroring
   the natal-chart module shape — `GET /numerology` and
