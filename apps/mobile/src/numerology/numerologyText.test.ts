@@ -135,6 +135,26 @@ describe('formatNumerologyDetails — pinnacles and challenges', () => {
     expect(pinnacles[3]!.ageRange).toBe('53+');
   });
 
+  it('badges a master or karmic-debt pinnacle, and leaves challenges unbadged', () => {
+    const { pinnacles, challenges } = formatNumerologyDetails(makeProfile(), 'en', EN_LABELS);
+
+    expect(pinnacles.map((p) => p.badge)).toEqual([
+      null,
+      null,
+      'master number', // 33 at position 3 — provenance the bare "33" would lose
+      'karmic debt 13',
+    ]);
+    // Challenges have no master/debt concept, so their badge is always null.
+    expect(challenges.map((c) => c.badge)).toEqual([null, null, null, null]);
+  });
+
+  it('localizes a pinnacle badge in Azerbaijani', () => {
+    const { pinnacles } = formatNumerologyDetails(makeProfile(), 'az', AZ_LABELS);
+
+    expect(pinnacles[2]!.badge).toBe('usta rəqəm');
+    expect(pinnacles[3]!.badge).toBe('karmik borc 13');
+  });
+
   it('marks only the current pinnacle and challenge', () => {
     const { pinnacles, challenges } = formatNumerologyDetails(makeProfile(), 'en', EN_LABELS);
 

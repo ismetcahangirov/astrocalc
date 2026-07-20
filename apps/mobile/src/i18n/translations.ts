@@ -139,6 +139,7 @@ const en = {
   'people.add': 'Add a person',
   'people.empty': 'No saved people yet. Add someone to see their chart.',
   'people.viewChart': 'View chart',
+  'people.viewNumbers': 'Numbers',
   'people.edit': 'Edit',
   'people.delete': 'Delete',
   'people.noBirthData': 'Birth details incomplete',
@@ -207,6 +208,9 @@ const en = {
   'numerology.offlineNotice':
     "You're viewing numbers computed on this device. Reconnect for your full reading.",
   'numerology.readingTitle': 'Your Reading',
+  'numerology.fullNameLabel': 'Full birth name',
+  'numerology.fullNameHint':
+    'The complete name on your birth certificate, including middle names. Your numerology is calculated letter by letter from it, so it may differ from the display name above.',
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -345,6 +349,7 @@ const az: Record<keyof typeof en, string> = {
   'people.add': 'Şəxs əlavə et',
   'people.empty': 'Hələ saxlanan şəxs yoxdur. Xartını görmək üçün kimisə əlavə edin.',
   'people.viewChart': 'Xartı gör',
+  'people.viewNumbers': 'Rəqəmlər',
   'people.edit': 'Redaktə et',
   'people.delete': 'Sil',
   'people.noBirthData': 'Doğum məlumatları natamamdır',
@@ -414,6 +419,9 @@ const az: Record<keyof typeof en, string> = {
   'numerology.offlineNotice':
     'Bu cihazda hesablanmış rəqəmlərə baxırsınız. Tam şərh üçün internetə qoşulun.',
   'numerology.readingTitle': 'Sizin Şərhiniz',
+  'numerology.fullNameLabel': 'Tam doğum adı',
+  'numerology.fullNameHint':
+    'Doğum haqqında şəhadətnamənizdəki tam ad, ata adı da daxil olmaqla. Numerologiyanız hərf-hərf bu addan hesablanır, ona görə də yuxarıdakı görünən addan fərqlənə bilər.',
 };
 
 export type TranslationKey = keyof typeof en;

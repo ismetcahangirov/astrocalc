@@ -61,6 +61,13 @@ export interface NumerologyPeriodRow {
   key: string;
   label: string;
   value: string;
+  /**
+   * Localized "master number" / "karmic debt 13", or null — same provenance the
+   * core rows carry. Always `null` for Challenges, which are plain 0–8
+   * subtractions with no master or karmic-debt concept; that is an absence in
+   * the domain, not an omission here.
+   */
+  badge: string | null;
   /** e.g. `0–34`, or `53+` for the open-ended final period. */
   ageRange: string;
   isCurrent: boolean;
@@ -148,6 +155,7 @@ export function formatNumerologyDetails(
       key: `pinnacle-${p.index}`,
       label: `${labels.pinnacle} ${p.index}`,
       value: String(p.number.value),
+      badge: badgeFor(p.number, labels),
       ageRange: formatAgeRange(p.startAge, p.endAge),
       isCurrent: p.index === profile.currentPinnacle,
     })),
@@ -155,6 +163,8 @@ export function formatNumerologyDetails(
       key: `challenge-${c.index}`,
       label: `${labels.challenge} ${c.index}`,
       value: String(c.value),
+      // Challenges are plain 0–8 values: no master numbers, no karmic debt.
+      badge: null,
       ageRange: formatAgeRange(c.startAge, c.endAge),
       isCurrent: c.index === profile.currentChallenge,
     })),

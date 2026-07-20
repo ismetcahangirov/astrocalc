@@ -31,6 +31,7 @@ const BIRTH_TIME_RE = /^\d{2}:\d{2}$/;
 const URL_RE = /^https?:\/\/\S+$/i;
 
 interface FormState {
+  fullName: string;
   displayName: string;
   avatarUrl: string;
   locale: Locale;
@@ -45,6 +46,7 @@ interface FormState {
 
 function toForm(profile: Profile): FormState {
   return {
+    fullName: profile.fullName ?? '',
     displayName: profile.displayName ?? '',
     avatarUrl: profile.avatarUrl ?? '',
     locale: isSupportedLocale(profile.locale) ? profile.locale : 'en',
@@ -75,6 +77,9 @@ function birthDataChanged(before: FormState, after: FormState): boolean {
 function toPatch(form: FormState): ProfileUpdateInput {
   const num = (s: string) => (s.trim() === '' ? null : Number(s));
   return {
+    // Cleared to null rather than '' — the backend rejects an empty string, and
+    // null is what "no full name yet" means to the numerology service.
+    fullName: form.fullName.trim() === '' ? null : form.fullName.trim(),
     displayName: form.displayName.trim() === '' ? null : form.displayName.trim(),
     avatarUrl: form.avatarUrl.trim() === '' ? null : form.avatarUrl.trim(),
     locale: form.locale,
@@ -123,6 +128,8 @@ interface ProfileScreenProps {
   onManageAccount?: () => void;
   /** Called to navigate to the natal-chart result screen (#17/#18), when offered. */
   onViewChart?: () => void;
+  /** Called to navigate to the numerology result screen (#66), when offered. */
+  onViewNumerology?: () => void;
   /** Called to navigate to the People list (#s2), when offered. */
   onViewPeople?: () => void;
 }
@@ -130,6 +137,7 @@ interface ProfileScreenProps {
 export function ProfileScreen({
   onManageAccount,
   onViewChart,
+  onViewNumerology,
   onViewPeople,
 }: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
@@ -227,6 +235,18 @@ export function ProfileScreen({
       <Text style={styles.subtitle}>
         {isNewProfile ? t('profile.subtitleCreate') : t('profile.subtitleEdit')}
       </Text>
+
+      <Field label={t('numerology.fullNameLabel')}>
+        <TextInput
+          style={styles.input}
+          value={form.fullName}
+          onChangeText={(v) => update('fullName', v)}
+          placeholder={t('numerology.fullNameLabel')}
+          placeholderTextColor={MUTED}
+          testID="profile-fullName"
+        />
+        <Text style={styles.hint}>{t('numerology.fullNameHint')}</Text>
+      </Field>
 
       <Field label={t('profile.name.label')}>
         <TextInput
@@ -352,6 +372,16 @@ export function ProfileScreen({
         </Pressable>
       ) : null}
 
+      {onViewNumerology ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewNumerology}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('numerology.title')}</Text>
+        </Pressable>
+      ) : null}
+
       {onViewPeople ? (
         <Pressable
           accessibilityRole="button"
@@ -419,6 +449,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
+  hint: { color: MUTED, fontSize: 13, marginTop: 8, lineHeight: 18 },
   inputDisabled: { opacity: 0.4 },
   inputSpaced: { marginTop: 10 },
   switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
