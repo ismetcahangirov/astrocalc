@@ -57,6 +57,15 @@ const envSchema = z.object({
     .int()
     .nonnegative()
     .default(60 * 60 * 24 * 180),
+  // Numerology result cache (#64). Same convention as CHART_CACHE_TTL_SECONDS:
+  // a long TTL so entries orphaned by invalidation — and by the month-scoped
+  // key rolling over (see `numerologyCacheKey.ts`) — eventually self-clean; set
+  // to `0` for no TTL (explicit invalidation only).
+  NUMEROLOGY_CACHE_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .nonnegative()
+    .default(60 * 60 * 24 * 180),
   // Natal-chart interpretation text (#18). An admin edit invalidates the
   // specific cache entry, so a generous TTL is safe here.
   INTERPRETATION_CACHE_TTL_SECONDS: z.coerce

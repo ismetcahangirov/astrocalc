@@ -91,6 +91,21 @@ export class IncompleteProfileError extends AuthError {
   }
 }
 
+/**
+ * The profile is missing data numerology needs — most often `fullName`, which
+ * profiles created before that column existed do not have. Mirrors
+ * {@link IncompleteProfileError}'s code and shape so a client can handle both
+ * the same way.
+ */
+export class IncompleteNumerologyProfileError extends AuthError {
+  constructor(missing: string[]) {
+    super('incomplete_profile', 'Profile is missing data required for numerology', 422, {
+      missing,
+    });
+    this.name = 'IncompleteNumerologyProfileError';
+  }
+}
+
 /** A saved subject (#s2) doesn't exist, or doesn't belong to the caller. */
 export class SubjectNotFoundError extends AuthError {
   constructor(message = 'That person could not be found.') {
