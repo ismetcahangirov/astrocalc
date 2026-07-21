@@ -9,6 +9,7 @@ export default function Profile() {
       onViewChart={() => router.push('/natal-chart')}
       onViewNumerology={() => router.push('/numerology')}
       onViewMatrix={() => router.push('/matrix')}
+      onViewChakra={() => router.push('/chakra')}
       onViewPeople={() => router.push('/people')}
     />
   );

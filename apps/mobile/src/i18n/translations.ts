@@ -233,9 +233,6 @@ const en = {
   'matrix.physical': 'Physical',
   'matrix.energy': 'Energy',
   'matrix.emotional': 'Emotional',
-  'matrix.chakraReadingsTitle': 'Chakra reading',
-  'matrix.chakraReadingUnavailableOffline': 'Your chakra reading needs an internet connection.',
-  'matrix.chakraReadingError': "Couldn't load your chakra reading. Please try again.",
   'matrix.missingData': 'Add your date of birth to your profile to see your Matrix.',
   'matrix.missingDataCta': 'Go to my profile',
   'matrix.loadError': "Couldn't load your Matrix. Please try again.",
@@ -245,6 +242,14 @@ const en = {
   'matrix.readingTitle': 'Your Reading',
   'matrix.maleLine': 'male generation line',
   'matrix.femaleLine': 'female generation line',
+
+  'chakra.title': 'Your chakras',
+  'chakra.subtitle':
+    'The seven chakras of your Matrix, crown to root — each on the body centre it governs.',
+  'chakra.offlineNotice':
+    "You're viewing chakras computed on this device. Reconnect for your full reading.",
+  'chakra.readingUnavailableOffline': 'Your chakra reading needs an internet connection.',
+  'chakra.readingError': "Couldn't load your chakra reading. Please try again.",
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -476,9 +481,6 @@ const az: Record<keyof typeof en, string> = {
   'matrix.physical': 'Fizika',
   'matrix.energy': 'Enerji',
   'matrix.emotional': 'Emosiya',
-  'matrix.chakraReadingsTitle': 'Çakra şərhi',
-  'matrix.chakraReadingUnavailableOffline': 'Çakra şərhiniz üçün internet bağlantısı lazımdır.',
-  'matrix.chakraReadingError': 'Çakra şərhiniz yüklənmədi. Yenidən cəhd edin.',
   'matrix.missingData': 'Matrisinizi görmək üçün profilinizə doğum tarixinizi əlavə edin.',
   'matrix.missingDataCta': 'Profilimə keç',
   'matrix.loadError': 'Matrisiniz yüklənmədi. Yenidən cəhd edin.',
@@ -488,6 +490,14 @@ const az: Record<keyof typeof en, string> = {
   'matrix.readingTitle': 'Sizin Şərhiniz',
   'matrix.maleLine': 'kişi nəsil xətti',
   'matrix.femaleLine': 'qadın nəsil xətti',
+
+  'chakra.title': 'Sizin Çakralarınız',
+  'chakra.subtitle':
+    'Matrisinizin yeddi çakrası — tacdan kökə qədər, hər biri idarə etdiyi bədən mərkəzində.',
+  'chakra.offlineNotice':
+    'Bu cihazda hesablanmış çakralara baxırsınız. Tam şərh üçün internetə qoşulun.',
+  'chakra.readingUnavailableOffline': 'Çakra şərhiniz üçün internet bağlantısı lazımdır.',
+  'chakra.readingError': 'Çakra şərhiniz yüklənmədi. Yenidən cəhd edin.',
 };
 
 export type TranslationKey = keyof typeof en;
