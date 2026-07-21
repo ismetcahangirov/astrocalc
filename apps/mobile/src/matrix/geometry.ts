@@ -335,7 +335,15 @@ export function computeOctagramLayout(
   ];
   for (const m of moneyInner) {
     const point = onMoneyBow(m.t);
-    nodes.push({ key: m.key, arcana: m.arcana, kind: 'money', point, angle: 315, emphasis: 3, label: point });
+    nodes.push({
+      key: m.key,
+      arcana: m.arcana,
+      kind: 'money',
+      point,
+      angle: 315,
+      emphasis: 3,
+      label: point,
+    });
   }
   const corePt = onMoneyBow(0.5);
 
