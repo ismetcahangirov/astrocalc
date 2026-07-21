@@ -6,6 +6,24 @@ and the related issue/PR numbers.
 
 ## 2026-07-21
 
+- Dedicated Chakra page with a body chart — mobile, i18n, design (#101). A user
+  searching "chakra chart" expects the familiar seated figure with the seven
+  chakras along the spine, not the numbers-only health table. Added a standalone
+  `app/chakra.tsx` → `ChakraScreen`, reachable from a "Your chakras" button on
+  the profile screen. `ChakraBodyChart` (Skia) draws a stylised seated silhouette
+  (torso + crossed-leg base + head + resting arms, one filled path built from
+  body landmarks) with a central channel and seven colour-coded discs — crown
+  violet → root red, the traditional rainbow — each carrying its emotional
+  (synthesis) arcana. Beneath: each chakra's name, its physical/energy/emotional
+  cells, and its reading paragraph (reused `fetchChakraReadings` from #99). Pure
+  layout in `chakraGeometry.ts` (unit-tested: crown→root order, disc = emotional
+  cell, discs on the central axis descending, seven distinct colours, closed
+  body path). The chakra **calculation** is unchanged (still `computeHealthMap`);
+  this is a second, recognisable *view* of it. Moved the per-chakra reading off
+  the Matrix screen (it lives here now); the Matrix keeps its health-map table.
+  Verified live on the USB device (13.09.2000): figure renders with the right
+  values (22/5/10/7/6/14/8). Mobile 198 green (+8); tsc + eslint + prettier clean.
+
 - Chakra reading surfaced on the Matrix screen — mobile, i18n (#99). The chakra
   *calculation* was already complete and cross-validated (`computeHealthMap`,
   Ladini §5.2) and its 4-locale interpretation content already seeded

@@ -138,6 +138,8 @@ interface ProfileScreenProps {
   onViewNumerology?: () => void;
   /** Called to navigate to the Matrix of Destiny screen (#75), when offered. */
   onViewMatrix?: () => void;
+  /** Called to navigate to the Chakra page (#101), when offered. */
+  onViewChakra?: () => void;
   /** Called to navigate to the People list (#s2), when offered. */
   onViewPeople?: () => void;
 }
@@ -147,6 +149,7 @@ export function ProfileScreen({
   onViewChart,
   onViewNumerology,
   onViewMatrix,
+  onViewChakra,
   onViewPeople,
 }: ProfileScreenProps = {}) {
   const { t, setLocale } = useTranslation();
@@ -398,6 +401,16 @@ export function ProfileScreen({
           style={styles.manageAccountLink}
         >
           <Text style={styles.manageAccountLinkText}>{t('matrix.title')}</Text>
+        </Pressable>
+      ) : null}
+
+      {onViewChakra ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onViewChakra}
+          style={styles.manageAccountLink}
+        >
+          <Text style={styles.manageAccountLinkText}>{t('chakra.title')}</Text>
         </Pressable>
       ) : null}
 

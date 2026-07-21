@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { ApiError, getSubjectMatrix } from '../api/matrixApi';
-import { isNetworkError } from '../api/httpClient';
-import { fetchChakraReadings, type ChakraReading } from '../api/interpretationApi';
 import { getProfile } from '../api/profileApi';
 import { MissingMatrixDataError, type MatrixView } from '../offline/matrixService';
 import { loadMatrix } from '../offline/matrixServiceWiring';
@@ -67,21 +65,16 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
   const { t, locale } = useTranslation();
   const { width } = useWindowDimensions();
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
-  const [readings, setReadings] = useState<ChakraReading[] | null>(null);
-  const [readingError, setReadingError] = useState<string | null>(null);
 
   const octagramSize = Math.min(width - 48, 420);
 
   const load = useCallback(async () => {
     setState({ phase: 'loading' });
-    setReadings(null);
-    setReadingError(null);
 
-    let view: MatrixView;
     try {
       // A saved subject's Matrix is fetched from the backend only (no offline
       // path); the user's own keeps its offline-capable loader.
-      view = subjectId
+      const view: MatrixView = subjectId
         ? { matrix: (await getSubjectMatrix(subjectId)).matrix, source: 'backend' }
         : await loadMatrix(await getProfile());
       setState({ phase: 'ready', view });
@@ -94,23 +87,8 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
         phase: 'error',
         message: err instanceof ApiError ? err.message : t('matrix.loadError'),
       });
-      return;
     }
-
-    // The chakra reading is fetched separately and allowed to fail on its own:
-    // the octagram and the numbers need no network once the Matrix is loaded, so
-    // a reading error (or being offline) must not blank the screen. Same split
-    // as NatalChartScreen's wheel vs. interpretation.
-    try {
-      setReadings(await fetchChakraReadings(view.matrix, locale));
-    } catch (err) {
-      setReadingError(
-        isNetworkError(err)
-          ? t('matrix.chakraReadingUnavailableOffline')
-          : t('matrix.chakraReadingError'),
-      );
-    }
-  }, [t, subjectId, locale]);
+  }, [t, subjectId]);
 
   // Reload on focus, not just on mount — the "add your birth date" prompt pushes
   // the profile screen on top of this one, so coming back must re-ask rather than
@@ -222,21 +200,6 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
           {/* The summary row totals each column; emphasised so it reads as a
               total rather than an eighth chakra. */}
           <ChakraLine row={details.healthSummary} emphasised />
-
-          {/* The reading for each chakra, keyed on its emotional (synthesis)
-              cell. Each paragraph already opens with the chakra's name, so no
-              separate row label is needed. Fails independently of the table. */}
-          {readingError ? <Text style={styles.sectionNote}>{readingError}</Text> : null}
-          {readings && readings.length > 0 ? (
-            <>
-              <Text style={styles.chakraReadingsTitle}>{t('matrix.chakraReadingsTitle')}</Text>
-              {readings.map((r) => (
-                <Text key={r.chakra} style={styles.paragraph}>
-                  {r.content}
-                </Text>
-              ))}
-            </>
-          ) : null}
         </>
       ) : null}
 
@@ -314,6 +277,4 @@ const styles = StyleSheet.create({
   error: { color: '#F2A2A2', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   retryButton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10 },
   retryButtonText: { color: GOLD, fontSize: 15, fontWeight: '600' },
-  chakraReadingsTitle: { color: GOLD, fontSize: 14, fontWeight: '700', marginTop: 18 },
-  paragraph: { color: '#B9B4C7', fontSize: 14, lineHeight: 21, marginTop: 12 },
 });

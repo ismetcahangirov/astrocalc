@@ -99,7 +99,7 @@ const POSITION_LABELS: Record<Locale, LabelSet> = {
 };
 
 /** Chakra names, per locale. Transliterated rather than translated — they are proper nouns. */
-const CHAKRA_LABELS: Record<Locale, Record<ChakraName, string>> = {
+export const CHAKRA_LABELS: Record<Locale, Record<ChakraName, string>> = {
   en: {
     sahasrara: 'Sahasrara',
     ajna: 'Ajna',
