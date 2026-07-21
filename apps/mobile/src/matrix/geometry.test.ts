@@ -286,3 +286,39 @@ describe('computeOctagramLayout', () => {
 function discGap(size: number): number {
   return size * 0.03 * 2;
 }
+
+describe('computeOctagramLayout — age-period timeline', () => {
+  const periodsBetween = (l: OctagramLayout, lo: number, hi: number): number[] =>
+    l.agePeriods
+      .filter((p) => p.age > lo && p.age < hi)
+      .sort((a, b) => a.age - b.age)
+      .map((p) => p.arcana);
+
+  it('emits seven sub-arcana in each of the eight decade gaps (56 total), all valid', () => {
+    const l = layout();
+    expect(l.agePeriods).toHaveLength(56);
+    for (const p of l.agePeriods) {
+      expect(p.arcana).toBeGreaterThanOrEqual(1);
+      expect(p.arcana).toBeLessThanOrEqual(22);
+    }
+  });
+
+  it('bisects the 20→30 decade for 1990-11-22 (month 11 → NE corner 3)', () => {
+    // 11 & 3 → mid 14; 7,17; 18,21,4,20 — read back in age order.
+    expect(periodsBetween(layout(), 20, 30)).toEqual([18, 7, 21, 14, 4, 17, 20]);
+  });
+
+  it('reproduces the reference figure for 2000-09-13 (20→30 = 20,11,4,20,6,4,15)', () => {
+    // The exact sequence destinymatrixchart.com draws in that arc — external
+    // cross-validation, not a restatement of this code's own arithmetic.
+    const l = computeOctagramLayout(computeDestinyMatrix({ birthDate: '2000-09-13' }), SIZE);
+    expect(periodsBetween(l, 20, 30)).toEqual([20, 11, 4, 20, 6, 4, 15]);
+  });
+
+  it('places every age-period arcana outside the ring of outer discs', () => {
+    const l = layout();
+    for (const p of l.agePeriods) {
+      expect(distance(p.point, l.center)).toBeGreaterThan(l.radius);
+    }
+  });
+});

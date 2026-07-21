@@ -6,6 +6,22 @@ and the related issue/PR numbers.
 
 ## 2026-07-21
 
+- Octagram age-forecast timeline drawn on the perimeter — mobile (#97). The
+  figure drew the age *ruler* (ticks + age numbers) but not the ruling arcana of
+  each life sub-period, which reference calculators (`destinymatrixchart.com`)
+  show as a dense ring of small numbers. Added it: the eight decade vertices
+  (ages 0/10/…/70) are the outer discs, and between each adjacent pair the
+  sub-period arcana are found by recursive bisection — each intermediate is the
+  reduced sum of its two neighbours — three levels deep for seven sub-points per
+  decade (56 total). `computeOctagramLayout()` places each on its own age angle
+  (4.5°/year, the same scale the ruler uses) in a band just outside the discs;
+  `OctagramChart` draws them tiny and dim so they read as a background layer, not
+  competing with the discs. A local `reduceArcana()` re-expresses the calc-engine
+  reduction (not exported from the package). geometry.test.ts: +4 cases,
+  including an **external cross-check** — the 20→30 arc for 2000-09-13 reproduces
+  `destinymatrixchart.com`'s `20, 11, 4, 20, 6, 4, 15` exactly. Mobile 188 green;
+  tsc + eslint + prettier clean. Verified on a physical device.
+
 - Video-in-silhouette figure on the Chakra page — mobile, design (#103). Replaced
   the hand-drawn Skia body with the provided lotus-pose figure, now playing a
   looping cosmic video *inside* the silhouette. No native rebuild: the dev client

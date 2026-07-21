@@ -104,6 +104,21 @@ export interface Segment {
   to: Point;
 }
 
+/**
+ * One arcana on the perimeter age-forecast timeline — the ruling energy of a
+ * ~1.25-year sub-period, sitting just outside its age tick.
+ */
+export interface AgePeriod {
+  /** Age (in years) at the start of the sub-period this arcana rules. */
+  age: number;
+  /** The arcana number, 1–22. */
+  arcana: number;
+  /** Screen angle (deg) of the point on the perimeter. */
+  angle: number;
+  /** Where to draw the small number. */
+  point: Point;
+}
+
 /** The complete, renderer-agnostic description of one octagram. */
 export interface OctagramLayout {
   size: number;
@@ -130,6 +145,11 @@ export interface OctagramLayout {
   /** Where to draw the money ("$") and love ("♥") marks on that line. */
   moneyMark: Point;
   loveMark: Point;
+  /**
+   * The age-forecast timeline: the ruling arcana of each ~1.25-year sub-period
+   * between the eight decade vertices (ages 0–80), placed around the perimeter.
+   */
+  agePeriods: AgePeriod[];
 }
 
 const DEG = Math.PI / 180;
@@ -166,6 +186,44 @@ const DIAGONAL_ANGLES = {
 
 function closedPath(points: Point[]): Segment[] {
   return points.map((from, i) => ({ from, to: points[(i + 1) % points.length]! }));
+}
+
+/**
+ * Reduce a sum back into the 1–22 arcana range by repeated digit-summing — the
+ * same rule the calc-engine uses, re-expressed locally because it is not exported
+ * from the package and this module must stay dependency-light. Both inputs here
+ * are already 1–22, so the sum is ≤ 44 and one digit-sum pass always suffices.
+ */
+function reduceArcana(sum: number): number {
+  let n = sum;
+  while (n > 22) {
+    let digits = 0;
+    for (let r = n; r > 0; r = Math.floor(r / 10)) digits += r % 10;
+    n = digits;
+  }
+  return n;
+}
+
+/**
+ * The perimeter age-forecast timeline (#97): the ruling arcana of each 1.25-year
+ * sub-period between two decade vertices, by recursive bisection — each new point
+ * is the reduced sum of the two it falls between. Three levels deep gives the
+ * seven sub-points the reference figures draw between every decade.
+ *
+ * Returned in age order: +1.25, +2.5, +3.75, +5, +6.25, +7.5, +8.75 years past
+ * `startAge`. The two endpoints (the decade vertices) are the outer octagram
+ * discs and are not repeated here.
+ */
+function bisectDecade(startAge: number, a0: number, a1: number): { age: number; arcana: number }[] {
+  const m4 = reduceArcana(a0 + a1); // +5   (the decade midpoint)
+  const m2 = reduceArcana(a0 + m4); // +2.5
+  const m6 = reduceArcana(m4 + a1); // +7.5
+  const m1 = reduceArcana(a0 + m2); // +1.25
+  const m3 = reduceArcana(m2 + m4); // +3.75
+  const m5 = reduceArcana(m4 + m6); // +6.25
+  const m7 = reduceArcana(m6 + a1); // +8.75
+  const arcana = [m1, m2, m3, m4, m5, m6, m7];
+  return arcana.map((a, i) => ({ age: startAge + (i + 1) * 1.25, arcana: a }));
 }
 
 /**
@@ -347,6 +405,38 @@ export function computeOctagramLayout(
   }
   const corePt = onMoneyBow(0.5);
 
+  // --- The perimeter age-forecast timeline (#97) ---
+  // The eight decade vertices (ages 0/10/…/70) are the outer discs; between each
+  // adjacent pair the sub-period arcana are found by bisection. Age runs
+  // clockwise from the west vertex at 4.5°/year — the same scale the age ruler
+  // uses — so each sub-arcana sits on its own age angle, in a band just outside
+  // the discs and inside the age-number labels.
+  const decadeArcana = [
+    matrix.core.day, // age 0  — W
+    matrix.ancestral.paternalSpiritual.corner, // age 10 — NW
+    matrix.core.month, // age 20 — N
+    matrix.ancestral.maternalSpiritual.corner, // age 30 — NE
+    matrix.core.year, // age 40 — E
+    matrix.ancestral.paternalMaterial.corner, // age 50 — SE
+    matrix.core.sum, // age 60 — S
+    matrix.ancestral.maternalMaterial.corner, // age 70 — SW
+  ];
+  const ageArcanaRadius = radius + size * 0.075;
+  const agePeriods: AgePeriod[] = [];
+  for (let seg = 0; seg < 8; seg++) {
+    const a0 = decadeArcana[seg]!;
+    const a1 = decadeArcana[(seg + 1) % 8]!;
+    for (const sub of bisectDecade(seg * 10, a0, a1)) {
+      const angle = 180 - sub.age * 4.5;
+      agePeriods.push({
+        age: sub.age,
+        arcana: sub.arcana,
+        angle,
+        point: pointOnCircle(center, ageArcanaRadius, angle),
+      });
+    }
+  }
+
   // --- Structure ---
   const byKey = (key: string) => nodes.find((n) => n.key === key)!.point;
 
@@ -377,5 +467,6 @@ export function computeOctagramLayout(
     // carries both readings without crowding the disc's own number.
     moneyMark: { x: corePt.x + size * 0.05, y: corePt.y - size * 0.03 },
     loveMark: { x: corePt.x - size * 0.03, y: corePt.y + size * 0.05 },
+    agePeriods,
   };
 }
