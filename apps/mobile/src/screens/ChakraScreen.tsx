@@ -16,7 +16,7 @@ import { fetchChakraReadings, type ChakraReading } from '../api/interpretationAp
 import { getProfile } from '../api/profileApi';
 import { MissingMatrixDataError, type MatrixView } from '../offline/matrixService';
 import { loadMatrix } from '../offline/matrixServiceWiring';
-import { computeChakraBodyLayout, type ChakraNode } from '../matrix/chakraGeometry';
+import { computeChakraFigureLayout, type ChakraNode } from '../matrix/chakraGeometry';
 import { ChakraBodyChart } from '../matrix/ChakraBodyChart';
 import { CHAKRA_LABELS } from '../matrix/matrixText';
 import { useTranslation } from '../i18n/LocaleContext';
@@ -61,7 +61,7 @@ export function ChakraScreen({ subjectId, subjectName, onEditProfile }: ChakraSc
   const [readings, setReadings] = useState<ChakraReading[] | null>(null);
   const [readingError, setReadingError] = useState<string | null>(null);
 
-  const chartSize = Math.min(width - 48, 360);
+  const chartSize = Math.min(width - 16, 440);
 
   const load = useCallback(async () => {
     setState({ phase: 'loading' });
@@ -105,7 +105,7 @@ export function ChakraScreen({ subjectId, subjectName, onEditProfile }: ChakraSc
 
   const layout = useMemo(() => {
     if (state.phase !== 'ready') return null;
-    return computeChakraBodyLayout(state.view.matrix, chartSize);
+    return computeChakraFigureLayout(state.view.matrix, chartSize);
   }, [state, chartSize]);
 
   const readingByChakra = useMemo(() => {
