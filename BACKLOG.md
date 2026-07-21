@@ -6,6 +6,22 @@ and the related issue/PR numbers.
 
 ## 2026-07-21
 
+- Video-in-silhouette figure on the Chakra page — mobile, design (#103). Replaced
+  the hand-drawn Skia body with the provided lotus-pose figure, now playing a
+  looping cosmic video *inside* the silhouette. No native rebuild: the dev client
+  already ships Fresco animated-GIF support (`expo.gif.enabled=true`), so the
+  `.mp4` was transcoded (ffmpeg) to a transparent animated GIF masked to the body
+  shape — the mask recovered from the near-black silhouette PNG by thresholding
+  (its alpha was uniform; the shape lived in a 2-vs-0 luma difference). Tightened
+  the crop so the figure fills the frame (bigger, per request), and made the loop
+  **seamless** with a forward+reverse boomerang (no hard cut back to frame 0).
+  Final asset: 288×288, 11 fps, ~10 s, 160-colour, **2.36 MB**. `ChakraBodyChart`
+  is now an `<Image>` (GIF) under a transparent Skia overlay of the discs;
+  `chakraGeometry` drops the body path and places the seven discs on the cropped
+  figure's anatomy (crown 0.11 → root 0.63). Verified live: figure animates,
+  chakras land on the right body centres. Mobile 197 green; tsc + eslint +
+  prettier clean.
+
 - Dedicated Chakra page with a body chart — mobile, i18n, design (#101). A user
   searching "chakra chart" expects the familiar seated figure with the seven
   chakras along the spine, not the numbers-only health table. Added a standalone

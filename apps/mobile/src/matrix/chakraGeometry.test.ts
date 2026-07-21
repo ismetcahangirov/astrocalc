@@ -1,17 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { computeDestinyMatrix, CHAKRA_ORDER } from '@astrocalc/calc-engine';
-import { computeChakraBodyLayout, CANVAS_RATIO } from './chakraGeometry';
+import { computeChakraFigureLayout } from './chakraGeometry';
 
 const MATRIX = computeDestinyMatrix({ birthDate: '1990-11-22' });
-const SIZE = 360;
+const SIZE = 320;
 
-describe('computeChakraBodyLayout', () => {
-  const layout = computeChakraBodyLayout(MATRIX, SIZE);
-
-  it('sizes a portrait canvas', () => {
-    expect(layout.size).toBe(SIZE);
-    expect(layout.height).toBeCloseTo(SIZE * CANVAS_RATIO);
-  });
+describe('computeChakraFigureLayout', () => {
+  const layout = computeChakraFigureLayout(MATRIX, SIZE);
 
   it('places seven chakra discs, crown to root', () => {
     expect(layout.nodes.map((n) => n.chakra)).toEqual([...CHAKRA_ORDER]);
@@ -39,6 +34,13 @@ describe('computeChakraBodyLayout', () => {
     }
   });
 
+  it('keeps every disc inside the square figure', () => {
+    for (const node of layout.nodes) {
+      expect(node.center.y - node.radius).toBeGreaterThan(0);
+      expect(node.center.y + node.radius).toBeLessThan(SIZE);
+    }
+  });
+
   it('gives each chakra its own traditional colour', () => {
     const colors = layout.nodes.map((n) => n.color);
     expect(new Set(colors).size).toBe(colors.length); // all seven distinct
@@ -51,17 +53,8 @@ describe('computeChakraBodyLayout', () => {
     expect(layout.channel.bottom).toEqual(layout.nodes[6]!.center);
   });
 
-  it('emits a closed body path, a head, and two arms', () => {
-    expect(layout.bodyPath.startsWith('M ')).toBe(true);
-    expect(layout.bodyPath.trimEnd().endsWith('Z')).toBe(true);
-    expect(layout.head.radius).toBeGreaterThan(0);
-    expect(layout.head.center.x).toBe(SIZE / 2);
-    expect(layout.arms).toHaveLength(2);
-    for (const arm of layout.arms) expect(arm.startsWith('M ')).toBe(true);
-  });
-
   it('scales with size', () => {
-    const small = computeChakraBodyLayout(MATRIX, 200);
+    const small = computeChakraFigureLayout(MATRIX, 200);
     expect(small.nodes[0]!.radius).toBeLessThan(layout.nodes[0]!.radius);
   });
 });

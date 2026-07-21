@@ -1,20 +1,23 @@
-import { Platform } from 'react-native';
+import { Image, Platform, View } from 'react-native';
 import {
   Canvas,
   Circle,
   Group,
   Line,
-  Path,
   Text as SkiaText,
   matchFont,
   type SkFont,
 } from '@shopify/react-native-skia';
-import type { ChakraBodyLayout, ChakraNode, Point } from './chakraGeometry';
+import type { ChakraFigureLayout, ChakraNode, Point } from './chakraGeometry';
 import { chartTheme } from '../chart/theme';
 
+/** The seated lotus figure with a cosmic video masked to its silhouette (#103). */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const CHAKRA_GIF = require('../../assets/chakra-body.gif');
+
 interface ChakraBodyChartProps {
-  /** Precomputed via `computeChakraBodyLayout()` — this component only draws it. */
-  layout: ChakraBodyLayout;
+  /** Precomputed via `computeChakraFigureLayout()` — this component only draws it. */
+  layout: ChakraFigureLayout;
 }
 
 /** Skia doesn't auto-centre text on a point; offset by the glyph's own measured box. */
@@ -23,39 +26,38 @@ function centered(font: SkFont, text: string, cx: number, cy: number): Point {
   return { x: cx - box.width / 2, y: cy + box.height / 2 };
 }
 
-/** Soft translucent body fill and its rim, so the silhouette reads without dominating the discs. */
-const BODY_FILL = 'rgba(150, 134, 190, 0.15)';
-const BODY_RIM = 'rgba(228, 185, 91, 0.34)';
-
 /**
- * Renders a precomputed {@link ChakraBodyLayout} (`chakraGeometry.ts`) as a seated
- * figure with the seven chakras placed along the spine — the familiar chakra
- * chart, in the app's gold/dark theme. Each disc carries its emotional
- * (synthesis) arcana; the physical/energy/emotional breakdown and the reading
- * live in the list beneath the figure.
+ * The Chakra figure: the masked video of a seated body ({@link CHAKRA_GIF}, a
+ * looping cosmic animation clipped to the lotus silhouette) with the seven
+ * colour-coded chakra discs placed along its spine.
  *
- * Pure presentation over flat point data, mirroring `OctagramChart` /
- * `NatalChartWheel`. Numbers are plain ASCII, so the system font via `matchFont`
- * is enough — asked for by an explicit `fontFamily`, without which Android draws
- * no text for a weighted style.
+ * Two layers, same square box: the animated `Image` underneath — a plain GIF, so
+ * Fresco animates it with no extra native module — and a transparent Skia
+ * `Canvas` on top for the discs. The figure image already carries transparency,
+ * so the screen's dark background shows through around it.
+ *
+ * Disc placement is precomputed in `chakraGeometry.ts`; this component only
+ * draws. Numbers are plain ASCII, so the system font via `matchFont` is enough —
+ * asked for by an explicit `fontFamily`, without which Android draws no text for
+ * a weighted style.
  */
 export function ChakraBodyChart({ layout }: ChakraBodyChartProps) {
-  const { size, height } = layout;
+  const { size } = layout;
   const fontFamily = Platform.select({ ios: 'Helvetica', default: 'sans-serif' });
-  const numberFont = matchFont({ fontFamily, fontSize: size * 0.046, fontWeight: '700' });
+  const numberFont = matchFont({ fontFamily, fontSize: size * 0.042, fontWeight: '700' });
 
   const renderNode = (node: ChakraNode) => {
     const label = String(node.emotional);
     const pos = numberFont ? centered(numberFont, label, node.center.x, node.center.y) : null;
     return (
       <Group key={node.chakra}>
-        {/* A soft same-colour glow lifts each chakra off the dark figure. */}
+        {/* A soft same-colour glow lifts each chakra off the figure. */}
         <Circle
           cx={node.center.x}
           cy={node.center.y}
           r={node.radius * 1.7}
           color={node.color}
-          opacity={0.12}
+          opacity={0.18}
         />
         <Circle cx={node.center.x} cy={node.center.y} r={node.radius} color={node.color} />
         <Circle
@@ -64,7 +66,7 @@ export function ChakraBodyChart({ layout }: ChakraBodyChartProps) {
           r={node.radius}
           style="stroke"
           strokeWidth={1.4}
-          color="rgba(255, 255, 255, 0.7)"
+          color="rgba(255, 255, 255, 0.8)"
         />
         {numberFont && pos ? (
           <SkiaText font={numberFont} text={label} x={pos.x} y={pos.y} color={node.ink} />
@@ -74,37 +76,23 @@ export function ChakraBodyChart({ layout }: ChakraBodyChartProps) {
   };
 
   return (
-    <Canvas style={{ width: size, height }}>
-      {/* Body silhouette: torso + crossed legs, then the head on top. */}
-      <Path path={layout.bodyPath} color={BODY_FILL} />
-      <Path path={layout.bodyPath} style="stroke" strokeWidth={1.4} color={BODY_RIM} />
-      <Circle
-        cx={layout.head.center.x}
-        cy={layout.head.center.y}
-        r={layout.head.radius}
-        color={BODY_FILL}
+    <View style={{ width: size, height: size }}>
+      <Image
+        source={CHAKRA_GIF}
+        style={{ position: 'absolute', width: size, height: size }}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
       />
-      <Circle
-        cx={layout.head.center.x}
-        cy={layout.head.center.y}
-        r={layout.head.radius}
-        style="stroke"
-        strokeWidth={1.4}
-        color={BODY_RIM}
-      />
-      {layout.arms.map((d, i) => (
-        <Path key={`arm-${i}`} path={d} style="stroke" strokeWidth={1.4} color={BODY_RIM} />
-      ))}
-
-      {/* The central channel (Sushumna) the chakras sit on. */}
-      <Line
-        p1={layout.channel.top}
-        p2={layout.channel.bottom}
-        color={chartTheme.goldMuted}
-        strokeWidth={1.2}
-      />
-
-      {layout.nodes.map(renderNode)}
-    </Canvas>
+      <Canvas style={{ position: 'absolute', width: size, height: size }}>
+        {/* The energy channel the chakras sit on — faint, since the body shows it. */}
+        <Line
+          p1={layout.channel.top}
+          p2={layout.channel.bottom}
+          color={chartTheme.goldFaint}
+          strokeWidth={1}
+        />
+        {layout.nodes.map(renderNode)}
+      </Canvas>
+    </View>
   );
 }
