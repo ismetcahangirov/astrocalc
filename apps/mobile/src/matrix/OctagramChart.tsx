@@ -105,6 +105,9 @@ export function OctagramChart({
   const tickLabelFont = matchFont({ fontFamily, fontSize: size * 0.021, fontWeight: '500' });
   const genFont = matchFont({ fontFamily, fontSize: size * 0.023, fontWeight: '500' });
   const markFont = matchFont({ fontFamily, fontSize: size * 0.05, fontWeight: '700' });
+  // The perimeter age-forecast arcana are deliberately tiny — a dense background
+  // ring of ~56 numbers, read on close inspection, not competing with the discs.
+  const agePeriodFont = matchFont({ fontFamily, fontSize: size * 0.019, fontWeight: '600' });
 
   // One-shot "reveal" on mount, driving a single 0→1 progress on the UI thread —
   // the same staged entrance the wheel uses: the structure draws in first, then
@@ -210,6 +213,27 @@ export function OctagramChart({
       }
     }
     return items;
+  };
+
+  // The age-forecast arcana: one tiny number per ~1.25-year sub-period, sitting
+  // in a band just outside the discs — the ruling energy of each slice of the
+  // life timeline the age ruler measures.
+  const renderAgePeriods = (): ReactElement[] => {
+    if (!agePeriodFont) return [];
+    return layout.agePeriods.map((p) => {
+      const label = String(p.arcana);
+      const pos = centered(agePeriodFont, label, p.point.x, p.point.y);
+      return (
+        <SkiaText
+          key={`ageperiod-${p.age}`}
+          font={agePeriodFont}
+          text={label}
+          x={pos.x}
+          y={pos.y}
+          color={AGE_MINOR}
+        />
+      );
+    });
   };
 
   // The two diagonals name the parental "generation lines" — male on the paternal
@@ -326,6 +350,8 @@ export function OctagramChart({
         {/* The age ruler around the perimeter — outside the discs, so it lives
             in the structure layer. */}
         {renderAgeScale()}
+        {/* The age-forecast arcana ride the same ruler, one per sub-period. */}
+        {renderAgePeriods()}
       </Group>
 
       <Group opacity={outerOpacity}>{outerNodes.map(renderNode)}</Group>
