@@ -135,7 +135,8 @@ export function OctagramChart({
           n.kind === 'arm' ||
           n.kind === 'centre' ||
           n.kind === 'ancestralCentre' ||
-          n.kind === 'axis',
+          n.kind === 'axis' ||
+          n.kind === 'money',
       ),
     }),
     [layout.nodes],

@@ -48,7 +48,9 @@ export type OctagramNodeKind =
   /** The ancestral centre, sitting just below the personal one. */
   | 'ancestralCentre'
   /** A chakra health point on one of the two central axes (§5.2). */
-  | 'axis';
+  | 'axis'
+  /** An inner point of the money/relationship line (§5.1), on the SE bow. */
+  | 'money';
 
 /** One placed arcana, ready to draw. */
 export interface OctagramNode {
@@ -306,15 +308,36 @@ export function computeOctagramLayout(
   for (const p of axisPoints) place(p.key, p.arcana, 'axis', p.angle, p.r, 3);
 
   // --- The money/relationship line (§5.1) ---
-  // Its ends are the two Svadhisthana points already placed — partner (C+E) at
-  // the east 0.5 mark, entry (D+E) at the south 0.5 mark — which is exactly
-  // where the method says the line sits, so it is drawn as one segment across
-  // the SE quadrant between them. The five arcana it carries are read in the
-  // breakdown; on the figure the line is marked only with "$" (money) and "♥"
-  // (love), the two readings the same points hold, kept clear of the busy
-  // centre so they stay legible.
-  const entryPt = pointOnCircle(center, radius * 0.5, 270); // svadhisthana.energy
-  const partnerPt = pointOnCircle(center, radius * 0.5, 0); // svadhisthana.physical
+  // Its two ends are the Svadhisthana points already placed as axis nodes —
+  // partner (C+E) at the east 0.5 mark, entry (D+E) at the south 0.5 mark. The
+  // three inner arcana (toEntry, core, toPartner) lie *on the line between those
+  // two ends*, so they are placed on a quadratic bow from entry to partner whose
+  // control point is pushed toward the SE corner. The bow is what keeps `core`
+  // clear of the SE ancestral arm's inner point, which sits on the straight
+  // chord it would otherwise land on. The two endpoints are not re-emitted here
+  // — they are already the two Svadhisthana axis discs — so only the three inner
+  // points are added, and the "$"/"♥" marks label the `core` they flank.
+  const entryPt = pointOnCircle(center, radius * 0.5, 270); // svadhisthana.energy (D+E)
+  const partnerPt = pointOnCircle(center, radius * 0.5, 0); // svadhisthana.physical (C+E)
+  const moneyControl = pointOnCircle(center, radius * 0.85, 315); // pushed toward the SE corner
+  const onMoneyBow = (t: number): Point => {
+    const u = 1 - t;
+    return {
+      x: u * u * entryPt.x + 2 * u * t * moneyControl.x + t * t * partnerPt.x,
+      y: u * u * entryPt.y + 2 * u * t * moneyControl.y + t * t * partnerPt.y,
+    };
+  };
+  const money = matrix.moneyAndRelationships;
+  const moneyInner: { key: string; arcana: number; t: number }[] = [
+    { key: 'money.toEntry', arcana: money.toEntry, t: 0.25 },
+    { key: 'money.core', arcana: money.core, t: 0.5 },
+    { key: 'money.toPartner', arcana: money.toPartner, t: 0.75 },
+  ];
+  for (const m of moneyInner) {
+    const point = onMoneyBow(m.t);
+    nodes.push({ key: m.key, arcana: m.arcana, kind: 'money', point, angle: 315, emphasis: 3, label: point });
+  }
+  const corePt = onMoneyBow(0.5);
 
   // --- Structure ---
   const byKey = (key: string) => nodes.find((n) => n.key === key)!.point;
@@ -334,11 +357,17 @@ export function computeOctagramLayout(
       { from: byKey('ancestral.maternalSpiritual'), to: byKey('ancestral.maternalMaterial') },
     ],
     spokes: [...cardinalPoints, ...diagonalPoints].map((to) => ({ from: center, to })),
-    moneyLine: [{ from: entryPt, to: partnerPt }],
-    // The two marks sit out on the SE diagonal, clear of the dense centre —
-    // money toward the east end of the line, love toward the south end, the
-    // arrangement the reference figures use.
-    moneyMark: pointOnCircle(center, radius * 0.42, 330),
-    loveMark: pointOnCircle(center, radius * 0.42, 300),
+    // The bowed polyline entry → toEntry → core → toPartner → partner, so the
+    // drawn line passes through all five arcana instead of cutting straight
+    // across the quadrant.
+    moneyLine: [entryPt, onMoneyBow(0.25), corePt, onMoneyBow(0.75), partnerPt].reduce<Segment[]>(
+      (segs, point, i, all) => (i === 0 ? segs : [...segs, { from: all[i - 1]!, to: point }]),
+      [],
+    ),
+    // The two marks flank `core` — money just past it toward the partner (east)
+    // end, love toward the entry (south) end — labelling the one point that
+    // carries both readings without crowding the disc's own number.
+    moneyMark: { x: corePt.x + size * 0.05, y: corePt.y - size * 0.03 },
+    loveMark: { x: corePt.x - size * 0.03, y: corePt.y + size * 0.05 },
   };
 }
