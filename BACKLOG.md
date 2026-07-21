@@ -6,6 +6,21 @@ and the related issue/PR numbers.
 
 ## 2026-07-21
 
+- Chakra reading surfaced on the Matrix screen — mobile, i18n (#99). The chakra
+  *calculation* was already complete and cross-validated (`computeHealthMap`,
+  Ladini §5.2) and its 4-locale interpretation content already seeded
+  (`chakra-<name>-<arcana>`, category `matrix`, #81) — but nothing turned the
+  numbers into text: the health section showed only the physical/energy/emotional
+  table and the Matrix "reading" heading was empty. Added a per-chakra reading
+  beneath the health table, fetched through the existing
+  `POST /interpretations/batch` (no backend change), mirroring
+  `fetchChartInterpretation`'s independent, network-optional, graceful-offline
+  split — the octagram and numbers still render with no connection. Each chakra's
+  representative arcana is its **emotional (synthesis)** cell `reduce(physical +
+  energy)` — the one place that choice is made lives in `matrix/chakraReading.ts`
+  (`chakraReadingSubjects` / `orderChakraReadings`, pure + unit-tested). Mobile
+  190 green (+6); tsc + eslint + prettier clean.
+
 - Octagram money/relationship line drawn on the figure — mobile. Previously the
   five money/relationship arcana (`entry–toEntry–core–toPartner–partner`, §5.1)
   were read only from the breakdown, and the figure showed just a hint (a single
