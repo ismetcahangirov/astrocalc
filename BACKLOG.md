@@ -4,6 +4,30 @@ Reverse-chronological log of completed work on AstroCalc. Add an entry here
 whenever a task is finished (merged or ready for review) — what was done,
 and the related issue/PR numbers.
 
+## 2026-07-21
+
+- Octagram money/relationship line drawn on the figure — mobile. Previously the
+  five money/relationship arcana (`entry–toEntry–core–toPartner–partner`, §5.1)
+  were read only from the breakdown, and the figure showed just a hint (a single
+  segment between the two Svadhisthana axis points plus the `$`/`♥` marks),
+  because the method sources give the line no single agreed *figure* position.
+  Cross-checking a user's chart (13.09.2000) against `destinymatrixchart.com`
+  surfaced this as a completeness gap: reference calculators plot all five
+  points. Added the three inner arcana (`toEntry`, `core`, `toPartner`) as discs
+  in `computeOctagramLayout()`, placed on a quadratic bow from `entry` (south
+  0.5) to `partner` (east 0.5) whose control is pushed toward the SE corner — the
+  bow is what keeps `core` clear of the SE ancestral arm's inner point it would
+  collide with on the straight chord. The two endpoints are **not** re-emitted
+  (they are already the two Svadhisthana axis discs), and the `$`/`♥` marks now
+  flank `core`. `moneyLine` became the 4-segment bowed polyline. New node kind
+  `'money'`; `OctagramChart` draws it like the other inner nodes. **Emotional /
+  chakra-map points were deliberately *not* added to the figure** — they have no
+  agreed octagram position and already appear in the health table, so plotting
+  them would mean inventing coordinates (the exact non-canonical placement the
+  reference site uses). geometry.test.ts: +2 cases (bowed polyline connectivity;
+  the three inner arcana on the line, in order, clear of the SE arm). Mobile 184
+  green; tsc + eslint clean.
+
 ## 2026-07-20
 
 - Matrix interpretation content — #80 (22 arcana base meanings) + #81

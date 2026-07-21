@@ -227,15 +227,22 @@ describe('computeOctagramLayout', () => {
     expect(d('chakra.vishuddha.physical')).toBeGreaterThan(d('chakra.anahata.physical'));
   });
 
-  it('draws the money/relationship line between the Svadhisthana points, marked $ and ♥', () => {
+  it('draws the money/relationship line as a bowed polyline through all five points, marked $ and ♥', () => {
     const l = layout();
-    expect(l.moneyLine).toHaveLength(1);
-    const [seg] = l.moneyLine;
-    const ends = [seg!.from, seg!.to];
-    // One end sits east on the horizontal (partner, C+E), the other south on the
-    // vertical (entry, D+E) — where §5.1 says the line's ends lie.
-    expect(ends.some((p) => p.x > l.center.x && Math.abs(p.y - l.center.y) < 1)).toBe(true);
-    expect(ends.some((p) => p.y > l.center.y && Math.abs(p.x - l.center.x) < 1)).toBe(true);
+    // entry → toEntry → core → toPartner → partner is four segments, connected
+    // end to end.
+    expect(l.moneyLine).toHaveLength(4);
+    for (let i = 1; i < l.moneyLine.length; i++) {
+      expect(l.moneyLine[i]!.from).toEqual(l.moneyLine[i - 1]!.to);
+    }
+    const first = l.moneyLine[0]!.from;
+    const last = l.moneyLine[l.moneyLine.length - 1]!.to;
+    // The line starts south on the vertical (entry, D+E) and ends east on the
+    // horizontal (partner, C+E) — where §5.1 says its ends lie.
+    expect(first.y).toBeGreaterThan(l.center.y);
+    expect(Math.abs(first.x - l.center.x)).toBeLessThan(1);
+    expect(last.x).toBeGreaterThan(l.center.x);
+    expect(Math.abs(last.y - l.center.y)).toBeLessThan(1);
 
     // The two marks are distinct and both fall in the SE quadrant.
     expect(l.moneyMark).not.toEqual(l.loveMark);
@@ -244,4 +251,38 @@ describe('computeOctagramLayout', () => {
       expect(m.y).toBeGreaterThan(l.center.y);
     }
   });
+
+  it('places the three inner money-line arcana on the line, in order, without hitting the SE arm', () => {
+    const l = layout();
+    const at = (key: string) => l.nodes.find((n) => n.key === key)!;
+    // 1990-11-22: entry 21, toEntry 3, core 9, toPartner 15, partner 6.
+    expect(at('money.toEntry').arcana).toBe(3);
+    expect(at('money.core').arcana).toBe(9);
+    expect(at('money.toPartner').arcana).toBe(15);
+
+    // All three are in the SE quadrant and carry the 'money' kind.
+    for (const key of ['money.toEntry', 'money.core', 'money.toPartner']) {
+      const n = at(key);
+      expect(n.kind).toBe('money');
+      expect(n.point.x).toBeGreaterThan(l.center.x);
+      expect(n.point.y).toBeGreaterThan(l.center.y);
+    }
+
+    // Ordered along the bow: toEntry nearer the south end (larger y), toPartner
+    // nearer the east end (larger x), core between them.
+    expect(at('money.toEntry').point.y).toBeGreaterThan(at('money.core').point.y);
+    expect(at('money.toPartner').point.x).toBeGreaterThan(at('money.core').point.x);
+
+    // core must not collide with the SE ancestral arm's inner point it would sit
+    // on if the line were a straight chord — the bow exists to separate them.
+    const core = at('money.core').point;
+    const seArm = at('ancestral.paternalMaterial.inner').point;
+    expect(distance(core, seArm)).toBeGreaterThan(discGap(l.size));
+  });
 });
+
+/** A disc's drawn radius is ~size*0.03–0.052; two discs clear if their centres
+ * are at least one small-disc diameter apart. */
+function discGap(size: number): number {
+  return size * 0.03 * 2;
+}
