@@ -1,7 +1,13 @@
-import type { InterpretationLocale, NatalChart } from '@astrocalc/calc-engine';
+import type { DestinyMatrix, InterpretationLocale, NatalChart } from '@astrocalc/calc-engine';
 import { authedFetch, ApiError } from './httpClient';
+import {
+  chakraReadingSubjects,
+  orderChakraReadings,
+  type ChakraReading,
+} from '../matrix/chakraReading';
 
 export { ApiError } from './httpClient';
+export type { ChakraReading } from '../matrix/chakraReading';
 
 /** One resolved interpretation row, as `/interpretations/for-chart` returns it. */
 export interface InterpretationResult {
@@ -71,4 +77,43 @@ export async function fetchChartInterpretation(
     res,
     'Could not load your chart reading. Please try again.',
   );
+}
+
+/** The `POST /interpretations/batch` response shape — only the fields this client reads. */
+interface BatchInterpretationResponse {
+  results: InterpretationResult[];
+}
+
+/**
+ * Fetch the seven chakra readings for a computed Matrix (#99).
+ *
+ * The chakra numbers are already on the (offline-capable) `DestinyMatrix`; this
+ * turns them into text using the interpretation content the backend already
+ * holds. It goes through the generic `/interpretations/batch` endpoint rather
+ * than a bespoke `for-matrix` route — the only subjects a chakra reading needs
+ * are the seven `chakra-*` keys, which batch resolves directly.
+ *
+ * Independent of loading the Matrix itself, and network-bound the same way
+ * {@link fetchChartInterpretation} is: it throws {@link ApiError} `network_error`
+ * when offline, the caller's cue to show a "needs a connection" note while still
+ * rendering the numbers. Chakras the batch returns no content for are omitted.
+ */
+export async function fetchChakraReadings(
+  matrix: DestinyMatrix,
+  locale: InterpretationLocale,
+): Promise<ChakraReading[]> {
+  const subjects = chakraReadingSubjects(matrix).map(({ subjectKey }) => ({
+    category: 'matrix' as const,
+    subjectKey,
+  }));
+  const res = await authedFetch('/interpretations/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locale, subjects }),
+  });
+  const { results } = await parseJson<BatchInterpretationResponse>(
+    res,
+    'Could not load your chakra reading. Please try again.',
+  );
+  return orderChakraReadings(matrix, new Map(results.map((r) => [r.subjectKey, r.content])));
 }
