@@ -6,6 +6,29 @@ and the related issue/PR numbers.
 
 ## 2026-07-22
 
+- Numerology, Matrix, and Chakra detail rows are now expandable accordions —
+  mobile (#108). Extends the pattern shipped for the Natal Chart screen
+  (#106/#107) to the remaining three result screens: every row (numerology's
+  core/extended/cycle numbers and Pinnacle/Challenge periods; the Matrix's
+  core square, ancestral square, purposes, money/relationship line, and
+  seven-chakra health map; the Chakra page's per-chakra blocks) taps open,
+  accordion-style, to reveal its seeded meaning, with only one row open at a
+  time. Mobile-only — the interpretation content already existed (numerology
+  185 subjects, matrix 682 subjects including the chakras), so no backend,
+  calc-engine, or seed changes were needed. `numerologyText.ts`/`matrixText.ts`
+  now attach each row's `numerologySubjectKey`/`matrixSubjectKey` alongside its
+  computed value (Matrix chakra rows derive theirs from the existing
+  `chakraReadingSubjects()` rather than re-deriving the formula, keeping that
+  file's "one place this choice is made" invariant intact); a new
+  `fetchInterpretationMap` helper (`interpretationApi.ts`) wraps the existing
+  `/interpretations/batch` endpoint into a `subjectKey → content` map,
+  mirroring `fetchChakraReadings`. `AccordionRow` gained one
+  backward-compatible optional `leading` slot so the Chakra page keeps its
+  coloured dot. The now-redundant empty "Your Reading" headings on the
+  Numerology and Matrix screens were removed — their content lives in the
+  accordions. Mobile tests green (215, + new `numerologyText`/`matrixText`
+  subjectKey assertions); tsc + prettier clean.
+
 - Natal chart detail rows are now expandable accordions — mobile, backend,
   calc-engine (#106). Each planet/house/aspect row in the "Chart details"
   section (planets, angles, houses, aspects) taps open to reveal what that
