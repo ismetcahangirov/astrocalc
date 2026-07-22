@@ -1,4 +1,5 @@
 import { matrixSubjectKey, type ChakraName, type DestinyMatrix, type MatrixSubjectKind } from '@astrocalc/calc-engine';
+import { chakraReadingSubjects } from './chakraReading';
 import type { Locale } from '../i18n/translations';
 
 /**
@@ -197,6 +198,13 @@ export function formatMatrixDetails(matrix: DestinyMatrix, locale: Locale): Matr
     subjectKey: matrixSubjectKey(POSITION_KEY_TO_KIND[key], value),
   });
 
+  // Chakra subject keys are derived from `chakraReadingSubjects`, the one
+  // place that decides which cell a chakra's reading is keyed on — see its
+  // doc comment. Keyed by chakra name so it stays correct regardless of order.
+  const chakraSubjectKeys = new Map(
+    chakraReadingSubjects(matrix).map((s) => [s.chakra, s.subjectKey]),
+  );
+
   return {
     core: [
       row('day', matrix.core.day),
@@ -237,7 +245,7 @@ export function formatMatrixDetails(matrix: DestinyMatrix, locale: Locale): Matr
       physical: String(r.physical),
       energy: String(r.energy),
       emotional: String(r.emotional),
-      subjectKey: matrixSubjectKey(`chakra-${r.chakra}`, r.emotional),
+      subjectKey: chakraSubjectKeys.get(r.chakra),
     })),
     healthSummary: {
       key: 'summary',
