@@ -123,3 +123,31 @@ export async function fetchChakraReadings(
   );
   return orderChakraReadings(matrix, new Map(results.map((r) => [r.subjectKey, r.content])));
 }
+
+/**
+ * Fetch a batch of numerology or matrix interpretations and collapse them into
+ * a `subjectKey → content` map — the shape every accordion screen's
+ * `renderMeaning` helper looks up from. Subject keys are unique within a
+ * category and each screen only ever asks for one category per call, so a
+ * flat map (no category namespacing) is enough.
+ *
+ * Throws {@link ApiError} with code `network_error` when offline, exactly like
+ * {@link fetchChartInterpretation} and {@link fetchChakraReadings} — the
+ * caller's cue to show a "needs a connection" note while still rendering the
+ * computed numbers.
+ */
+export async function fetchInterpretationMap(
+  subjects: { category: 'numerology' | 'matrix'; subjectKey: string }[],
+  locale: InterpretationLocale,
+): Promise<Map<string, string>> {
+  const res = await authedFetch('/interpretations/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locale, subjects }),
+  });
+  const { results } = await parseJson<BatchInterpretationResponse>(
+    res,
+    'Could not load your reading. Please try again.',
+  );
+  return new Map(results.map((r) => [r.subjectKey, r.content]));
+}

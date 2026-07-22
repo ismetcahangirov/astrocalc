@@ -1,4 +1,10 @@
-import type { ChakraName, DestinyMatrix } from '@astrocalc/calc-engine';
+import {
+  matrixSubjectKey,
+  type ChakraName,
+  type DestinyMatrix,
+  type MatrixSubjectKind,
+} from '@astrocalc/calc-engine';
+import { chakraReadingSubjects } from './chakraReading';
 import type { Locale } from '../i18n/translations';
 
 /**
@@ -43,6 +49,33 @@ interface LabelSet {
   toPartner: string;
   partner: string;
 }
+
+/** Maps each `LabelSet` key to its `matrixSubjectKey` kind. */
+const POSITION_KEY_TO_KIND: Record<keyof LabelSet, MatrixSubjectKind> = {
+  day: 'day',
+  month: 'month',
+  year: 'year',
+  sum: 'karmic-tail',
+  centre: 'comfort-zone',
+  paternalSpiritual: 'paternal-spiritual',
+  paternalMaterial: 'paternal-material',
+  maternalSpiritual: 'maternal-spiritual',
+  maternalMaterial: 'maternal-material',
+  ancestralCentre: 'ancestral-centre',
+  paternalLine: 'paternal-line',
+  maternalLine: 'maternal-line',
+  sky: 'sky',
+  earth: 'earth',
+  personal: 'personal-purpose',
+  social: 'social-purpose',
+  spiritual: 'spiritual-purpose',
+  planetary: 'planetary-purpose',
+  entry: 'line-entry',
+  toEntry: 'line-toward-entry',
+  lineCore: 'line-core',
+  toPartner: 'line-toward-partner',
+  partner: 'line-partner',
+};
 
 /** Row labels for every named position, per locale. */
 const POSITION_LABELS: Record<Locale, LabelSet> = {
@@ -132,6 +165,8 @@ export interface MatrixRow {
   label: string;
   /** The arcana, as a string. */
   value: string;
+  /** Interpretation key for this position, e.g. `comfort-zone-14`. */
+  subjectKey: string;
 }
 
 /** One chakra row of the health map. */
@@ -141,6 +176,8 @@ export interface MatrixChakraRow {
   physical: string;
   energy: string;
   emotional: string;
+  /** Interpretation key for this chakra, e.g. `chakra-anahata-12`. Absent for the summary row. */
+  subjectKey?: string;
 }
 
 export interface MatrixDetails {
@@ -163,7 +200,15 @@ export function formatMatrixDetails(matrix: DestinyMatrix, locale: Locale): Matr
     key,
     label: names[key],
     value: String(value),
+    subjectKey: matrixSubjectKey(POSITION_KEY_TO_KIND[key], value),
   });
+
+  // Chakra subject keys are derived from `chakraReadingSubjects`, the one
+  // place that decides which cell a chakra's reading is keyed on — see its
+  // doc comment. Keyed by chakra name so it stays correct regardless of order.
+  const chakraSubjectKeys = new Map(
+    chakraReadingSubjects(matrix).map((s) => [s.chakra, s.subjectKey]),
+  );
 
   return {
     core: [
@@ -205,6 +250,7 @@ export function formatMatrixDetails(matrix: DestinyMatrix, locale: Locale): Matr
       physical: String(r.physical),
       energy: String(r.energy),
       emotional: String(r.emotional),
+      subjectKey: chakraSubjectKeys.get(r.chakra),
     })),
     healthSummary: {
       key: 'summary',

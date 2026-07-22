@@ -1,4 +1,9 @@
-import type { NumerologyNumber, NumerologyProfile } from '@astrocalc/calc-engine';
+import type {
+  NumerologyNumber,
+  NumerologyNumberKind,
+  NumerologyProfile,
+} from '@astrocalc/calc-engine';
+import { numerologySubjectKey } from '@astrocalc/calc-engine';
 import type { Locale } from '../i18n/translations';
 
 /**
@@ -48,6 +53,18 @@ const NUMBER_LABELS: Record<
   },
 };
 
+/** Maps each `NUMBER_LABELS` key to its `numerologySubjectKey` kind. */
+const NUMBER_KEY_TO_KIND: Record<keyof typeof NUMBER_LABELS.en, NumerologyNumberKind> = {
+  lifePath: 'life-path',
+  expression: 'expression',
+  soulUrge: 'soul-urge',
+  personality: 'personality',
+  birthday: 'birthday',
+  maturity: 'maturity',
+  personalYear: 'personal-year',
+  personalMonth: 'personal-month',
+};
+
 export interface NumerologyRow {
   key: string;
   label: string;
@@ -55,6 +72,8 @@ export interface NumerologyRow {
   value: string;
   /** Localized "master number" / "karmic debt 19", or null. */
   badge: string | null;
+  /** Interpretation key for this number, e.g. `life-path-11`. */
+  subjectKey: string;
 }
 
 export interface NumerologyPeriodRow {
@@ -71,6 +90,8 @@ export interface NumerologyPeriodRow {
   /** e.g. `0–34`, or `53+` for the open-ended final period. */
   ageRange: string;
   isCurrent: boolean;
+  /** Interpretation key for this period, e.g. `pinnacle-1-6`. */
+  subjectKey: string;
 }
 
 export interface NumerologyDetails {
@@ -124,19 +145,21 @@ export function formatNumerologyDetails(
 ): NumerologyDetails {
   const names = NUMBER_LABELS[locale];
 
-  const row = (key: keyof typeof names, number: NumerologyNumber): NumerologyRow => ({
+  const row = (key: keyof typeof NUMBER_LABELS.en, number: NumerologyNumber): NumerologyRow => ({
     key,
     label: names[key],
     value: String(number.value),
     badge: badgeFor(number, labels),
+    subjectKey: numerologySubjectKey(NUMBER_KEY_TO_KIND[key], number.value),
   });
 
   /** A number with no master/karmic-debt provenance to report (birthday, cycles). */
-  const plainRow = (key: keyof typeof names, value: number): NumerologyRow => ({
+  const plainRow = (key: keyof typeof NUMBER_LABELS.en, value: number): NumerologyRow => ({
     key,
     label: names[key],
     value: String(value),
     badge: null,
+    subjectKey: numerologySubjectKey(NUMBER_KEY_TO_KIND[key], value),
   });
 
   return {
@@ -158,6 +181,7 @@ export function formatNumerologyDetails(
       badge: badgeFor(p.number, labels),
       ageRange: formatAgeRange(p.startAge, p.endAge),
       isCurrent: p.index === profile.currentPinnacle,
+      subjectKey: numerologySubjectKey(`pinnacle-${p.index}`, p.number.value),
     })),
     challenges: profile.challenges.map((c) => ({
       key: `challenge-${c.index}`,
@@ -167,6 +191,7 @@ export function formatNumerologyDetails(
       badge: null,
       ageRange: formatAgeRange(c.startAge, c.endAge),
       isCurrent: c.index === profile.currentChallenge,
+      subjectKey: numerologySubjectKey(`challenge-${c.index}`, c.value),
     })),
   };
 }

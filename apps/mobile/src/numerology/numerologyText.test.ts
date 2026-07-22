@@ -49,7 +49,9 @@ function makeProfile(): NumerologyProfile {
         index: 3,
         startAge: 44,
         endAge: 52,
-        number: { value: 33, isMaster: true, karmicDebt: null },
+        // Pinnacle 3 sums Pinnacles 1 and 2, so its master ceiling is 22, not 33
+        // (see PINNACLE_THIRD_RANGE in calc-engine/interpretations.ts).
+        number: { value: 22, isMaster: true, karmicDebt: null },
       },
       {
         index: 4,
@@ -87,8 +89,14 @@ describe('formatNumerologyDetails — core and extended numbers', () => {
     const { extended } = formatNumerologyDetails(makeProfile(), 'en', EN_LABELS);
 
     expect(extended).toEqual([
-      { key: 'birthday', label: 'Birthday', value: '24', badge: null },
-      { key: 'maturity', label: 'Maturity', value: '22', badge: 'master number' },
+      { key: 'birthday', label: 'Birthday', value: '24', badge: null, subjectKey: 'birthday-24' },
+      {
+        key: 'maturity',
+        label: 'Maturity',
+        value: '22',
+        badge: 'master number',
+        subjectKey: 'maturity-22',
+      },
     ]);
   });
 
@@ -96,8 +104,20 @@ describe('formatNumerologyDetails — core and extended numbers', () => {
     const { cycles } = formatNumerologyDetails(makeProfile(), 'en', EN_LABELS);
 
     expect(cycles).toEqual([
-      { key: 'personalYear', label: 'Personal Year', value: '5', badge: null },
-      { key: 'personalMonth', label: 'Personal Month', value: '8', badge: null },
+      {
+        key: 'personalYear',
+        label: 'Personal Year',
+        value: '5',
+        badge: null,
+        subjectKey: 'personal-year-5',
+      },
+      {
+        key: 'personalMonth',
+        label: 'Personal Month',
+        value: '8',
+        badge: null,
+        subjectKey: 'personal-month-8',
+      },
     ]);
   });
 
@@ -141,7 +161,7 @@ describe('formatNumerologyDetails — pinnacles and challenges', () => {
     expect(pinnacles.map((p) => p.badge)).toEqual([
       null,
       null,
-      'master number', // 33 at position 3 — provenance the bare "33" would lose
+      'master number', // 22 at position 3 — provenance the bare "22" would lose
       'karmic debt 13',
     ]);
     // Challenges have no master/debt concept, so their badge is always null.
@@ -180,5 +200,20 @@ describe('formatNumerologyDetails — pinnacles and challenges', () => {
     expect(challenges[0]!.label).toBe('Sınaq 1');
     // Age ranges are digits — identical in either locale.
     expect(pinnacles[3]!.ageRange).toBe('53+');
+  });
+});
+
+describe('formatNumerologyDetails — interpretation subject keys', () => {
+  it('attaches the right subjectKey to core, cycle, pinnacle and challenge rows', () => {
+    const { core, cycles, pinnacles, challenges } = formatNumerologyDetails(
+      makeProfile(),
+      'en',
+      EN_LABELS,
+    );
+
+    expect(core.find((r) => r.key === 'lifePath')!.subjectKey).toBe('life-path-11');
+    expect(cycles.find((r) => r.key === 'personalYear')!.subjectKey).toBe('personal-year-5');
+    expect(pinnacles[0]!.subjectKey).toBe('pinnacle-1-6');
+    expect(challenges[0]!.subjectKey).toBe('challenge-1-2');
   });
 });
