@@ -168,6 +168,37 @@ describe('createProfileService.updateProfile — numerology cache invalidation',
   });
 });
 
+describe('createProfileService.updateProfile — name parts', () => {
+  it('composes fullName and displayName from the parts, and invalidates numerology', async () => {
+    const { repo, service, invalidated, numerologyInvalidated } = build();
+    const userId = await createUser(repo);
+
+    const updated = await service.updateProfile(userId, {
+      firstName: 'Aysel',
+      lastName: 'Məmmədova',
+      patronymic: 'Elçin qızı',
+    });
+
+    expect(updated.fullName).toBe('Aysel Məmmədova Elçin qızı');
+    expect(updated.displayName).toBe('Aysel'); // greeting name = first name
+    expect(updated.firstName).toBe('Aysel');
+    // fullName changed, so numerology is dropped; no birth field moved, so the
+    // chart cache is not.
+    expect(numerologyInvalidated).toEqual([userId]);
+    expect(invalidated).toEqual([]);
+  });
+
+  it('merges a single changed part with the stored ones', async () => {
+    const { repo, service } = build();
+    const userId = await createUser(repo);
+
+    await service.updateProfile(userId, { firstName: 'Aysel', lastName: 'Məmmədova' });
+    const updated = await service.updateProfile(userId, { lastName: 'Əliyeva' });
+
+    expect(updated.fullName).toBe('Aysel Əliyeva');
+  });
+});
+
 describe('createProfileService.updateProfile — Matrix cache invalidation', () => {
   it('invalidates all three caches when birthDate changes — the one field all of them read', async () => {
     const { repo, service, invalidated, numerologyInvalidated, matrixInvalidated } = build();

@@ -73,6 +73,16 @@ const en = {
   'profile.name.label': 'Name',
   'profile.name.placeholder': 'Your name',
 
+  // Shared name-part fields (Ad / Soyad / Ata adı), used by the profile,
+  // onboarding and add-person forms alike.
+  'name.first.label': 'First name',
+  'name.first.placeholder': 'First name',
+  'name.first.required': 'Enter a first name.',
+  'name.last.label': 'Surname',
+  'name.last.placeholder': 'Surname',
+  'name.patronymic.label': "Father's name",
+  'name.patronymic.placeholder': "Father's name",
+
   'profile.avatarUrl.label': 'Avatar URL',
   'profile.avatarUrl.placeholder': 'https://…',
   'profile.avatarUrl.invalid': 'Enter a valid URL, or leave this blank.',
@@ -216,7 +226,7 @@ const en = {
   'numerology.readingTitle': 'Your Reading',
   'numerology.fullNameLabel': 'Full birth name',
   'numerology.fullNameHint':
-    'The complete name on your birth certificate, including middle names. Your numerology is calculated letter by letter from it, so it may differ from the display name above.',
+    'Enter the complete name from your birth certificate. Your numerology is calculated letter by letter from these three fields.',
   'numerology.fullNameTooLong': 'Full birth name must be 200 characters or fewer.',
 
   'matrix.title': 'Your Matrix',
@@ -321,6 +331,14 @@ const az: Record<keyof typeof en, string> = {
 
   'profile.name.label': 'Ad',
   'profile.name.placeholder': 'Adınız',
+
+  'name.first.label': 'Ad',
+  'name.first.placeholder': 'Ad',
+  'name.first.required': 'Ad daxil edin.',
+  'name.last.label': 'Soyad',
+  'name.last.placeholder': 'Soyad',
+  'name.patronymic.label': 'Ata adı',
+  'name.patronymic.placeholder': 'Ata adı',
 
   'profile.avatarUrl.label': 'Avatar URL',
   'profile.avatarUrl.placeholder': 'https://…',
@@ -466,7 +484,7 @@ const az: Record<keyof typeof en, string> = {
   'numerology.readingTitle': 'Sizin Şərhiniz',
   'numerology.fullNameLabel': 'Tam doğum adı',
   'numerology.fullNameHint':
-    'Doğum haqqında şəhadətnamənizdəki tam ad, ata adı da daxil olmaqla. Numerologiyanız hərf-hərf bu addan hesablanır, ona görə də yuxarıdakı görünən addan fərqlənə bilər.',
+    'Doğum haqqında şəhadətnamənizdəki tam adınızı yazın. Numerologiyanız bu üç sahədən hərf-hərf hesablanır.',
   'numerology.fullNameTooLong': 'Tam doğum adı 200 simvoldan çox ola bilməz.',
 
   'matrix.title': 'Sizin Matrisiniz',

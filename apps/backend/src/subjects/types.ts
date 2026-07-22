@@ -5,7 +5,12 @@
 export interface Subject {
   id: string;
   userId: string;
+  /** Combined name — composed from the parts, kept for numerology and the People list. */
   name: string;
+  /** Name parts (Ad / Soyad / Ata adı) — the source of truth the form collects. */
+  firstName: string | null;
+  lastName: string | null;
+  patronymic: string | null;
   birthDate: string | null;
   birthTime: string | null;
   birthTimeKnown: boolean;
@@ -23,7 +28,15 @@ export interface Subject {
  * the client (the same rule as profiles).
  */
 export interface SubjectCreateInput {
-  name: string;
+  /**
+   * Legacy single-string name, still accepted (and used by older callers/tests).
+   * When the name parts below are supplied, `name` is composed from them and any
+   * `name` sent alongside is ignored.
+   */
+  name?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  patronymic?: string | null;
   birthDate?: string | null;
   birthTime?: string | null;
   birthTimeKnown?: boolean;
@@ -36,7 +49,14 @@ export type SubjectUpdateInput = Partial<SubjectCreateInput>;
 
 /**
  * The persisted shape the repository writes: create/update inputs after the
- * service has resolved the server-owned `birthPlaceTimezone`.
+ * service has resolved the server-owned `birthPlaceTimezone` and composed the
+ * combined `name` from the parts.
  */
-export type SubjectWriteData = SubjectCreateInput & { birthPlaceTimezone: string | null };
+export type SubjectWriteData = SubjectCreateInput & {
+  name: string;
+  firstName: string | null;
+  lastName: string | null;
+  patronymic: string | null;
+  birthPlaceTimezone: string | null;
+};
 export type SubjectPatchData = SubjectUpdateInput & { birthPlaceTimezone?: string | null };

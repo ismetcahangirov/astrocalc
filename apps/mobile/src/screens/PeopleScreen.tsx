@@ -11,7 +11,24 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { ApiError, getProfile, type Profile } from '../api/profileApi';
 import { deleteSubject, listSubjects, type Subject } from '../api/subjectsApi';
+import { composeFullName } from '../common/personName';
 import { useTranslation } from '../i18n/LocaleContext';
+
+/**
+ * The name to show for a saved person: the combined `name` the backend composed
+ * (what it normally is), falling back to composing it from the parts should the
+ * combined value ever come back blank — so a row is never nameless.
+ */
+function subjectDisplayName(subject: Subject): string {
+  return (
+    subject.name?.trim() ||
+    composeFullName({
+      firstName: subject.firstName ?? '',
+      lastName: subject.lastName ?? '',
+      patronymic: subject.patronymic ?? '',
+    })
+  );
+}
 
 interface BirthPlaceish {
   birthDate: string | null;
@@ -161,10 +178,10 @@ export function PeopleScreen({
             <Pressable
               accessibilityRole="button"
               disabled={!ready}
-              onPress={() => onOpenSubjectChart(subject.id, subject.name)}
+              onPress={() => onOpenSubjectChart(subject.id, subjectDisplayName(subject))}
               style={styles.rowMain}
             >
-              <Text style={styles.rowName}>{subject.name}</Text>
+              <Text style={styles.rowName}>{subjectDisplayName(subject)}</Text>
               {ready ? (
                 <Text style={styles.rowAction}>{t('people.viewChart')}</Text>
               ) : (
@@ -178,7 +195,7 @@ export function PeopleScreen({
               {onOpenSubjectNumerology && numerologyReady(subject) ? (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => onOpenSubjectNumerology(subject.id, subject.name)}
+                  onPress={() => onOpenSubjectNumerology(subject.id, subjectDisplayName(subject))}
                   hitSlop={8}
                 >
                   <Text style={styles.numerologyText}>{t('people.viewNumbers')}</Text>
@@ -187,7 +204,7 @@ export function PeopleScreen({
               {onOpenSubjectMatrix && matrixReady(subject) ? (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => onOpenSubjectMatrix(subject.id, subject.name)}
+                  onPress={() => onOpenSubjectMatrix(subject.id, subjectDisplayName(subject))}
                   hitSlop={8}
                 >
                   <Text style={styles.numerologyText}>{t('people.viewMatrix')}</Text>

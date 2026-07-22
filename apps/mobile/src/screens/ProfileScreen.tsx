@@ -17,6 +17,7 @@ import {
   type ProfileUpdateInput,
 } from '../api/profileApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
+import { composeFullName, partsFromRecord } from '../common/personName';
 import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 import {
@@ -31,8 +32,9 @@ const BIRTH_TIME_RE = /^\d{2}:\d{2}$/;
 const URL_RE = /^https?:\/\/\S+$/i;
 
 interface FormState {
-  fullName: string;
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  patronymic: string;
   avatarUrl: string;
   locale: Locale;
   birthDate: string;
@@ -46,8 +48,7 @@ interface FormState {
 
 function toForm(profile: Profile): FormState {
   return {
-    fullName: profile.fullName ?? '',
-    displayName: profile.displayName ?? '',
+    ...partsFromRecord(profile),
     avatarUrl: profile.avatarUrl ?? '',
     locale: isSupportedLocale(profile.locale) ? profile.locale : 'en',
     birthDate: profile.birthDate ?? '',
@@ -76,11 +77,12 @@ function birthDataChanged(before: FormState, after: FormState): boolean {
 
 function toPatch(form: FormState): ProfileUpdateInput {
   const num = (s: string) => (s.trim() === '' ? null : Number(s));
+  const orNull = (s: string) => (s.trim() === '' ? null : s.trim());
   return {
-    // Cleared to null rather than '' — the backend rejects an empty string, and
-    // null is what "no full name yet" means to the numerology service.
-    fullName: form.fullName.trim() === '' ? null : form.fullName.trim(),
-    displayName: form.displayName.trim() === '' ? null : form.displayName.trim(),
+    // Send the three parts; the backend composes fullName + displayName from them.
+    firstName: orNull(form.firstName),
+    lastName: orNull(form.lastName),
+    patronymic: orNull(form.patronymic),
     avatarUrl: form.avatarUrl.trim() === '' ? null : form.avatarUrl.trim(),
     locale: form.locale,
     birthDate: form.birthDate.trim() === '' ? null : form.birthDate.trim(),
@@ -99,7 +101,7 @@ function toPatch(form: FormState): ProfileUpdateInput {
 const FULL_NAME_MAX = 200;
 
 function validate(form: FormState, t: (key: TranslationKey) => string): string | null {
-  if (form.fullName.trim().length > FULL_NAME_MAX) {
+  if (composeFullName(form).length > FULL_NAME_MAX) {
     return t('numerology.fullNameTooLong');
   }
   if (form.avatarUrl.trim() !== '' && !URL_RE.test(form.avatarUrl.trim())) {
@@ -248,26 +250,36 @@ export function ProfileScreen({
         {isNewProfile ? t('profile.subtitleCreate') : t('profile.subtitleEdit')}
       </Text>
 
-      <Field label={t('numerology.fullNameLabel')}>
+      <Field label={t('name.first.label')}>
         <TextInput
           style={styles.input}
-          value={form.fullName}
-          onChangeText={(v) => update('fullName', v)}
-          placeholder={t('numerology.fullNameLabel')}
+          value={form.firstName}
+          onChangeText={(v) => update('firstName', v)}
+          placeholder={t('name.first.placeholder')}
           placeholderTextColor={MUTED}
-          testID="profile-fullName"
+          testID="profile-firstName"
         />
-        <Text style={styles.hint}>{t('numerology.fullNameHint')}</Text>
       </Field>
 
-      <Field label={t('profile.name.label')}>
+      <Field label={t('name.last.label')}>
         <TextInput
           style={styles.input}
-          value={form.displayName}
-          onChangeText={(v) => update('displayName', v)}
-          placeholder={t('profile.name.placeholder')}
+          value={form.lastName}
+          onChangeText={(v) => update('lastName', v)}
+          placeholder={t('name.last.placeholder')}
           placeholderTextColor={MUTED}
         />
+      </Field>
+
+      <Field label={t('name.patronymic.label')}>
+        <TextInput
+          style={styles.input}
+          value={form.patronymic}
+          onChangeText={(v) => update('patronymic', v)}
+          placeholder={t('name.patronymic.placeholder')}
+          placeholderTextColor={MUTED}
+        />
+        <Text style={styles.hint}>{t('numerology.fullNameHint')}</Text>
       </Field>
 
       <Field label={t('profile.avatarUrl.label')}>

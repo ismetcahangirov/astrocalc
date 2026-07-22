@@ -7,6 +7,7 @@ import {
   type OrbConfig,
 } from '@astrocalc/calc-engine';
 import { SubjectNotFoundError } from '../auth/errors';
+import { composeFullName, splitFullName } from '../common/personName';
 import { birthDataToChartInput } from '../chart/birthChartInput';
 import type { ChartCacheKeyInput } from '../chart/chartCacheKey';
 import { getOrComputeChart, type ChartResultCache } from '../chart/chartResultCache';
@@ -84,7 +85,40 @@ function patchTouchesBirthData(patch: SubjectUpdateInput): boolean {
  * numbers served forever after a rename.
  */
 function patchTouchesNumerologyData(patch: SubjectUpdateInput): boolean {
-  return 'name' in patch || 'birthDate' in patch;
+  return (
+    'name' in patch ||
+    'firstName' in patch ||
+    'lastName' in patch ||
+    'patronymic' in patch ||
+    'birthDate' in patch
+  );
+}
+
+type NameInput = Pick<SubjectUpdateInput, 'name' | 'firstName' | 'lastName' | 'patronymic'>;
+type ResolvedName = { name: string; firstName: string | null; lastName: string | null; patronymic: string | null };
+
+/**
+ * Resolve the stored name columns from an input that may carry either the three
+ * parts (what the app sends) or the legacy combined `name` (older callers and
+ * tests). Parts win: when any is filled in, `name` is composed from them; when
+ * only `name` is given, the parts are derived by splitting it — so the combined
+ * name and its parts are always written together and stay consistent.
+ */
+function resolveName(input: NameInput): ResolvedName {
+  const hasParts =
+    (input.firstName?.trim() ?? '') !== '' ||
+    (input.lastName?.trim() ?? '') !== '' ||
+    (input.patronymic?.trim() ?? '') !== '';
+  if (hasParts) {
+    const parts = {
+      firstName: input.firstName ?? null,
+      lastName: input.lastName ?? null,
+      patronymic: input.patronymic ?? null,
+    };
+    return { name: composeFullName(parts) ?? '', ...parts };
+  }
+  const name = (input.name ?? '').trim();
+  return { name, ...splitFullName(name) };
 }
 
 /**
@@ -130,20 +164,39 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
 
     async create(userId, input) {
       const timezone = deriveTimezone(input.birthPlaceLat, input.birthPlaceLng);
-      return repo.create(userId, { ...input, birthPlaceTimezone: timezone });
+      return repo.create(userId, { ...input, ...resolveName(input), birthPlaceTimezone: timezone });
     },
 
     async update(userId, id, patch) {
       const existing = await repo.get(userId, id);
       if (!existing) throw new SubjectNotFoundError();
 
+      let patchToApply: SubjectPatchData = patch;
+
+      // Recompose the stored name whenever the patch touches any name field.
+      // The app sends all three parts together; a lone part still merges with
+      // the subject's existing ones, and a legacy `name`-only patch re-derives
+      // the parts by splitting it.
+      const touchesParts =
+        'firstName' in patch || 'lastName' in patch || 'patronymic' in patch;
+      if (touchesParts) {
+        const parts = {
+          firstName: 'firstName' in patch ? (patch.firstName ?? null) : existing.firstName,
+          lastName: 'lastName' in patch ? (patch.lastName ?? null) : existing.lastName,
+          patronymic: 'patronymic' in patch ? (patch.patronymic ?? null) : existing.patronymic,
+        };
+        patchToApply = { ...patchToApply, ...parts, name: composeFullName(parts) ?? existing.name };
+      } else if ('name' in patch) {
+        const name = (patch.name ?? '').trim();
+        patchToApply = { ...patchToApply, name, ...splitFullName(name) };
+      }
+
       // Re-derive the timezone from the effective coordinates whenever the patch
       // touches either coordinate; otherwise leave the stored zone untouched.
-      let patchToApply: SubjectPatchData = patch;
       if ('birthPlaceLat' in patch || 'birthPlaceLng' in patch) {
         const lat = 'birthPlaceLat' in patch ? patch.birthPlaceLat : existing.birthPlaceLat;
         const lng = 'birthPlaceLng' in patch ? patch.birthPlaceLng : existing.birthPlaceLng;
-        patchToApply = { ...patch, birthPlaceTimezone: deriveTimezone(lat, lng) };
+        patchToApply = { ...patchToApply, birthPlaceTimezone: deriveTimezone(lat, lng) };
       }
 
       const updated = await repo.update(userId, id, patchToApply);

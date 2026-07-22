@@ -12,7 +12,9 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
 ];
 
 export interface OnboardingData {
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  patronymic: string;
   birthDate: string;
   birthTime: string;
   birthTimeKnown: boolean;
@@ -35,7 +37,8 @@ export function validateStep(
 ): string | null {
   switch (step) {
     case 'name':
-      return data.displayName.trim() === '' ? t('onboarding.name.required') : null;
+      // Surname and patronymic are optional; a first name is the one required part.
+      return data.firstName.trim() === '' ? t('name.first.required') : null;
     case 'birthDate':
       return BIRTH_DATE_RE.test(data.birthDate.trim()) ? null : t('profile.birthDate.invalid');
     case 'birthTime':

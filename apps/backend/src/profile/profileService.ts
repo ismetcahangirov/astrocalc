@@ -1,5 +1,6 @@
 import type { UserRepository } from '../auth/repository';
 import type { Profile, ProfileUpdateInput } from '../auth/types';
+import { composeFullName, displayNameOf } from '../common/personName';
 import { deriveBirthTimezone, type BirthTimezoneResolver } from '../geocoding/birthTimezone';
 import {
   BIRTH_DATA_FIELDS,
@@ -60,6 +61,34 @@ function withDerivedTimezone(
   return { ...patch, birthPlaceTimezone: derive(lat, lng) };
 }
 
+/** Whether a patch carries any of the three name parts. */
+function touchesNameParts(patch: ProfileUpdateInput): boolean {
+  return 'firstName' in patch || 'lastName' in patch || 'patronymic' in patch;
+}
+
+/**
+ * When a patch carries any name part, compose `fullName` (numerology's input)
+ * and `displayName` (the greeting name) from the merged parts — parts the patch
+ * doesn't touch fall back to the stored profile. This makes the parts the
+ * source of truth: a client that sends them need not send `fullName` itself,
+ * and any `fullName`/`displayName` sent alongside is overridden by the
+ * composition so the two can never drift apart.
+ */
+function withComposedName(patch: ProfileUpdateInput, before: Profile | null): ProfileUpdateInput {
+  if (!touchesNameParts(patch)) return patch;
+  const parts = {
+    firstName: 'firstName' in patch ? (patch.firstName ?? null) : (before?.firstName ?? null),
+    lastName: 'lastName' in patch ? (patch.lastName ?? null) : (before?.lastName ?? null),
+    patronymic: 'patronymic' in patch ? (patch.patronymic ?? null) : (before?.patronymic ?? null),
+  };
+  return {
+    ...patch,
+    ...parts,
+    fullName: composeFullName(parts),
+    displayName: displayNameOf(parts),
+  };
+}
+
 /**
  * Thin orchestration over the profile repository, shared by the onboarding
  * flow (#6) and the profile-edit screen (#7). Each onboarding step (name,
@@ -101,9 +130,14 @@ export function createProfileService(deps: ProfileServiceDeps): ProfileService {
       // `touchesBirthData` alone would leave a name-only edit serving the old
       // numbers forever.
       const needsBefore =
-        touchesBirthData(patch) || touchesNumerologyData(patch) || touchesMatrixData(patch);
+        touchesBirthData(patch) ||
+        touchesNumerologyData(patch) ||
+        touchesMatrixData(patch) ||
+        touchesNameParts(patch);
       const before = needsBefore ? await repo.getProfile(userId) : null;
-      const patchToApply = withDerivedTimezone(patch, before, deriveTimezone);
+      // Compose fullName/displayName from any name parts first, then derive the
+      // timezone; the two transforms touch disjoint fields.
+      const patchToApply = withDerivedTimezone(withComposedName(patch, before), before, deriveTimezone);
       const updated = await repo.updateProfile(userId, patchToApply);
 
       if (before && BIRTH_DATA_FIELDS.some((field) => before[field] !== updated[field])) {
