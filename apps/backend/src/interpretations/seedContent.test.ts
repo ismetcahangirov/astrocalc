@@ -19,9 +19,9 @@ describe('generateSeedInterpretations', () => {
     expect(generatedIds).toEqual(requiredIds);
   });
 
-  it('has 5,328 rows: 1,332 subjects x 4 locales (465 astrology + 185 numerology + 682 matrix)', () => {
-    expect(required.length).toBe(1332 * 4);
-    expect(rows.length).toBe(1332 * 4);
+  it('has 5,376 rows: 1,344 subjects x 4 locales (465 astrology + 12 house + 185 numerology + 682 matrix)', () => {
+    expect(required.length).toBe(1344 * 4);
+    expect(rows.length).toBe(1344 * 4);
   });
 
   it('covers all 185 numerology subjects, 4 locales each', () => {
@@ -74,6 +74,22 @@ describe('generateSeedInterpretations', () => {
       'Планета Луна связана с вашими эмоциональными инстинктами, внутренними потребностями ' +
         'и чувством безопасности. Дом 4: здесь это проявляется через дом, семью и ваши ' +
         'эмоциональные основы.',
+    );
+  });
+
+  it('covers all 12 house subjects, 4 locales each', () => {
+    const houses = rows.filter((r) => r.category === 'house');
+    expect(houses.length).toBe(12 * 4);
+    expect(new Set(houses.map((r) => r.subjectKey)).size).toBe(12);
+  });
+
+  it('produces a legible house example', () => {
+    const row = rows.find(
+      (r) => r.category === 'house' && r.subjectKey === 'house-4' && r.locale === 'en',
+    );
+    expect(row?.content).toBe(
+      'The fourth house governs home, family, and your emotional foundations. ' +
+        'It shows the area of life where these themes play out for you.',
     );
   });
 

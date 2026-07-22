@@ -1,6 +1,7 @@
 import {
   ARCANA_VALUES,
   aspectSubjectKey,
+  houseSubjectKey,
   INTERPRETED_BODIES,
   matrixSubjectKey,
   numerologySubjectKey,
@@ -434,6 +435,26 @@ function composePlanetHouse(
       return `${planet} gezegeni ${theme} ile ilgilidir. ${HOUSE_ORDINAL[house]!.tr} evde bu, ${area} üzerinden kendini gösterir.`;
     case 'ru':
       return `Планета ${planet} связана с ${theme}. Дом ${house}: здесь это проявляется через ${area}.`;
+  }
+}
+
+/**
+ * The generic meaning of a whole house (#106) — reuses the {@link HOUSE_AREA}
+ * life-area phrase and {@link HOUSE_ORDINAL} that already back the planet-house
+ * text, but reads it on its own rather than through a planet.
+ */
+function composeHouse(house: number, locale: InterpretationLocale): string {
+  const area = HOUSE_AREA[house]![locale];
+
+  switch (locale) {
+    case 'en':
+      return `The ${HOUSE_ORDINAL[house]!.en} house governs ${area}. It shows the area of life where these themes play out for you.`;
+    case 'az':
+      return `${HOUSE_ORDINAL[house]!.az} ev ${area} sahəsini idarə edir. Bu, həmin mövzuların həyatınızda təzahür etdiyi sahəni göstərir.`;
+    case 'tr':
+      return `${HOUSE_ORDINAL[house]!.tr} ev ${area} alanını yönetir. Bu temaların yaşamınızda ortaya çıktığı alanı gösterir.`;
+    case 'ru':
+      return `Дом ${house} управляет сферой: ${area}. Он показывает область жизни, где эти темы проявляются для вас.`;
   }
 }
 
@@ -1614,7 +1635,8 @@ export interface GeneratedInterpretation {
  * {@link SUPPORTED_LOCALES} locale:
  *
  * - astrology — the ten {@link INTERPRETED_BODIES} across all twelve signs, all
- *   twelve houses, and every major aspect between them (465 subjects),
+ *   twelve houses, and every major aspect between them (465 subjects), plus the
+ *   twelve generic whole-house meanings (#106, category `house`),
  * - numerology — all 185 subjects across the sixteen numerology kinds, and
  * - Matrix of Destiny — all 682 subjects (22 base arcana + 30 positions × 22).
  *
@@ -1646,6 +1668,17 @@ export function generateSeedInterpretations(): GeneratedInterpretation[] {
           content: composePlanetHouse(body, house, locale),
         });
       }
+    }
+  }
+
+  for (const house of HOUSES) {
+    for (const locale of SUPPORTED_LOCALES) {
+      rows.push({
+        category: 'house',
+        subjectKey: houseSubjectKey(house),
+        locale,
+        content: composeHouse(house, locale),
+      });
     }
   }
 

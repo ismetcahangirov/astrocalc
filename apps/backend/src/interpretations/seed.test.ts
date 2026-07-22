@@ -8,7 +8,7 @@ describe('seedInterpretations', () => {
     const result = await seedInterpretations(repo);
 
     expect(result.skipped).toBe(0);
-    expect(result.written).toBe(1332 * 4);
+    expect(result.written).toBe(1344 * 4);
 
     const row = await repo.get({ category: 'planet-sign', subjectKey: 'sun-Aries', locale: 'en' });
     expect(row?.content).toContain('The Sun');
@@ -25,7 +25,7 @@ describe('seedInterpretations', () => {
     const result = await seedInterpretations(repo);
 
     expect(result.skipped).toBe(1);
-    expect(result.written).toBe(1332 * 4 - 1);
+    expect(result.written).toBe(1344 * 4 - 1);
 
     const row = await repo.get({ category: 'planet-sign', subjectKey: 'sun-Aries', locale: 'en' });
     expect(row?.content).toBe('Hand-written admin copy.');
@@ -38,6 +38,6 @@ describe('seedInterpretations', () => {
     const second = await seedInterpretations(repo);
 
     expect(second.written).toBe(0);
-    expect(second.skipped).toBe(1332 * 4);
+    expect(second.skipped).toBe(1344 * 4);
   });
 });
