@@ -137,7 +137,11 @@ export function createProfileService(deps: ProfileServiceDeps): ProfileService {
       const before = needsBefore ? await repo.getProfile(userId) : null;
       // Compose fullName/displayName from any name parts first, then derive the
       // timezone; the two transforms touch disjoint fields.
-      const patchToApply = withDerivedTimezone(withComposedName(patch, before), before, deriveTimezone);
+      const patchToApply = withDerivedTimezone(
+        withComposedName(patch, before),
+        before,
+        deriveTimezone,
+      );
       const updated = await repo.updateProfile(userId, patchToApply);
 
       if (before && BIRTH_DATA_FIELDS.some((field) => before[field] !== updated[field])) {

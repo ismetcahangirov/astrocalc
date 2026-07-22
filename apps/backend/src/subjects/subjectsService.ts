@@ -182,8 +182,7 @@ export function createSubjectsService(deps: SubjectsServiceDeps): SubjectsServic
       // The app sends all three parts together; a lone part still merges with
       // the subject's existing ones, and a legacy `name`-only patch re-derives
       // the parts by splitting it.
-      const touchesParts =
-        'firstName' in patch || 'lastName' in patch || 'patronymic' in patch;
+      const touchesParts = 'firstName' in patch || 'lastName' in patch || 'patronymic' in patch;
       if (touchesParts) {
         const parts = {
           firstName: 'firstName' in patch ? (patch.firstName ?? null) : existing.firstName,

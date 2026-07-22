@@ -31,7 +31,11 @@ describe('splitFullName', () => {
   });
 
   it('handles a one- or two-token name', () => {
-    expect(splitFullName('Aysel')).toEqual({ firstName: 'Aysel', lastName: null, patronymic: null });
+    expect(splitFullName('Aysel')).toEqual({
+      firstName: 'Aysel',
+      lastName: null,
+      patronymic: null,
+    });
     expect(splitFullName('Aysel Məmmədova')).toEqual({
       firstName: 'Aysel',
       lastName: 'Məmmədova',
