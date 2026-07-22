@@ -256,6 +256,9 @@ const en = {
   'matrix.offlineNotice':
     "You're viewing a Matrix computed on this device. Reconnect for your full reading.",
   'matrix.readingTitle': 'Your Reading',
+  'matrix.readingError': "Couldn't load your reading. Please try again.",
+  'matrix.readingUnavailableOffline': 'Your reading needs an internet connection.',
+  'matrix.readingRowUnavailable': 'Connect to the internet to see this reading.',
   'matrix.maleLine': 'male generation line',
   'matrix.femaleLine': 'female generation line',
 
@@ -518,6 +521,9 @@ const az: Record<keyof typeof en, string> = {
   'matrix.offlineNotice':
     'Bu cihazda hesablanmış matrisə baxırsınız. Tam şərh üçün internetə qoşulun.',
   'matrix.readingTitle': 'Sizin Şərhiniz',
+  'matrix.readingError': 'Şərhiniz yüklənmədi. Yenidən cəhd edin.',
+  'matrix.readingUnavailableOffline': 'Şərhiniz üçün internet bağlantısı lazımdır.',
+  'matrix.readingRowUnavailable': 'Bu açıqlamanı görmək üçün internetə qoşulun.',
   'matrix.maleLine': 'kişi nəsil xətti',
   'matrix.femaleLine': 'qadın nəsil xətti',
 
