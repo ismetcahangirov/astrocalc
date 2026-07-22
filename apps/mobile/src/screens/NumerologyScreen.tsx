@@ -120,7 +120,9 @@ export function NumerologyScreen({
       setMeaning(await fetchInterpretationMap(subjects, locale));
     } catch (err) {
       setReadingError(
-        isNetworkError(err) ? t('numerology.readingUnavailableOffline') : t('numerology.readingError'),
+        isNetworkError(err)
+          ? t('numerology.readingUnavailableOffline')
+          : t('numerology.readingError'),
       );
     }
   }, [t, subjectId, locale]);
@@ -206,17 +208,35 @@ export function NumerologyScreen({
         <>
           <Text style={styles.sectionTitle}>{t('numerology.coreTitle')}</Text>
           {details.core.map((row) => (
-            <NumberRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <NumberRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('numerology.extendedTitle')}</Text>
           {details.extended.map((row) => (
-            <NumberRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <NumberRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('numerology.cyclesTitle')}</Text>
           {details.cycles.map((row) => (
-            <NumberRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <NumberRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('numerology.pinnaclesTitle')}</Text>

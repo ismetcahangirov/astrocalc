@@ -186,7 +186,9 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
   const renderMeaning = (subjectKey: string | undefined) => {
     const content = subjectKey ? meaning.get(subjectKey) : undefined;
     if (!content) {
-      return <Text style={styles.rowNote}>{readingError ?? t('matrix.readingRowUnavailable')}</Text>;
+      return (
+        <Text style={styles.rowNote}>{readingError ?? t('matrix.readingRowUnavailable')}</Text>
+      );
     }
     return <Text style={styles.rowMeaning}>{content}</Text>;
   };
@@ -214,17 +216,35 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
         <>
           <Text style={styles.sectionTitle}>{t('matrix.coreTitle')}</Text>
           {details.core.map((row) => (
-            <ValueRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <ValueRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('matrix.ancestralTitle')}</Text>
           {details.ancestral.map((row) => (
-            <ValueRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <ValueRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('matrix.purposesTitle')}</Text>
           {details.purposes.map((row) => (
-            <ValueRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <ValueRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('matrix.moneyTitle')}</Text>
@@ -232,7 +252,13 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
               here keeps a user from reading the section as money-only. */}
           <Text style={styles.sectionNote}>{t('matrix.moneyNote')}</Text>
           {details.moneyAndRelationships.map((row) => (
-            <ValueRow key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <ValueRow
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
 
           <Text style={styles.sectionTitle}>{t('matrix.healthTitle')}</Text>
@@ -243,7 +269,13 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
             <Text style={styles.chakraHeaderCell}>{t('matrix.emotional')}</Text>
           </View>
           {details.health.map((row) => (
-            <ChakraLine key={row.key} row={row} openKey={openKey} onToggle={toggle} renderMeaning={renderMeaning} />
+            <ChakraLine
+              key={row.key}
+              row={row}
+              openKey={openKey}
+              onToggle={toggle}
+              renderMeaning={renderMeaning}
+            />
           ))}
           {/* The summary row totals each column and has no reading — it stays a
               plain, non-expandable row so it reads as a total, not an eighth chakra. */}
@@ -273,7 +305,12 @@ function ValueRow({
 }) {
   const key = `mtx-${row.key}`;
   return (
-    <AccordionRow name={row.label} value={row.value} expanded={openKey === key} onToggle={() => onToggle(key)}>
+    <AccordionRow
+      name={row.label}
+      value={row.value}
+      expanded={openKey === key}
+      onToggle={() => onToggle(key)}
+    >
       {renderMeaning(row.subjectKey)}
     </AccordionRow>
   );

@@ -1,4 +1,9 @@
-import { matrixSubjectKey, type ChakraName, type DestinyMatrix, type MatrixSubjectKind } from '@astrocalc/calc-engine';
+import {
+  matrixSubjectKey,
+  type ChakraName,
+  type DestinyMatrix,
+  type MatrixSubjectKind,
+} from '@astrocalc/calc-engine';
 import { chakraReadingSubjects } from './chakraReading';
 import type { Locale } from '../i18n/translations';
 
