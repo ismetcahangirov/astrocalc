@@ -12,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 import { ApiError, getProfile, type Profile } from '../api/profileApi';
 import { deleteSubject, listSubjects, type Subject } from '../api/subjectsApi';
 import { composeFullName } from '../common/personName';
+import { HomeButton } from '../common/HomeButton';
 import { useTranslation } from '../i18n/LocaleContext';
 
 /**
@@ -64,21 +65,24 @@ interface PeopleScreenProps {
   onOpenSubjectChart: (id: string, name: string) => void;
   onOpenSubjectNumerology?: (id: string, name: string) => void;
   onOpenSubjectMatrix?: (id: string, name: string) => void;
+  onOpenSubjectChakra?: (id: string, name: string) => void;
   onAddSubject: () => void;
   onEditSubject: (id: string) => void;
 }
 
 /**
  * People list (#s2): the user ("Me", from their profile) pinned at the top,
- * followed by their saved subjects. Tapping a chart-ready person opens their
- * natal chart; rows offer edit and delete. The self and subject rows read from
- * different backend resources but are presented as one list.
+ * followed by their saved subjects. Each ready subject row offers its
+ * available views (chart/numbers/matrix/chakra) as same-styled links, plus
+ * edit and delete. The self and subject rows read from different backend
+ * resources but are presented as one list.
  */
 export function PeopleScreen({
   onOpenSelfChart,
   onOpenSubjectChart,
   onOpenSubjectNumerology,
   onOpenSubjectMatrix,
+  onOpenSubjectChakra,
   onAddSubject,
   onEditSubject,
 }: PeopleScreenProps) {
@@ -151,7 +155,10 @@ export function PeopleScreen({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t('people.title')}</Text>
+      <View style={styles.titleRow}>
+        <HomeButton />
+        <Text style={styles.title}>{t('people.title')}</Text>
+      </View>
       <Text style={styles.subtitle}>{t('people.subtitle')}</Text>
 
       {/* Me — pinned */}
@@ -172,32 +179,34 @@ export function PeopleScreen({
 
       {/* Saved subjects */}
       {subjects.map((subject) => {
-        const ready = chartReady(subject);
+        const chartAvailable = chartReady(subject);
+        const numbersAvailable = !!onOpenSubjectNumerology && numerologyReady(subject);
+        // Chakra reads the same Matrix data the Matrix view does, so it needs
+        // nothing beyond `matrixReady` — no separate gate.
+        const matrixAvailable = !!onOpenSubjectMatrix && matrixReady(subject);
+        const chakraAvailable = !!onOpenSubjectChakra && matrixReady(subject);
+        const anyAvailable =
+          chartAvailable || numbersAvailable || matrixAvailable || chakraAvailable;
         return (
           <View key={subject.id} style={styles.row}>
-            {/* Name on its own line with the action stacked below, mirroring the
-                "Me" row above. An earlier layout put the name and action as two
-                children of a `space-between` row; on Android the flexing name
-                Text there collapsed and rendered blank (the reported bug). */}
-            <Pressable
-              accessibilityRole="button"
-              disabled={!ready}
-              onPress={() => onOpenSubjectChart(subject.id, subjectDisplayName(subject))}
-            >
-              <Text style={styles.rowName} numberOfLines={1}>
-                {subjectDisplayName(subject)}
-              </Text>
-              {ready ? (
-                <Text style={styles.rowAction}>{t('people.viewChart')}</Text>
-              ) : (
-                <Text style={styles.rowMuted}>{t('people.noBirthData')}</Text>
-              )}
-            </Pressable>
+            <Text style={styles.rowName} numberOfLines={1}>
+              {subjectDisplayName(subject)}
+            </Text>
+            {!anyAvailable ? <Text style={styles.rowMuted}>{t('people.noBirthData')}</Text> : null}
             <View style={styles.rowButtons}>
-              {/* Numbers joins edit/delete in the row's existing secondary-action
-                  strip: the row body is already the "open the chart" tap target,
-                  so a second destination belongs beside the other row actions. */}
-              {onOpenSubjectNumerology && numerologyReady(subject) ? (
+              {/* Every available view is offered as a same-styled link, so
+                  chart/numbers/matrix/chakra all read as equal options rather
+                  than the chart being the row's sole primary action. */}
+              {chartAvailable ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onOpenSubjectChart(subject.id, subjectDisplayName(subject))}
+                  hitSlop={8}
+                >
+                  <Text style={styles.numerologyText}>{t('people.viewChart')}</Text>
+                </Pressable>
+              ) : null}
+              {onOpenSubjectNumerology && numbersAvailable ? (
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => onOpenSubjectNumerology(subject.id, subjectDisplayName(subject))}
@@ -206,13 +215,22 @@ export function PeopleScreen({
                   <Text style={styles.numerologyText}>{t('people.viewNumbers')}</Text>
                 </Pressable>
               ) : null}
-              {onOpenSubjectMatrix && matrixReady(subject) ? (
+              {onOpenSubjectMatrix && matrixAvailable ? (
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => onOpenSubjectMatrix(subject.id, subjectDisplayName(subject))}
                   hitSlop={8}
                 >
                   <Text style={styles.numerologyText}>{t('people.viewMatrix')}</Text>
+                </Pressable>
+              ) : null}
+              {onOpenSubjectChakra && chakraAvailable ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onOpenSubjectChakra(subject.id, subjectDisplayName(subject))}
+                  hitSlop={8}
+                >
+                  <Text style={styles.numerologyText}>{t('people.viewChakra')}</Text>
                 </Pressable>
               ) : null}
               <Pressable
@@ -261,6 +279,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { color: GOLD, fontSize: 28, fontWeight: '700', letterSpacing: 0.5 },
   subtitle: { color: '#B9B4C7', fontSize: 14, marginTop: 6, marginBottom: 24 },
   row: {
@@ -287,7 +306,7 @@ const styles = StyleSheet.create({
   },
   rowAction: { color: GOLD, fontSize: 13, fontWeight: '600', marginTop: 6 },
   rowMuted: { color: MUTED, fontSize: 12, marginTop: 6 },
-  rowButtons: { flexDirection: 'row', gap: 18, marginTop: 12 },
+  rowButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 },
   numerologyText: { color: GOLD, fontSize: 13, fontWeight: '600' },
   editText: { color: '#B9B4C7', fontSize: 13, fontWeight: '600' },
   deleteText: { color: '#F2A2A2', fontSize: 13, fontWeight: '600' },

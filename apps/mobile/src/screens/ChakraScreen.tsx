@@ -21,6 +21,7 @@ import { ChakraBodyChart } from '../matrix/ChakraBodyChart';
 import { CHAKRA_LABELS } from '../matrix/matrixText';
 import { useTranslation } from '../i18n/LocaleContext';
 import { AccordionRow } from '../chart/AccordionRow';
+import { HomeButton } from '../common/HomeButton';
 
 /** Mirrors `MatrixScreen`'s phases — `missing` is a one-tap fix, not an error. */
 type LoadState =
@@ -155,7 +156,10 @@ export function ChakraScreen({ subjectId, subjectName, onEditProfile }: ChakraSc
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{subjectName ?? t('chakra.title')}</Text>
+      <View style={styles.titleRow}>
+        <HomeButton />
+        <Text style={styles.title}>{subjectName ?? t('chakra.title')}</Text>
+      </View>
       <Text style={styles.subTitle}>{t('chakra.subtitle')}</Text>
 
       {view.source === 'offline' ? (
@@ -205,6 +209,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { color: GOLD, fontSize: 26, fontWeight: '700', letterSpacing: 0.5 },
   subTitle: { color: '#B9B4C7', fontSize: 14, lineHeight: 20, marginTop: 6 },
   notice: { color: GOLD, fontSize: 13, lineHeight: 18, marginTop: 10, textAlign: 'center' },

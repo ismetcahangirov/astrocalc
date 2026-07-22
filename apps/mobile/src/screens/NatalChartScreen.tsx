@@ -16,6 +16,7 @@ import { fetchChartInterpretation, type ChartInterpretation } from '../api/inter
 import { computeWheelLayout, type WheelInput } from '../chart/geometry';
 import { formatChartDetails } from '../chart/chartText';
 import { AccordionRow } from '../chart/AccordionRow';
+import { HomeButton } from '../common/HomeButton';
 import { NatalChartWheel } from '../chart/NatalChartWheel';
 import { MissingBirthDataError } from '../offline/natalChartService';
 import { loadNatalChart } from '../offline/natalChartServiceWiring';
@@ -188,7 +189,10 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{subjectName ?? t('natalChart.title')}</Text>
+      <View style={styles.titleRow}>
+        <HomeButton />
+        <Text style={styles.title}>{subjectName ?? t('natalChart.title')}</Text>
+      </View>
 
       {view.source === 'offline' ? (
         <Text style={styles.notice}>{t('natalChart.offlineNotice')}</Text>
@@ -308,12 +312,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start' },
   title: {
     color: GOLD,
     fontSize: 26,
     fontWeight: '700',
     letterSpacing: 0.5,
-    alignSelf: 'flex-start',
   },
   notice: {
     color: GOLD,

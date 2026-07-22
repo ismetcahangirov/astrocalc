@@ -15,6 +15,9 @@ export default function People() {
       onOpenSubjectMatrix={(id, name) =>
         router.push({ pathname: '/matrix', params: { subjectId: id, name } })
       }
+      onOpenSubjectChakra={(id, name) =>
+        router.push({ pathname: '/chakra', params: { subjectId: id, name } })
+      }
       onAddSubject={() => router.push('/subject')}
       onEditSubject={(id) => router.push({ pathname: '/subject', params: { id } })}
     />

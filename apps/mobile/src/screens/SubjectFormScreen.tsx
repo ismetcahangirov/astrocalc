@@ -18,6 +18,7 @@ import {
 } from '../api/subjectsApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
 import { partsFromRecord } from '../common/personName';
+import { HomeButton } from '../common/HomeButton';
 import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 
@@ -145,7 +146,10 @@ export function SubjectFormScreen({ subjectId, onDone, onCancel }: SubjectFormSc
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t(editing ? 'subject.titleEdit' : 'subject.titleCreate')}</Text>
+      <View style={styles.titleRow}>
+        <HomeButton />
+        <Text style={styles.title}>{t(editing ? 'subject.titleEdit' : 'subject.titleCreate')}</Text>
+      </View>
 
       <Field label={t('name.first.label')}>
         <TextInput
@@ -276,7 +280,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  title: { color: GOLD, fontSize: 26, fontWeight: '700', letterSpacing: 0.5, marginBottom: 24 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
+  title: { color: GOLD, fontSize: 26, fontWeight: '700', letterSpacing: 0.5 },
   field: { marginBottom: 20 },
   label: {
     color: '#B9B4C7',
