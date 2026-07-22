@@ -120,10 +120,9 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
     // figure and numbers need no network once the Matrix is loaded.
     try {
       const details = formatMatrixDetails(view.matrix, locale);
-      const subjects = allRows(details).map((row) => ({
-        category: 'matrix' as const,
-        subjectKey: row.subjectKey!,
-      }));
+      const subjects = allRows(details).flatMap((row) =>
+        row.subjectKey ? [{ category: 'matrix' as const, subjectKey: row.subjectKey }] : [],
+      );
       setMeaning(await fetchInterpretationMap(subjects, locale));
     } catch (err) {
       setReadingError(
@@ -248,13 +247,11 @@ export function MatrixScreen({ subjectId, subjectName, onEditProfile }: MatrixSc
           ))}
           {/* The summary row totals each column and has no reading — it stays a
               plain, non-expandable row so it reads as a total, not an eighth chakra. */}
-          <View style={styles.chakraRow}>
-            <View style={[styles.summaryRow, styles.chakraRowInner]}>
-              <Text style={styles.summaryName}>{details.healthSummary.label}</Text>
-              <Text style={styles.chakraCell}>{details.healthSummary.physical}</Text>
-              <Text style={styles.chakraCell}>{details.healthSummary.energy}</Text>
-              <Text style={styles.chakraCell}>{details.healthSummary.emotional}</Text>
-            </View>
+          <View style={[styles.summaryRow, styles.chakraRowInner]}>
+            <Text style={styles.summaryName}>{details.healthSummary.label}</Text>
+            <Text style={styles.chakraCell}>{details.healthSummary.physical}</Text>
+            <Text style={styles.chakraCell}>{details.healthSummary.energy}</Text>
+            <Text style={styles.chakraCell}>{details.healthSummary.emotional}</Text>
           </View>
         </>
       ) : null}
@@ -329,7 +326,6 @@ const styles = StyleSheet.create({
   chakraHeader: { flexDirection: 'row', alignItems: 'center', paddingBottom: 4 },
   chakraHeaderName: { flex: 1 },
   chakraHeaderCell: { color: '#6E6A80', fontSize: 11, width: 52, textAlign: 'center' },
-  chakraRow: { alignSelf: 'stretch' },
   chakraRowInner: {
     flexDirection: 'row',
     alignItems: 'center',
