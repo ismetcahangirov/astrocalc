@@ -20,6 +20,7 @@ import { computeChakraFigureLayout, type ChakraNode } from '../matrix/chakraGeom
 import { ChakraBodyChart } from '../matrix/ChakraBodyChart';
 import { CHAKRA_LABELS } from '../matrix/matrixText';
 import { useTranslation } from '../i18n/LocaleContext';
+import { AccordionRow } from '../chart/AccordionRow';
 
 /** Mirrors `MatrixScreen`'s phases — `missing` is a one-tap fix, not an error. */
 type LoadState =
@@ -60,6 +61,7 @@ export function ChakraScreen({ subjectId, subjectName, onEditProfile }: ChakraSc
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
   const [readings, setReadings] = useState<ChakraReading[] | null>(null);
   const [readingError, setReadingError] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
 
   const chartSize = Math.min(width - 16, 440);
 
@@ -114,6 +116,8 @@ export function ChakraScreen({ subjectId, subjectName, onEditProfile }: ChakraSc
     return map;
   }, [readings]);
 
+  const toggle = useCallback((key: string) => setOpenKey((cur) => (cur === key ? null : key)), []);
+
   if (state.phase === 'loading') {
     return (
       <View style={styles.centered}>
@@ -167,20 +171,22 @@ export function ChakraScreen({ subjectId, subjectName, onEditProfile }: ChakraSc
       {readingError ? <Text style={styles.sectionNote}>{readingError}</Text> : null}
 
       {layout?.nodes.map((node: ChakraNode) => (
-        <View key={node.chakra} style={styles.block}>
-          <View style={styles.blockHeader}>
-            <View style={[styles.dot, { backgroundColor: node.color }]} />
-            <Text style={styles.chakraName}>{names[node.chakra]}</Text>
-            <Text style={styles.chakraValue}>{node.emotional}</Text>
-          </View>
+        <AccordionRow
+          key={node.chakra}
+          name={names[node.chakra]}
+          value={`${node.physical} / ${node.energy} / ${node.emotional}`}
+          leading={<View style={[styles.dot, { backgroundColor: node.color }]} />}
+          expanded={openKey === node.chakra}
+          onToggle={() => toggle(node.chakra)}
+        >
           <Text style={styles.cells}>
             {t('matrix.physical')} {node.physical} · {t('matrix.energy')} {node.energy} ·{' '}
             {t('matrix.emotional')} {node.emotional}
           </Text>
-          {readingByChakra.has(node.chakra) ? (
-            <Text style={styles.paragraph}>{readingByChakra.get(node.chakra)}</Text>
-          ) : null}
-        </View>
+          <Text style={styles.paragraph}>
+            {readingByChakra.get(node.chakra) ?? readingError ?? t('chakra.readingRowUnavailable')}
+          </Text>
+        </AccordionRow>
       ))}
     </ScrollView>
   );
@@ -204,18 +210,9 @@ const styles = StyleSheet.create({
   notice: { color: GOLD, fontSize: 13, lineHeight: 18, marginTop: 10, textAlign: 'center' },
   canvasWrap: { alignItems: 'center', marginTop: 16, marginBottom: 4 },
   sectionNote: { color: '#6E6A80', fontSize: 12, lineHeight: 17, marginTop: 10 },
-  block: {
-    marginTop: 18,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#221D33',
-  },
-  blockHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   dot: { width: 14, height: 14, borderRadius: 7 },
-  chakraName: { color: '#F4F1FA', fontSize: 16, fontWeight: '700', flex: 1 },
-  chakraValue: { color: GOLD, fontSize: 16, fontWeight: '700' },
-  cells: { color: '#8E8AA0', fontSize: 12.5, marginTop: 4 },
-  paragraph: { color: '#B9B4C7', fontSize: 14, lineHeight: 21, marginTop: 8 },
+  cells: { color: '#8E8AA0', fontSize: 12.5, marginBottom: 6 },
+  paragraph: { color: '#B9B4C7', fontSize: 14, lineHeight: 21 },
   error: { color: '#F2A2A2', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   retryButton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10 },
   retryButtonText: { color: GOLD, fontSize: 15, fontWeight: '600' },

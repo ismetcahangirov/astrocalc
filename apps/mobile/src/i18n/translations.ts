@@ -269,6 +269,7 @@ const en = {
     "You're viewing chakras computed on this device. Reconnect for your full reading.",
   'chakra.readingUnavailableOffline': 'Your chakra reading needs an internet connection.',
   'chakra.readingError': "Couldn't load your chakra reading. Please try again.",
+  'chakra.readingRowUnavailable': 'Connect to the internet to see this reading.',
 } as const;
 
 const az: Record<keyof typeof en, string> = {
@@ -534,6 +535,7 @@ const az: Record<keyof typeof en, string> = {
     'Bu cihazda hesablanmış çakralara baxırsınız. Tam şərh üçün internetə qoşulun.',
   'chakra.readingUnavailableOffline': 'Çakra şərhiniz üçün internet bağlantısı lazımdır.',
   'chakra.readingError': 'Çakra şərhiniz yüklənmədi. Yenidən cəhd edin.',
+  'chakra.readingRowUnavailable': 'Bu açıqlamanı görmək üçün internetə qoşulun.',
 };
 
 export type TranslationKey = keyof typeof en;
