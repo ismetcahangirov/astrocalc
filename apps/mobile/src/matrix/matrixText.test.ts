@@ -127,3 +127,23 @@ describe('formatMatrixDetails', () => {
     }
   });
 });
+
+describe('formatMatrixDetails — interpretation subject keys', () => {
+  it('attaches the right subjectKey to core, purpose, line and chakra rows', () => {
+    const details = formatMatrixDetails(MATRIX, 'en');
+
+    const centre = details.core.find((r) => r.key === 'centre')!;
+    expect(centre.subjectKey).toBe(`comfort-zone-${centre.value}`);
+
+    const personal = details.purposes.find((r) => r.key === 'personal')!;
+    expect(personal.subjectKey).toBe(`personal-purpose-${personal.value}`);
+
+    const entry = details.moneyAndRelationships.find((r) => r.key === 'entry')!;
+    expect(entry.subjectKey).toBe(`line-entry-${entry.value}`);
+
+    const anahata = details.health.find((r) => r.key === 'anahata')!;
+    expect(anahata.subjectKey).toBe(`chakra-anahata-${anahata.emotional}`);
+
+    expect(details.healthSummary.subjectKey).toBeUndefined();
+  });
+});
