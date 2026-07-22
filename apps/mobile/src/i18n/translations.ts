@@ -141,6 +141,7 @@ const en = {
   'birthTime.select': 'Select time',
   'common.done': 'Done',
   'common.cancel': 'Cancel',
+  'common.backToHome': 'Back to home',
 
   'birthPlaceMap.title': 'Tap the map to set your birth place',
   'birthPlaceMap.tapHint': 'Tap anywhere on the map to drop a pin.',
@@ -157,6 +158,7 @@ const en = {
   'people.viewChart': 'View chart',
   'people.viewNumbers': 'Numbers',
   'people.viewMatrix': 'Matrix',
+  'people.viewChakra': 'Chakras',
   'people.edit': 'Edit',
   'people.delete': 'Delete',
   'people.noBirthData': 'Birth details incomplete',
@@ -408,6 +410,7 @@ const az: Record<keyof typeof en, string> = {
   'birthTime.select': 'Vaxtı seçin',
   'common.done': 'Hazırdır',
   'common.cancel': 'Ləğv et',
+  'common.backToHome': 'Ana səhifəyə qayıt',
 
   'birthPlaceMap.title': 'Doğum yerinizi xəritəyə toxunaraq seçin',
   'birthPlaceMap.tapHint': 'Nişan qoymaq üçün xəritədə istənilən yerə toxunun.',
@@ -424,6 +427,7 @@ const az: Record<keyof typeof en, string> = {
   'people.viewChart': 'Kartı gör',
   'people.viewNumbers': 'Rəqəmlər',
   'people.viewMatrix': 'Matris',
+  'people.viewChakra': 'Çakralar',
   'people.edit': 'Redaktə et',
   'people.delete': 'Sil',
   'people.noBirthData': 'Doğum məlumatları natamamdır',
