@@ -6,6 +6,19 @@ and the related issue/PR numbers.
 
 ## 2026-07-22
 
+- Home button on every screen + consistent chart/numbers/matrix/chakra links
+  on People cards — mobile (#110). Every screen except home/pre-auth/onboarding
+  now has a small back arrow inline to the left of its title, vertically
+  centered with it (plain glyph, no background), returning to the profile
+  (home) screen — a floating global overlay was tried first but repositioned
+  to sit next to each title per feedback. On the People screen, a saved
+  subject's Natal Chart access moves from "tap the whole row" to a same-styled
+  link alongside Numbers/Matrix, consistent with how those two already worked,
+  and a missing "View Chakra" link was added (Chakra was previously reachable
+  only for the logged-in user's own data, never a saved subject — it reads the
+  same Matrix data the Matrix view does, so it shares that readiness gate).
+  Mobile tests green (215); tsc + prettier clean.
+
 - Numerology, Matrix, and Chakra detail rows are now expandable accordions —
   mobile (#108). Extends the pattern shipped for the Natal Chart screen
   (#106/#107) to the remaining three result screens: every row (numerology's
