@@ -113,8 +113,9 @@ export function DateTimeField({
             disabled={disabled}
             onPress={() => setOpen(true)}
             hitSlop={10}
+            style={styles.calendarButton}
           >
-            <Text style={styles.calendarIcon}>📅</Text>
+            <CalendarIcon color={GOLD} />
           </Pressable>
         </View>
       ) : (
@@ -177,9 +178,32 @@ export function DateTimeField({
   );
 }
 
+/**
+ * A small calendar glyph drawn from plain Views (no icon dependency): a bordered
+ * body with a coloured header strip and two binder rings poking up above it.
+ */
+function CalendarIcon({ color }: { color: string }) {
+  return (
+    <View style={icon.wrap}>
+      <View style={[icon.ring, { backgroundColor: color, left: 4 }]} />
+      <View style={[icon.ring, { backgroundColor: color, right: 4 }]} />
+      <View style={[icon.body, { borderColor: color }]}>
+        <View style={[icon.header, { backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+}
+
 const GOLD = '#E4B95B';
 const TEXT = '#F4F1FA';
 const MUTED = '#6E6A80';
+
+const icon = StyleSheet.create({
+  wrap: { width: 22, height: 22, justifyContent: 'flex-end' },
+  ring: { position: 'absolute', top: 0, width: 2.5, height: 5, borderRadius: 1 },
+  body: { width: 22, height: 18, borderWidth: 1.6, borderRadius: 4, overflow: 'hidden' },
+  header: { height: 5, width: '100%' },
+});
 
 const styles = StyleSheet.create({
   field: {
@@ -194,7 +218,7 @@ const styles = StyleSheet.create({
   fieldDisabled: { opacity: 0.4 },
   dateRow: { flexDirection: 'row', alignItems: 'center' },
   input: { flex: 1, color: TEXT, fontSize: 15, padding: 0 },
-  calendarIcon: { fontSize: 18, marginLeft: 10 },
+  calendarButton: { marginLeft: 10, padding: 2 },
   value: { color: TEXT, fontSize: 15 },
   placeholder: { color: MUTED, fontSize: 15 },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
