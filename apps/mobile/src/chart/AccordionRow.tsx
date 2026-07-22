@@ -18,6 +18,8 @@ interface AccordionRowProps {
   value: string;
   /** Small tag rendered after the name, e.g. a retrograde "R". */
   tag?: ReactNode;
+  /** Optional element rendered before the name, e.g. a coloured dot. */
+  leading?: ReactNode;
   expanded: boolean;
   onToggle: () => void;
   /** The meaning content revealed when expanded. */
@@ -33,6 +35,7 @@ export function AccordionRow({
   name,
   value,
   tag,
+  leading,
   expanded,
   onToggle,
   children,
@@ -48,10 +51,13 @@ export function AccordionRow({
         }}
         style={styles.header}
       >
-        <Text style={styles.name}>
-          {name}
-          {tag}
-        </Text>
+        <View style={styles.left}>
+          {leading}
+          <Text style={styles.name}>
+            {name}
+            {tag}
+          </Text>
+        </View>
         <View style={styles.right}>
           <Text style={styles.value}>{value}</Text>
           <Text style={styles.caret}>{expanded ? '▲' : '▼'}</Text>
@@ -78,6 +84,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   name: { color: '#F4F1FA', fontSize: 14, fontWeight: '600', flexShrink: 1 },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   right: { flexDirection: 'row', alignItems: 'baseline', gap: 8, flexShrink: 1 },
   value: { color: '#B9B4C7', fontSize: 13, textAlign: 'right', flexShrink: 1 },
   caret: { color: GOLD, fontSize: 10 },
