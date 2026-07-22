@@ -136,8 +136,9 @@ describe('createInterpretationService', () => {
       const { service } = buildService();
       const missing = await service.listMissing();
       // 10 planets x 12 signs + 10 planets x 12 houses + 45 pairs x 5 aspects (465)
-      // + 185 numerology + 682 matrix subjects (folded in by #82 and #80/#81), x4 locales.
-      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5 + 185 + 682) * 4);
+      // + 12 house meanings (#106) + 185 numerology + 682 matrix subjects (folded in
+      // by #82 and #80/#81), x4 locales.
+      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5 + 12 + 185 + 682) * 4);
     });
 
     it('shrinks as rows are added and is empty once everything is seeded', async () => {
@@ -216,6 +217,32 @@ describe('createInterpretationService', () => {
 
       expect(result.planetSign).toHaveLength(1);
       expect(result.planetHouse).toHaveLength(0);
+    });
+
+    it('returns a house reading for each of the 12 houses when cusps are present', async () => {
+      for (let h = 1; h <= 12; h++) {
+        await repo.upsert(
+          { category: 'house', subjectKey: `house-${h}`, locale: 'en' },
+          { content: `House ${h} meaning`, updatedBy: null },
+        );
+      }
+
+      const result = await service.getForComputedChart(
+        { positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }], cusps },
+        'en',
+      );
+
+      expect(result.houses.map((h) => h.subjectKey)).toEqual(
+        Array.from({ length: 12 }, (_, i) => `house-${i + 1}`),
+      );
+    });
+
+    it('returns no house readings when cusps are absent', async () => {
+      const result = await service.getForComputedChart(
+        { positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }] },
+        'en',
+      );
+      expect(result.houses).toEqual([]);
     });
 
     it('ignores bodies outside the interpreted set (e.g. lunar nodes)', async () => {

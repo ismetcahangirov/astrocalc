@@ -4,6 +4,7 @@ import {
   SUPPORTED_LOCALES,
   aspectSubjectKey,
   findHouseNumber,
+  houseSubjectKey,
   listInterpretationSubjects,
   planetHouseSubjectKey,
   planetSignSubjectKey,
@@ -58,6 +59,8 @@ export interface ComputedChartInput {
 export interface ComputedChartInterpretation {
   planetSign: ResolvedInterpretation[];
   planetHouse: ResolvedInterpretation[];
+  /** The 12 generic house meanings — empty when the birth time (and so cusps) is unknown. */
+  houses: ResolvedInterpretation[];
   aspects: ResolvedInterpretation[];
 }
 
@@ -164,6 +167,16 @@ export function createInterpretationService(
           }))
         : [];
 
+      // House meanings are generic (1–12), independent of the chart's data, but
+      // only returned when cusps exist so they line up with the "houses shown
+      // only with a known birth time" rule the result screen follows.
+      const houseQueries = chart.cusps
+        ? Array.from({ length: 12 }, (_, i) => ({
+            category: 'house' as const,
+            subjectKey: houseSubjectKey(i + 1),
+          }))
+        : [];
+
       const aspectQueries = (chart.aspects ?? [])
         .filter((a) => INTERPRETED_BODY_SET.has(a.bodyA) && INTERPRETED_BODY_SET.has(a.bodyB))
         .map((a) => ({
@@ -171,13 +184,14 @@ export function createInterpretationService(
           subjectKey: aspectSubjectKey(a.type, a.bodyA, a.bodyB),
         }));
 
-      const [planetSign, planetHouse, aspects] = await Promise.all([
+      const [planetSign, planetHouse, houses, aspects] = await Promise.all([
         getBatch(planetSignQueries, locale),
         getBatch(planetHouseQueries, locale),
+        getBatch(houseQueries, locale),
         getBatch(aspectQueries, locale),
       ]);
 
-      return { planetSign, planetHouse, aspects };
+      return { planetSign, planetHouse, houses, aspects };
     },
   };
 }

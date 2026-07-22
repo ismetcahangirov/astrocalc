@@ -6,7 +6,14 @@ import { AdminUnauthorizedError, InvalidRequestError } from '../auth/errors';
 import { requireAuth } from '../auth/authMiddleware';
 import type { TokenService } from '../auth/tokens';
 
-const categorySchema = z.enum(['planet-sign', 'planet-house', 'aspect', 'numerology', 'matrix']);
+const categorySchema = z.enum([
+  'planet-sign',
+  'planet-house',
+  'house',
+  'aspect',
+  'numerology',
+  'matrix',
+]);
 const localeSchema = z.enum(
   SUPPORTED_LOCALES as unknown as [InterpretationLocale, ...InterpretationLocale[]],
 );
