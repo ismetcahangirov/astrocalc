@@ -196,6 +196,8 @@ const en = {
   'natalChart.aspectsTitle': 'Aspects',
   'natalChart.readingError': "Couldn't load your reading. Please try again.",
   'natalChart.readingUnavailableOffline': 'Your reading needs an internet connection.',
+  'natalChart.tapForMeaning': 'Tap any row to see what it means.',
+  'natalChart.readingRowUnavailable': 'Connect to the internet to see this reading.',
 
   'numerology.title': 'Your Numbers',
   'numerology.subtitle': 'Calculated from your full birth name and your date of birth.',
@@ -455,6 +457,8 @@ const az: Record<keyof typeof en, string> = {
   'natalChart.aspectsTitle': 'Aspektlər',
   'natalChart.readingError': 'Şərhiniz yüklənmədi. Yenidən cəhd edin.',
   'natalChart.readingUnavailableOffline': 'Şərhiniz üçün internet bağlantısı lazımdır.',
+  'natalChart.tapForMeaning': 'Mənasını görmək üçün istənilən sətrə toxunun.',
+  'natalChart.readingRowUnavailable': 'Bu açıqlamanı görmək üçün internetə qoşulun.',
 
   'numerology.title': 'Sizin Rəqəmləriniz',
   'numerology.subtitle': 'Tam doğum adınız və doğum tarixiniz əsasında hesablanır.',

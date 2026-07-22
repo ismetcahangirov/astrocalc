@@ -15,6 +15,7 @@ import { isNetworkError } from '../api/httpClient';
 import { fetchChartInterpretation, type ChartInterpretation } from '../api/interpretationApi';
 import { computeWheelLayout, type WheelInput } from '../chart/geometry';
 import { formatChartDetails } from '../chart/chartText';
+import { AccordionRow } from '../chart/AccordionRow';
 import { NatalChartWheel } from '../chart/NatalChartWheel';
 import { MissingBirthDataError } from '../offline/natalChartService';
 import { loadNatalChart } from '../offline/natalChartServiceWiring';
@@ -67,6 +68,7 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
   const [state, setState] = useState<LoadState>({ phase: 'loading' });
   const [interpretation, setInterpretation] = useState<ChartInterpretation | null>(null);
   const [interpretationError, setInterpretationError] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setState({ phase: 'loading' });
@@ -121,6 +123,25 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
     });
   }, [state, locale, t]);
 
+  // Every fetched reading, keyed by its subjectKey — subjectKeys are unique
+  // across categories, so one flat map lets each detail row find its meaning.
+  const meaning = useMemo(() => {
+    const map = new Map<string, string>();
+    if (interpretation) {
+      for (const row of [
+        ...interpretation.planetSign,
+        ...interpretation.planetHouse,
+        ...interpretation.houses,
+        ...interpretation.aspects,
+      ]) {
+        map.set(row.subjectKey, row.content);
+      }
+    }
+    return map;
+  }, [interpretation]);
+
+  const toggle = useCallback((key: string) => setOpenKey((cur) => (cur === key ? null : key)), []);
+
   if (state.phase === 'loading') {
     return (
       <View style={styles.centered}>
@@ -141,9 +162,28 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
   }
 
   const { view } = state;
-  const readingRows = interpretation
-    ? [...interpretation.planetSign, ...interpretation.planetHouse]
-    : [];
+
+  // The meaning paragraph(s) for a detail row, or a short note when the reading
+  // hasn't loaded (offline / fetch error). Angle rows pass no keys and so never
+  // reach this — they render as plain, non-expandable rows.
+  const renderMeaning = (keys: (string | null | undefined)[]) => {
+    const paragraphs = keys
+      .filter((k): k is string => !!k)
+      .map((k) => meaning.get(k))
+      .filter((c): c is string => !!c);
+    if (paragraphs.length === 0) {
+      return (
+        <Text style={styles.rowNote}>
+          {interpretationError ?? t('natalChart.readingRowUnavailable')}
+        </Text>
+      );
+    }
+    return paragraphs.map((c, i) => (
+      <Text key={i} style={styles.rowMeaning}>
+        {c}
+      </Text>
+    ));
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -163,24 +203,31 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
       ) : null}
       <Text style={styles.retrogradeHint}>{t('natalChart.retrogradeHint')}</Text>
 
-      {/* Computed placements, in text — shown before (and independent of) the reading. */}
+      {/* Computed placements — each row taps open, accordion-style, to reveal its
+          meaning (fetched separately). Only one row is open at a time. */}
       {details ? (
         <>
           <Text style={styles.sectionTitle}>{t('natalChart.detailsTitle')}</Text>
+          <Text style={styles.detailsHint}>{t('natalChart.tapForMeaning')}</Text>
 
           <Text style={styles.subTitle}>{t('natalChart.planetsTitle')}</Text>
-          {details.planets.map((p) => (
-            <View key={p.body} style={styles.detailRow}>
-              <Text style={styles.detailName}>
-                {p.name}
-                {p.retrograde ? <Text style={styles.retroTag}> R</Text> : null}
-              </Text>
-              <Text style={styles.detailValue}>
-                {p.position}
-                {p.house != null ? ` · ${t('natalChart.houseAbbrev')} ${p.house}` : ''}
-              </Text>
-            </View>
-          ))}
+          {details.planets.map((p) => {
+            const key = `planet-${p.signSubjectKey}`;
+            return (
+              <AccordionRow
+                key={key}
+                name={p.name}
+                tag={p.retrograde ? <Text style={styles.retroTag}> R</Text> : null}
+                value={`${p.position}${
+                  p.house != null ? ` · ${t('natalChart.houseAbbrev')} ${p.house}` : ''
+                }`}
+                expanded={openKey === key}
+                onToggle={() => toggle(key)}
+              >
+                {renderMeaning([p.signSubjectKey, p.houseSubjectKey])}
+              </AccordionRow>
+            );
+          })}
 
           {details.angles.length > 0 ? (
             <>
@@ -197,52 +244,42 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
           {details.houses.length > 0 ? (
             <>
               <Text style={styles.subTitle}>{t('natalChart.housesTitle')}</Text>
-              {details.houses.map((h) => (
-                <View key={h.house} style={styles.detailRow}>
-                  <Text style={styles.detailName}>
-                    {t('natalChart.houseAbbrev')} {h.house}
-                  </Text>
-                  <Text style={styles.detailValue}>{h.position}</Text>
-                </View>
-              ))}
+              {details.houses.map((h) => {
+                const key = `house-row-${h.subjectKey}`;
+                return (
+                  <AccordionRow
+                    key={key}
+                    name={`${t('natalChart.houseAbbrev')} ${h.house}`}
+                    value={h.position}
+                    expanded={openKey === key}
+                    onToggle={() => toggle(key)}
+                  >
+                    {renderMeaning([h.subjectKey])}
+                  </AccordionRow>
+                );
+              })}
             </>
           ) : null}
 
           {details.aspects.length > 0 ? (
             <>
               <Text style={styles.subTitle}>{t('natalChart.aspectsTitle')}</Text>
-              {details.aspects.map((a) => (
-                <View key={a.key} style={styles.detailRow}>
-                  <Text style={styles.detailName}>
-                    {a.bodyA} – {a.bodyB}
-                  </Text>
-                  <Text style={styles.detailValue}>
-                    {a.aspect} · {a.orb}
-                    {a.motion ? ` · ${a.motion}` : ''}
-                  </Text>
-                </View>
-              ))}
+              {details.aspects.map((a) => {
+                const key = `aspect-${a.key}`;
+                return (
+                  <AccordionRow
+                    key={key}
+                    name={`${a.bodyA} – ${a.bodyB}`}
+                    value={`${a.aspect} · ${a.orb}${a.motion ? ` · ${a.motion}` : ''}`}
+                    expanded={openKey === key}
+                    onToggle={() => toggle(key)}
+                  >
+                    {renderMeaning([a.subjectKey])}
+                  </AccordionRow>
+                );
+              })}
             </>
           ) : null}
-        </>
-      ) : null}
-
-      <Text style={styles.sectionTitle}>{t('natalChart.readingTitle')}</Text>
-      {interpretationError ? <Text style={styles.error}>{interpretationError}</Text> : null}
-      {readingRows.map((row) => (
-        <Text key={`${row.category}-${row.subjectKey}`} style={styles.paragraph}>
-          {row.content}
-        </Text>
-      ))}
-
-      {interpretation && interpretation.aspects.length > 0 ? (
-        <>
-          <Text style={styles.sectionTitle}>{t('natalChart.aspectsTitle')}</Text>
-          {interpretation.aspects.map((row) => (
-            <Text key={row.subjectKey} style={styles.paragraph}>
-              {row.content}
-            </Text>
-          ))}
         </>
       ) : null}
     </ScrollView>
@@ -286,13 +323,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 10,
   },
-  paragraph: {
-    color: '#B9B4C7',
-    fontSize: 14,
-    lineHeight: 21,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
   subTitle: {
     color: '#B9B4C7',
     fontSize: 13,
@@ -315,6 +345,9 @@ const styles = StyleSheet.create({
   },
   detailName: { color: '#F4F1FA', fontSize: 14, fontWeight: '600', flexShrink: 1 },
   detailValue: { color: '#B9B4C7', fontSize: 13, textAlign: 'right', flexShrink: 1 },
+  detailsHint: { color: '#6E6A80', fontSize: 12, alignSelf: 'flex-start', marginBottom: 4 },
+  rowMeaning: { color: '#B9B4C7', fontSize: 13, lineHeight: 20, marginBottom: 8 },
+  rowNote: { color: '#6E6A80', fontSize: 12, fontStyle: 'italic' },
   retroTag: { color: '#F2A2A2', fontSize: 12, fontWeight: '700' },
   error: { color: '#F2A2A2', fontSize: 14, marginBottom: 16, textAlign: 'center' },
   retryButton: { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10 },
