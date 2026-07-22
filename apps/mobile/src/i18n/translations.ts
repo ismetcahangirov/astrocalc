@@ -227,6 +227,9 @@ const en = {
   'numerology.offlineNotice':
     "You're viewing numbers computed on this device. Reconnect for your full reading.",
   'numerology.readingTitle': 'Your Reading',
+  'numerology.readingError': "Couldn't load your reading. Please try again.",
+  'numerology.readingUnavailableOffline': 'Your reading needs an internet connection.',
+  'numerology.readingRowUnavailable': 'Connect to the internet to see this reading.',
   'numerology.fullNameLabel': 'Full birth name',
   'numerology.fullNameHint':
     'Enter the complete name from your birth certificate. Your numerology is calculated letter by letter from these three fields.',
@@ -488,6 +491,9 @@ const az: Record<keyof typeof en, string> = {
   'numerology.offlineNotice':
     'Bu cihazda hesablanmış rəqəmlərə baxırsınız. Tam şərh üçün internetə qoşulun.',
   'numerology.readingTitle': 'Sizin Şərhiniz',
+  'numerology.readingError': 'Şərhiniz yüklənmədi. Yenidən cəhd edin.',
+  'numerology.readingUnavailableOffline': 'Şərhiniz üçün internet bağlantısı lazımdır.',
+  'numerology.readingRowUnavailable': 'Bu açıqlamanı görmək üçün internetə qoşulun.',
   'numerology.fullNameLabel': 'Tam doğum adı',
   'numerology.fullNameHint':
     'Doğum haqqında şəhadətnamənizdəki tam adınızı yazın. Numerologiyanız bu üç sahədən hərf-hərf hesablanır.',
