@@ -79,6 +79,10 @@ describe('formatChartDetails', () => {
 
     const conj = details.aspects.find((a) => a.aspect === 'Conjunction')!;
     expect(conj.subjectKey).toBe('conjunction-moon-sun'); // alphabetical, like aspectSubjectKey
+
+    // Ascendant Virgo, Midheaven Gemini in the fixture.
+    expect(details.angles[0]!.subjectKey).toBe('ascendant-Virgo');
+    expect(details.angles[1]!.subjectKey).toBe('midheaven-Gemini');
   });
 
   it('leaves houseSubjectKey null when the birth time is unknown', () => {
@@ -111,8 +115,8 @@ describe('formatChartDetails', () => {
   it('exposes the chart angles', () => {
     const { angles } = formatChartDetails(makeChart(), 'en', LABELS);
     expect(angles).toEqual([
-      { name: 'Ascendant', position: '19°59′ Virgo' },
-      { name: 'Midheaven', position: '21°33′ Gemini' },
+      { name: 'Ascendant', position: '19°59′ Virgo', subjectKey: 'ascendant-Virgo' },
+      { name: 'Midheaven', position: '21°33′ Gemini', subjectKey: 'midheaven-Gemini' },
     ]);
   });
 

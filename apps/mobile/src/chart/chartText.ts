@@ -1,4 +1,5 @@
 import {
+  angleSubjectKey,
   aspectSubjectKey,
   findHouseNumber,
   houseSubjectKey,
@@ -139,6 +140,8 @@ export interface AngleDetail {
   name: string;
   /** e.g. `19°59′ Virgo`. */
   position: string;
+  /** Interpretation key for this angle-in-sign, e.g. `ascendant-Virgo`. */
+  subjectKey: string;
 }
 
 export interface HouseDetail {
@@ -200,10 +203,12 @@ export function formatChartDetails(
         {
           name: labels.ascendant,
           position: `${formatDegree(chart.houses.ascendant.degree)} ${signNames[chart.houses.ascendant.sign]}`,
+          subjectKey: angleSubjectKey('ascendant', chart.houses.ascendant.sign),
         },
         {
           name: labels.midheaven,
           position: `${formatDegree(chart.houses.midheaven.degree)} ${signNames[chart.houses.midheaven.sign]}`,
+          subjectKey: angleSubjectKey('midheaven', chart.houses.midheaven.sign),
         },
       ]
     : [];

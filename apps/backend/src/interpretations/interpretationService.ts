@@ -188,10 +188,20 @@ export function createInterpretationService(
       // Angle-in-sign readings — one per angle whose sign was supplied.
       const angleQueries = [
         ...(chart.ascendantSign
-          ? [{ category: 'angle' as const, subjectKey: angleSubjectKey('ascendant', chart.ascendantSign) }]
+          ? [
+              {
+                category: 'angle' as const,
+                subjectKey: angleSubjectKey('ascendant', chart.ascendantSign),
+              },
+            ]
           : []),
         ...(chart.midheavenSign
-          ? [{ category: 'angle' as const, subjectKey: angleSubjectKey('midheaven', chart.midheavenSign) }]
+          ? [
+              {
+                category: 'angle' as const,
+                subjectKey: angleSubjectKey('midheaven', chart.midheavenSign),
+              },
+            ]
           : []),
       ];
 

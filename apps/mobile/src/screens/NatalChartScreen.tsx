@@ -132,6 +132,7 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
         ...interpretation.planetSign,
         ...interpretation.planetHouse,
         ...interpretation.houses,
+        ...interpretation.angles,
         ...interpretation.aspects,
       ]) {
         map.set(row.subjectKey, row.content);
@@ -232,12 +233,20 @@ export function NatalChartScreen({ subjectId, subjectName }: NatalChartScreenPro
           {details.angles.length > 0 ? (
             <>
               <Text style={styles.subTitle}>{t('natalChart.anglesTitle')}</Text>
-              {details.angles.map((a) => (
-                <View key={a.name} style={styles.detailRow}>
-                  <Text style={styles.detailName}>{a.name}</Text>
-                  <Text style={styles.detailValue}>{a.position}</Text>
-                </View>
-              ))}
+              {details.angles.map((a) => {
+                const key = `angle-${a.subjectKey}`;
+                return (
+                  <AccordionRow
+                    key={key}
+                    name={a.name}
+                    value={a.position}
+                    expanded={openKey === key}
+                    onToggle={() => toggle(key)}
+                  >
+                    {renderMeaning([a.subjectKey])}
+                  </AccordionRow>
+                );
+              })}
             </>
           ) : null}
 
