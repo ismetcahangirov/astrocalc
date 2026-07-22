@@ -22,7 +22,13 @@ export const FALLBACK_LOCALE: InterpretationLocale = 'en';
  * were added for the numerology (#57) and Matrix of Destiny (#67) epics.
  */
 export type InterpretationCategory =
-  'planet-sign' | 'planet-house' | 'aspect' | 'numerology' | 'matrix';
+  'planet-sign' | 'planet-house' | 'house' | 'angle' | 'aspect' | 'numerology' | 'matrix';
+
+/** The two chart angles that get their own "angle in sign" interpretation text. */
+export type AngleKind = 'ascendant' | 'midheaven';
+
+/** Both angle kinds, in enumeration order. */
+export const ANGLE_KINDS: readonly AngleKind[] = ['ascendant', 'midheaven'];
 
 const SIGNS: readonly ZodiacSign[] = [
   'Aries',
@@ -51,12 +57,13 @@ const ASPECT_TYPES: readonly AspectType[] = [
 
 /**
  * The bodies this feature writes planet-sign/planet-house/aspect
- * interpretation text for: the ten classical planets (Sun–Pluto). The lunar
- * nodes and Chiron are deliberately out of scope for now — they are
- * optional/advanced points in {@link CelestialBody} (Chiron is opt-in in
- * {@link computePlanetaryPositions} and only approximate) — but nothing here
- * hard-codes the count of ten, so a future issue can extend
- * {@link INTERPRETED_BODIES} without changing the key scheme.
+ * interpretation text for: the ten classical planets (Sun–Pluto) plus the two
+ * lunar nodes (North/South), which the natal chart computes and shows by
+ * default (`nodeModel: 'true'`), so their placements and aspects need readings
+ * too (#106). Chiron stays out — it is opt-in and off by default in
+ * {@link computePlanetaryPositions}, so it never appears in a normal chart.
+ * Nothing here hard-codes the count, so extending this list is all it takes to
+ * bring another body into scope.
  */
 export const INTERPRETED_BODIES: readonly CelestialBody[] = [
   'sun',
@@ -69,6 +76,8 @@ export const INTERPRETED_BODIES: readonly CelestialBody[] = [
   'uranus',
   'neptune',
   'pluto',
+  'northNode',
+  'southNode',
 ];
 
 /** One row's worth of identity: which combination this interpretation text is for. */
@@ -95,6 +104,31 @@ export function planetHouseSubjectKey(body: CelestialBody, house: number): strin
 }
 
 /**
+ * Build the subject key for a whole-house meaning, e.g. `house-4` — the generic
+ * meaning of the fourth house itself, independent of any planet in it or the
+ * sign on its cusp. Distinct from {@link planetHouseSubjectKey} (`sun-4`), which
+ * is a planet read *through* a house.
+ */
+export function houseSubjectKey(house: number): string {
+  if (!Number.isInteger(house) || house < 1 || house > 12) {
+    throw new CalcEngineError(
+      'invalid_input',
+      `house must be an integer within [1, 12], got ${house}`,
+    );
+  }
+  return `house-${house}`;
+}
+
+/**
+ * Build the subject key for a chart angle in a sign, e.g. `ascendant-Virgo` or
+ * `midheaven-Gemini` — the rising sign's outward style / the Midheaven sign's
+ * public role. Keyed by angle kind + sign, parallel to {@link planetSignSubjectKey}.
+ */
+export function angleSubjectKey(kind: AngleKind, sign: ZodiacSign): string {
+  return `${kind}-${sign}`;
+}
+
+/**
  * Build the subject key for an aspect between two bodies, e.g.
  * `conjunction-moon-sun`. The two bodies are ordered alphabetically
  * regardless of call order, so "Sun conjunction Moon" and "Moon conjunction
@@ -115,9 +149,11 @@ export function aspectSubjectKey(
  * single source of truth both the seed script (writes the content) and a
  * parity test (verifies nothing is missing) are driven from:
  *
- * - astrology (#18) — the ten {@link INTERPRETED_BODIES} planets across all 12
- *   signs, all 12 houses, and all 5 major aspects across every unordered pair
- *   of those planets (465 subjects), plus
+ * - astrology (#18) — the twelve {@link INTERPRETED_BODIES} (ten classical
+ *   planets + the two lunar nodes) across all 12 signs, all 12 houses, and all 5
+ *   major aspects across every unordered pair of those bodies (618 subjects),
+ *   plus the 12 generic whole-house meanings and the 24 angle-in-sign meanings
+ *   (#106, categories `house` and `angle`), plus
  * - numerology (#57) — the 185 subjects {@link listNumerologySubjects}
  *   enumerates, merged in for issue #82 now that their seed content exists, and
  * - Matrix of Destiny (#67) — the 682 subjects {@link listMatrixSubjects}
@@ -133,6 +169,16 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
     }
     for (const house of HOUSES) {
       subjects.push({ category: 'planet-house', subjectKey: planetHouseSubjectKey(body, house) });
+    }
+  }
+
+  for (const house of HOUSES) {
+    subjects.push({ category: 'house', subjectKey: houseSubjectKey(house) });
+  }
+
+  for (const kind of ANGLE_KINDS) {
+    for (const sign of SIGNS) {
+      subjects.push({ category: 'angle', subjectKey: angleSubjectKey(kind, sign) });
     }
   }
 

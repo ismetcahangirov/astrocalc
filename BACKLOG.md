@@ -4,6 +4,40 @@ Reverse-chronological log of completed work on AstroCalc. Add an entry here
 whenever a task is finished (merged or ready for review) — what was done,
 and the related issue/PR numbers.
 
+## 2026-07-22
+
+- Natal chart detail rows are now expandable accordions — mobile, backend,
+  calc-engine (#106). Each planet/house/aspect row in the "Chart details"
+  section (planets, angles, houses, aspects) taps open to reveal what that
+  placement means, with only one row open at a time (opening one closes the
+  previous). The meaning text already came from `/interpretations/for-chart` for
+  planet-sign, planet-house and aspect; the old flat "Your Reading" / "Aspects"
+  lists were folded into the accordions so nothing is shown twice. Houses and
+  the chart angles (Asc/MC) had **no** interpretation text, so two new
+  categories were added to the existing original-content generator (no external
+  API, keeping content original and offline-consistent): `house` (12 generic
+  whole-house meanings) and `angle` (Ascendant/Midheaven in each of 12 signs,
+  2 × 12 = 24). Wiring: calc-engine `houseSubjectKey()` / `angleSubjectKey()` +
+  enumeration (1,332 → 1,368 subjects); `seedContent.ts` `composeHouse()` /
+  `composeAngle()` reusing the existing `HOUSE_AREA`/`HOUSE_ORDINAL` and
+  `SIGN_NAME`/`SIGN_TRAIT` banks (5,328 → 5,472 seed rows); `getForComputedChart`
+  returns `houses[]` and `angles[]`; the for-chart payload now carries the
+  Asc/MC signs; route `categorySchema` accepts `house` and `angle`; mobile
+  `formatChartDetails` attaches each row's interpretation `subjectKey`, and
+  `NatalChartScreen` renders rows via a new single-open `AccordionRow`.
+  Also: the natal chart computes and shows the **lunar nodes** (North/South) by
+  default, so their placement and aspect rows were appearing with no reading —
+  both nodes were added to `INTERPRETED_BODIES`, generating their sign/house/
+  aspect text from the existing `PLANET_NAME`/`BODY_THEME` banks (astrology
+  465 → 618 subjects; grand total 1,368 → 1,521; Chiron stays out — off by
+  default). calc-engine + backend (377) + mobile (213) tests green; tsc clean.
+  **Seed:** the interpretation content was (re)seeded to the Neon DB via
+  `db:seed:interpretations` (idempotent). A latent seed bug was fixed on the
+  way — the script passed the string `'seed-script'` into the nullable UUID
+  `updated_by` column, which Postgres rejected on any new insert; baseline seed
+  rows now use `null`. Pre-existing repo `expo lint` config error
+  (`no-unassigned-vars` rule missing) is unrelated to this work.
+
 ## 2026-07-21
 
 - Octagram age-forecast timeline drawn on the perimeter — mobile (#97). The

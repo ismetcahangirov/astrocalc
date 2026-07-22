@@ -198,6 +198,49 @@ describe('POST /interpretations/for-chart', () => {
     );
   });
 
+  it('returns the 12 house readings when cusps are present', async () => {
+    const { app, repo } = makeApp();
+    for (let h = 1; h <= 12; h++) {
+      await repo.upsert(
+        { category: 'house', subjectKey: `house-${h}`, locale: 'en' },
+        { content: `House ${h} text.`, updatedBy: null },
+      );
+    }
+
+    const res = await request(app)
+      .post('/interpretations/for-chart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ locale: 'en', chart });
+
+    expect(res.status).toBe(200);
+    expect(res.body.houses.map((h: { subjectKey: string }) => h.subjectKey)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `house-${i + 1}`),
+    );
+  });
+
+  it('returns angle readings when the angle signs are supplied', async () => {
+    const { app, repo } = makeApp();
+    await repo.upsert(
+      { category: 'angle', subjectKey: 'ascendant-Aries', locale: 'en' },
+      { content: 'Ascendant in Aries text.', updatedBy: null },
+    );
+
+    const res = await request(app)
+      .post('/interpretations/for-chart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ locale: 'en', chart: { ...chart, ascendantSign: 'Aries' } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.angles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          subjectKey: 'ascendant-Aries',
+          content: 'Ascendant in Aries text.',
+        }),
+      ]),
+    );
+  });
+
   it('omits planet-house readings when the chart has no house cusps (birth time unknown)', async () => {
     const { app, repo } = makeApp();
     await repo.upsert(
@@ -266,8 +309,8 @@ describe('GET /interpretations/admin/missing', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`);
 
     expect(res.status).toBe(200);
-    // 465 astrology + 185 numerology + 682 matrix subjects (folded in by #82
-    // and #80/#81), x4 locales.
-    expect(res.body.count).toBe((10 * 12 + 10 * 12 + 45 * 5 + 185 + 682) * 4);
+    // 618 astrology (12 bodies incl. nodes) + 12 house + 24 angle (#106) + 185
+    // numerology + 682 matrix subjects (folded in by #82 and #80/#81), x4 locales.
+    expect(res.body.count).toBe((12 * 12 + 12 * 12 + 66 * 5 + 12 + 24 + 185 + 682) * 4);
   });
 });

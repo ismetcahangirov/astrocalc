@@ -1,5 +1,10 @@
 import {
+  angleSubjectKey,
+  aspectSubjectKey,
   findHouseNumber,
+  houseSubjectKey,
+  planetHouseSubjectKey,
+  planetSignSubjectKey,
   type AspectType,
   type CelestialBody,
   type NatalChart,
@@ -125,18 +130,26 @@ export interface PlanetDetail {
   /** House number 1–12, or `null` when the birth time (and so houses) is unknown. */
   house: number | null;
   retrograde: boolean;
+  /** Interpretation key for this planet-in-sign, e.g. `sun-Capricorn`. */
+  signSubjectKey: string;
+  /** Interpretation key for this planet-in-house (`sun-10`), or `null` without houses. */
+  houseSubjectKey: string | null;
 }
 
 export interface AngleDetail {
   name: string;
   /** e.g. `19°59′ Virgo`. */
   position: string;
+  /** Interpretation key for this angle-in-sign, e.g. `ascendant-Virgo`. */
+  subjectKey: string;
 }
 
 export interface HouseDetail {
   house: number;
   /** The sign + degree the house cusp falls on, e.g. `19°14′ Libra`. */
   position: string;
+  /** Interpretation key for the house's generic meaning, e.g. `house-4`. */
+  subjectKey: string;
 }
 
 export interface AspectDetail {
@@ -148,6 +161,8 @@ export interface AspectDetail {
   orb: string;
   /** Localized "applying"/"separating", or `null` when undetermined. */
   motion: string | null;
+  /** Interpretation key for this aspect, e.g. `conjunction-moon-sun`. */
+  subjectKey: string;
 }
 
 export interface ChartDetails {
@@ -170,23 +185,30 @@ export function formatChartDetails(
   const applying = APPLYING_LABELS[locale];
   const cusps = chart.houses?.cusps ?? null;
 
-  const planets: PlanetDetail[] = chart.positions.map((p) => ({
-    body: p.body,
-    name: bodyNames[p.body],
-    position: `${formatDegree(p.degree)} ${signNames[p.sign]}`,
-    house: cusps ? findHouseNumber(cusps, p.longitude) : null,
-    retrograde: p.retrograde,
-  }));
+  const planets: PlanetDetail[] = chart.positions.map((p) => {
+    const house = cusps ? findHouseNumber(cusps, p.longitude) : null;
+    return {
+      body: p.body,
+      name: bodyNames[p.body],
+      position: `${formatDegree(p.degree)} ${signNames[p.sign]}`,
+      house,
+      retrograde: p.retrograde,
+      signSubjectKey: planetSignSubjectKey(p.body, p.sign),
+      houseSubjectKey: house != null ? planetHouseSubjectKey(p.body, house) : null,
+    };
+  });
 
   const angles: AngleDetail[] = chart.houses
     ? [
         {
           name: labels.ascendant,
           position: `${formatDegree(chart.houses.ascendant.degree)} ${signNames[chart.houses.ascendant.sign]}`,
+          subjectKey: angleSubjectKey('ascendant', chart.houses.ascendant.sign),
         },
         {
           name: labels.midheaven,
           position: `${formatDegree(chart.houses.midheaven.degree)} ${signNames[chart.houses.midheaven.sign]}`,
+          subjectKey: angleSubjectKey('midheaven', chart.houses.midheaven.sign),
         },
       ]
     : [];
@@ -194,6 +216,7 @@ export function formatChartDetails(
   const houses: HouseDetail[] = (chart.houses?.cusps ?? []).map((cusp) => ({
     house: cusp.house,
     position: `${formatDegree(cusp.degree)} ${signNames[cusp.sign]}`,
+    subjectKey: houseSubjectKey(cusp.house),
   }));
 
   const aspects: AspectDetail[] = chart.aspects.map((a, i) => ({
@@ -203,6 +226,7 @@ export function formatChartDetails(
     aspect: aspectNames[a.type],
     orb: `orb ${a.orb.toFixed(1)}°`,
     motion: a.applying == null ? null : a.applying ? applying.applying : applying.separating,
+    subjectKey: aspectSubjectKey(a.type, a.bodyA, a.bodyB),
   }));
 
   return { planets, angles, houses, aspects };

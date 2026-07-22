@@ -135,9 +135,10 @@ describe('createInterpretationService', () => {
     it('reports every required subject/locale combination as missing on an empty store', async () => {
       const { service } = buildService();
       const missing = await service.listMissing();
-      // 10 planets x 12 signs + 10 planets x 12 houses + 45 pairs x 5 aspects (465)
-      // + 185 numerology + 682 matrix subjects (folded in by #82 and #80/#81), x4 locales.
-      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5 + 185 + 682) * 4);
+      // 12 bodies (10 planets + 2 nodes) x 12 signs + x 12 houses + 66 pairs x 5
+      // aspects (618) + 12 house meanings + 24 angle-in-sign meanings (#106) +
+      // 185 numerology + 682 matrix subjects (folded in by #82 and #80/#81), x4 locales.
+      expect(missing.length).toBe((12 * 12 + 12 * 12 + 66 * 5 + 12 + 24 + 185 + 682) * 4);
     });
 
     it('shrinks as rows are added and is empty once everything is seeded', async () => {
@@ -218,9 +219,71 @@ describe('createInterpretationService', () => {
       expect(result.planetHouse).toHaveLength(0);
     });
 
-    it('ignores bodies outside the interpreted set (e.g. lunar nodes)', async () => {
+    it('returns a house reading for each of the 12 houses when cusps are present', async () => {
+      for (let h = 1; h <= 12; h++) {
+        await repo.upsert(
+          { category: 'house', subjectKey: `house-${h}`, locale: 'en' },
+          { content: `House ${h} meaning`, updatedBy: null },
+        );
+      }
+
       const result = await service.getForComputedChart(
-        { positions: [{ body: 'northNode', sign: 'Aries', longitude: 5 }], cusps },
+        { positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }], cusps },
+        'en',
+      );
+
+      expect(result.houses.map((h) => h.subjectKey)).toEqual(
+        Array.from({ length: 12 }, (_, i) => `house-${i + 1}`),
+      );
+    });
+
+    it('returns no house readings when cusps are absent', async () => {
+      const result = await service.getForComputedChart(
+        { positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }] },
+        'en',
+      );
+      expect(result.houses).toEqual([]);
+    });
+
+    it('returns Ascendant- and Midheaven-in-sign readings when the angle signs are given', async () => {
+      await repo.upsert(
+        { category: 'angle', subjectKey: 'ascendant-Virgo', locale: 'en' },
+        { content: 'Ascendant in Virgo text', updatedBy: null },
+      );
+      await repo.upsert(
+        { category: 'angle', subjectKey: 'midheaven-Gemini', locale: 'en' },
+        { content: 'Midheaven in Gemini text', updatedBy: null },
+      );
+
+      const result = await service.getForComputedChart(
+        {
+          positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }],
+          ascendantSign: 'Virgo',
+          midheavenSign: 'Gemini',
+        },
+        'en',
+      );
+
+      expect(result.angles.map((a) => a.subjectKey)).toEqual([
+        'ascendant-Virgo',
+        'midheaven-Gemini',
+      ]);
+    });
+
+    it('returns no angle readings when the angle signs are absent', async () => {
+      const result = await service.getForComputedChart(
+        { positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }], cusps },
+        'en',
+      );
+      expect(result.angles).toEqual([]);
+    });
+
+    it('ignores bodies outside the interpreted set (e.g. Chiron, which is off by default)', async () => {
+      // The lunar nodes ARE interpreted now (#106); Chiron is the remaining
+      // out-of-scope body — it never appears in a default chart, and even if
+      // supplied it composes no queries.
+      const result = await service.getForComputedChart(
+        { positions: [{ body: 'chiron', sign: 'Aries', longitude: 5 }], cusps },
         'en',
       );
 

@@ -6,7 +6,15 @@ import { AdminUnauthorizedError, InvalidRequestError } from '../auth/errors';
 import { requireAuth } from '../auth/authMiddleware';
 import type { TokenService } from '../auth/tokens';
 
-const categorySchema = z.enum(['planet-sign', 'planet-house', 'aspect', 'numerology', 'matrix']);
+const categorySchema = z.enum([
+  'planet-sign',
+  'planet-house',
+  'house',
+  'angle',
+  'aspect',
+  'numerology',
+  'matrix',
+]);
 const localeSchema = z.enum(
   SUPPORTED_LOCALES as unknown as [InterpretationLocale, ...InterpretationLocale[]],
 );
@@ -78,6 +86,8 @@ const forChartSchema = z.object({
   chart: z.object({
     positions: z.array(positionSchema).min(1).max(20),
     cusps: z.array(cuspSchema).length(12).optional(),
+    ascendantSign: zodiacSignSchema.optional(),
+    midheavenSign: zodiacSignSchema.optional(),
     aspects: z.array(chartAspectSchema).max(200).optional(),
   }),
 });

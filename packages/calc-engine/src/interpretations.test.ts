@@ -3,7 +3,9 @@ import { CalcEngineError } from './errors';
 import {
   INTERPRETED_BODIES,
   SUPPORTED_LOCALES,
+  angleSubjectKey,
   aspectSubjectKey,
+  houseSubjectKey,
   listInterpretationSubjects,
   listMatrixSubjects,
   listNumerologySubjects,
@@ -33,6 +35,21 @@ describe('subject key builders', () => {
   it('rejects an out-of-range house', () => {
     expect(() => planetHouseSubjectKey('moon', 13)).toThrowError(CalcEngineError);
     expect(() => planetHouseSubjectKey('moon', 0)).toThrowError(CalcEngineError);
+  });
+
+  it('builds a stable house key', () => {
+    expect(houseSubjectKey(4)).toBe('house-4');
+  });
+
+  it('rejects an out-of-range house key', () => {
+    expect(() => houseSubjectKey(0)).toThrowError(CalcEngineError);
+    expect(() => houseSubjectKey(13)).toThrowError(CalcEngineError);
+    expect(() => houseSubjectKey(1.5)).toThrowError(CalcEngineError);
+  });
+
+  it('builds a stable angle key', () => {
+    expect(angleSubjectKey('ascendant', 'Virgo')).toBe('ascendant-Virgo');
+    expect(angleSubjectKey('midheaven', 'Gemini')).toBe('midheaven-Gemini');
   });
 
   it('canonicalizes aspect body order regardless of call order', () => {
@@ -65,6 +82,21 @@ describe('listInterpretationSubjects', () => {
   it('has no duplicate (category, subjectKey) pairs', () => {
     const keys = subjects.map((s) => `${s.category}:${s.subjectKey}`);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('covers all 12 houses in the house category', () => {
+    const houses = subjects.filter((s) => s.category === 'house');
+    expect(houses).toHaveLength(12);
+    expect(new Set(houses.map((s) => s.subjectKey))).toEqual(
+      new Set(Array.from({ length: 12 }, (_, i) => `house-${i + 1}`)),
+    );
+  });
+
+  it('covers both angles across all 12 signs in the angle category', () => {
+    const angles = subjects.filter((s) => s.category === 'angle');
+    expect(angles).toHaveLength(24);
+    expect(angles.some((s) => s.subjectKey === 'ascendant-Aries')).toBe(true);
+    expect(angles.some((s) => s.subjectKey === 'midheaven-Pisces')).toBe(true);
   });
 });
 
@@ -120,8 +152,9 @@ describe('listNumerologySubjects', () => {
 
   it('is folded into listInterpretationSubjects as of #82, on top of the 465 astrology subjects', () => {
     const all = listInterpretationSubjects();
-    // 465 astrology + 185 numerology + 682 matrix = 1332.
-    expect(all).toHaveLength(1332);
+    // 618 astrology (12 bodies incl. nodes) + 12 house + 24 angle + 185
+    // numerology + 682 matrix = 1521.
+    expect(all).toHaveLength(1521);
     expect(all.filter((s) => s.category === 'numerology')).toHaveLength(185);
     expect(all.filter((s) => s.category === 'matrix')).toHaveLength(682);
     // Every numerology subject listNumerologySubjects() enumerates is present.

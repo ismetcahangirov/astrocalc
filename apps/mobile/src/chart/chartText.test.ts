@@ -67,6 +67,32 @@ describe('formatDegree', () => {
 });
 
 describe('formatChartDetails', () => {
+  it('attaches interpretation subjectKeys to each detail row', () => {
+    const details = formatChartDetails(makeChart(), 'en', LABELS);
+
+    const sun = details.planets.find((p) => p.body === 'sun')!;
+    expect(sun.signSubjectKey).toBe('sun-Capricorn');
+    expect(sun.houseSubjectKey).toBe('sun-10');
+
+    expect(details.houses[0]!.subjectKey).toBe('house-1');
+    expect(details.houses[3]!.subjectKey).toBe('house-4');
+
+    const conj = details.aspects.find((a) => a.aspect === 'Conjunction')!;
+    expect(conj.subjectKey).toBe('conjunction-moon-sun'); // alphabetical, like aspectSubjectKey
+
+    // Ascendant Virgo, Midheaven Gemini in the fixture.
+    expect(details.angles[0]!.subjectKey).toBe('ascendant-Virgo');
+    expect(details.angles[1]!.subjectKey).toBe('midheaven-Gemini');
+  });
+
+  it('leaves houseSubjectKey null when the birth time is unknown', () => {
+    const chart = makeChart();
+    (chart as { houses: unknown }).houses = undefined;
+    const details = formatChartDetails(chart, 'en', LABELS);
+    expect(details.planets[0]!.houseSubjectKey).toBeNull();
+    expect(details.houses).toEqual([]);
+  });
+
   it('lists planet placements with position, house and retrograde (English)', () => {
     const { planets } = formatChartDetails(makeChart(), 'en', LABELS);
     expect(planets[0]).toMatchObject({
@@ -89,15 +115,15 @@ describe('formatChartDetails', () => {
   it('exposes the chart angles', () => {
     const { angles } = formatChartDetails(makeChart(), 'en', LABELS);
     expect(angles).toEqual([
-      { name: 'Ascendant', position: '19°59′ Virgo' },
-      { name: 'Midheaven', position: '21°33′ Gemini' },
+      { name: 'Ascendant', position: '19°59′ Virgo', subjectKey: 'ascendant-Virgo' },
+      { name: 'Midheaven', position: '21°33′ Gemini', subjectKey: 'midheaven-Gemini' },
     ]);
   });
 
   it('lists all 12 house cusps with their sign', () => {
     const { houses } = formatChartDetails(makeChart(), 'en', LABELS);
     expect(houses).toHaveLength(12);
-    expect(houses[0]).toEqual({ house: 1, position: '0°00′ Aries' });
+    expect(houses[0]).toEqual({ house: 1, position: '0°00′ Aries', subjectKey: 'house-1' });
     expect(houses[11].house).toBe(12);
   });
 

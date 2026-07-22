@@ -29,7 +29,10 @@ export async function seedInterpretations(
     }
     await repo.upsert(
       { category: row.category, subjectKey: row.subjectKey, locale: row.locale },
-      { content: row.content, updatedBy: 'seed-script' },
+      // `updated_by` is a nullable UUID FK to a user; baseline seed content has
+      // no editing user, so it is null (a non-UUID marker string is rejected by
+      // Postgres). Admin edits later set a real user id via the PUT endpoint.
+      { content: row.content, updatedBy: null },
     );
     written++;
   }

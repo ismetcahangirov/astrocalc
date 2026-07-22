@@ -1,12 +1,16 @@
 import {
+  ANGLE_KINDS,
+  angleSubjectKey,
   ARCANA_VALUES,
   aspectSubjectKey,
+  houseSubjectKey,
   INTERPRETED_BODIES,
   matrixSubjectKey,
   numerologySubjectKey,
   planetHouseSubjectKey,
   planetSignSubjectKey,
   SUPPORTED_LOCALES,
+  type AngleKind,
   type AspectType,
   type CelestialBody,
   type InterpretationCategory,
@@ -434,6 +438,75 @@ function composePlanetHouse(
       return `${planet} gezegeni ${theme} ile ilgilidir. ${HOUSE_ORDINAL[house]!.tr} evde bu, ${area} üzerinden kendini gösterir.`;
     case 'ru':
       return `Планета ${planet} связана с ${theme}. Дом ${house}: здесь это проявляется через ${area}.`;
+  }
+}
+
+/**
+ * The generic meaning of a whole house (#106) — reuses the {@link HOUSE_AREA}
+ * life-area phrase and {@link HOUSE_ORDINAL} that already back the planet-house
+ * text, but reads it on its own rather than through a planet.
+ */
+function composeHouse(house: number, locale: InterpretationLocale): string {
+  const area = HOUSE_AREA[house]![locale];
+
+  switch (locale) {
+    case 'en':
+      return `The ${HOUSE_ORDINAL[house]!.en} house governs ${area}. It shows the area of life where these themes play out for you.`;
+    case 'az':
+      return `${HOUSE_ORDINAL[house]!.az} ev ${area} sahəsini idarə edir. Bu, həmin mövzuların həyatınızda təzahür etdiyi sahəni göstərir.`;
+    case 'tr':
+      return `${HOUSE_ORDINAL[house]!.tr} ev ${area} alanını yönetir. Bu temaların yaşamınızda ortaya çıktığı alanı gösterir.`;
+    case 'ru':
+      return `Дом ${house} управляет сферой: ${area}. Он показывает область жизни, где эти темы проявляются для вас.`;
+  }
+}
+
+/** Each angle's display name, per locale. */
+const ANGLE_NAME: Record<AngleKind, LocalizedText> = {
+  ascendant: { en: 'The Ascendant', az: 'Yüksələn (ASC)', tr: 'Yükselen (ASC)', ru: 'Асцендент' },
+  midheaven: {
+    en: 'The Midheaven',
+    az: 'Zenit (MC)',
+    tr: 'Tepe Noktası (MC)',
+    ru: 'Середина неба (MC)',
+  },
+};
+
+/** What each angle governs — a verb clause following the angle name. */
+const ANGLE_FRAME: Record<AngleKind, LocalizedText> = {
+  ascendant: {
+    en: 'shapes the first impression you make and how you meet the world',
+    az: 'yaratdığınız ilk təəssüratı və dünya ilə qarşılaşma tərzinizi formalaşdırır',
+    tr: 'bıraktığınız ilk izlenimi ve dünyayla karşılaşma biçiminizi şekillendirir',
+    ru: 'формирует первое впечатление и то, как вы встречаете мир',
+  },
+  midheaven: {
+    en: 'points to your public role, career direction, and reputation',
+    az: 'ictimai rolunuza, karyera istiqamətinizə və nüfuzunuza işarə edir',
+    tr: 'toplumsal rolünüze, kariyer yönünüze ve itibarınıza işaret eder',
+    ru: 'указывает на вашу публичную роль, карьерное направление и репутацию',
+  },
+};
+
+/**
+ * The meaning of a chart angle in a sign (#106) — same shape as
+ * {@link composePlanetSign}: the angle's frame woven with the sign's trait.
+ */
+function composeAngle(kind: AngleKind, sign: ZodiacSign, locale: InterpretationLocale): string {
+  const angle = ANGLE_NAME[kind][locale];
+  const frame = ANGLE_FRAME[kind][locale];
+  const signName = SIGN_NAME[sign][locale];
+  const trait = SIGN_TRAIT[sign][locale];
+
+  switch (locale) {
+    case 'en':
+      return `${angle} ${frame}. In ${signName}, this comes across as ${trait}.`;
+    case 'az':
+      return `${angle} ${frame}. ${signName} bürcündə bu, ${trait} şəkildə özünü göstərir.`;
+    case 'tr':
+      return `${angle} ${frame}. ${signName} burcunda bu, ${trait} bir şekilde kendini gösterir.`;
+    case 'ru':
+      return `${angle} ${frame}. В знаке ${signName} это проявляется ${trait}.`;
   }
 }
 
@@ -1614,7 +1687,9 @@ export interface GeneratedInterpretation {
  * {@link SUPPORTED_LOCALES} locale:
  *
  * - astrology — the ten {@link INTERPRETED_BODIES} across all twelve signs, all
- *   twelve houses, and every major aspect between them (465 subjects),
+ *   twelve houses, and every major aspect between them (465 subjects), plus the
+ *   twelve generic whole-house meanings and the 24 angle-in-sign meanings
+ *   (#106, categories `house` and `angle`),
  * - numerology — all 185 subjects across the sixteen numerology kinds, and
  * - Matrix of Destiny — all 682 subjects (22 base arcana + 30 positions × 22).
  *
@@ -1644,6 +1719,30 @@ export function generateSeedInterpretations(): GeneratedInterpretation[] {
           subjectKey: planetHouseSubjectKey(body, house),
           locale,
           content: composePlanetHouse(body, house, locale),
+        });
+      }
+    }
+  }
+
+  for (const house of HOUSES) {
+    for (const locale of SUPPORTED_LOCALES) {
+      rows.push({
+        category: 'house',
+        subjectKey: houseSubjectKey(house),
+        locale,
+        content: composeHouse(house, locale),
+      });
+    }
+  }
+
+  for (const kind of ANGLE_KINDS) {
+    for (const sign of SIGNS) {
+      for (const locale of SUPPORTED_LOCALES) {
+        rows.push({
+          category: 'angle',
+          subjectKey: angleSubjectKey(kind, sign),
+          locale,
+          content: composeAngle(kind, sign, locale),
         });
       }
     }

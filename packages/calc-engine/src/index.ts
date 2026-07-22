@@ -46,6 +46,9 @@ export {
   INTERPRETED_BODIES,
   planetSignSubjectKey,
   planetHouseSubjectKey,
+  houseSubjectKey,
+  angleSubjectKey,
+  ANGLE_KINDS,
   aspectSubjectKey,
   listInterpretationSubjects,
   numerologySubjectKey,
@@ -55,6 +58,7 @@ export {
   type InterpretationLocale,
   type InterpretationCategory,
   type InterpretationSubject,
+  type AngleKind,
   type NumerologyNumberKind,
   type MatrixSubjectKind,
 } from './interpretations';

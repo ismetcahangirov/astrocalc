@@ -2,8 +2,10 @@ import {
   FALLBACK_LOCALE,
   INTERPRETED_BODIES,
   SUPPORTED_LOCALES,
+  angleSubjectKey,
   aspectSubjectKey,
   findHouseNumber,
+  houseSubjectKey,
   listInterpretationSubjects,
   planetHouseSubjectKey,
   planetSignSubjectKey,
@@ -11,6 +13,7 @@ import {
   type HouseCusp,
   type InterpretationLocale,
   type PlanetPosition,
+  type ZodiacSign,
 } from '@astrocalc/calc-engine';
 import type { InterpretationCache } from './cache';
 import type { InterpretationRepository } from './repository';
@@ -52,12 +55,20 @@ export interface ComputedChartInput {
   positions: Pick<PlanetPosition, 'body' | 'sign' | 'longitude'>[];
   /** House cusps, when the birth time is known. Omit to skip planet-house text. */
   cusps?: HouseCusp[];
+  /** The sign on the Ascendant, when known — drives the `angle` reading. */
+  ascendantSign?: ZodiacSign;
+  /** The sign on the Midheaven, when known — drives the `angle` reading. */
+  midheavenSign?: ZodiacSign;
   aspects?: Pick<Aspect, 'bodyA' | 'bodyB' | 'type'>[];
 }
 
 export interface ComputedChartInterpretation {
   planetSign: ResolvedInterpretation[];
   planetHouse: ResolvedInterpretation[];
+  /** The 12 generic house meanings — empty when the birth time (and so cusps) is unknown. */
+  houses: ResolvedInterpretation[];
+  /** The Ascendant- and Midheaven-in-sign meanings — empty when the birth time is unknown. */
+  angles: ResolvedInterpretation[];
   aspects: ResolvedInterpretation[];
 }
 
@@ -164,6 +175,36 @@ export function createInterpretationService(
           }))
         : [];
 
+      // House meanings are generic (1–12), independent of the chart's data, but
+      // only returned when cusps exist so they line up with the "houses shown
+      // only with a known birth time" rule the result screen follows.
+      const houseQueries = chart.cusps
+        ? Array.from({ length: 12 }, (_, i) => ({
+            category: 'house' as const,
+            subjectKey: houseSubjectKey(i + 1),
+          }))
+        : [];
+
+      // Angle-in-sign readings — one per angle whose sign was supplied.
+      const angleQueries = [
+        ...(chart.ascendantSign
+          ? [
+              {
+                category: 'angle' as const,
+                subjectKey: angleSubjectKey('ascendant', chart.ascendantSign),
+              },
+            ]
+          : []),
+        ...(chart.midheavenSign
+          ? [
+              {
+                category: 'angle' as const,
+                subjectKey: angleSubjectKey('midheaven', chart.midheavenSign),
+              },
+            ]
+          : []),
+      ];
+
       const aspectQueries = (chart.aspects ?? [])
         .filter((a) => INTERPRETED_BODY_SET.has(a.bodyA) && INTERPRETED_BODY_SET.has(a.bodyB))
         .map((a) => ({
@@ -171,13 +212,15 @@ export function createInterpretationService(
           subjectKey: aspectSubjectKey(a.type, a.bodyA, a.bodyB),
         }));
 
-      const [planetSign, planetHouse, aspects] = await Promise.all([
+      const [planetSign, planetHouse, houses, angles, aspects] = await Promise.all([
         getBatch(planetSignQueries, locale),
         getBatch(planetHouseQueries, locale),
+        getBatch(houseQueries, locale),
+        getBatch(angleQueries, locale),
         getBatch(aspectQueries, locale),
       ]);
 
-      return { planetSign, planetHouse, aspects };
+      return { planetSign, planetHouse, houses, angles, aspects };
     },
   };
 }

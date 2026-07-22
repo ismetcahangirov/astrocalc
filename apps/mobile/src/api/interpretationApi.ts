@@ -11,7 +11,7 @@ export type { ChakraReading } from '../matrix/chakraReading';
 
 /** One resolved interpretation row, as `/interpretations/for-chart` returns it. */
 export interface InterpretationResult {
-  category: 'planet-sign' | 'planet-house' | 'aspect';
+  category: 'planet-sign' | 'planet-house' | 'house' | 'angle' | 'aspect';
   subjectKey: string;
   content: string;
   locale: InterpretationLocale;
@@ -24,6 +24,10 @@ export interface ChartInterpretation {
   planetSign: InterpretationResult[];
   /** Empty when the chart has no houses (birth time unknown) — nothing to compose. */
   planetHouse: InterpretationResult[];
+  /** The 12 generic house meanings — empty when the chart has no houses. */
+  houses: InterpretationResult[];
+  /** The Ascendant/Midheaven-in-sign meanings — empty when the chart has no houses. */
+  angles: InterpretationResult[];
   aspects: InterpretationResult[];
 }
 
@@ -47,6 +51,8 @@ function toChartPayload(chart: NatalChart) {
   return {
     positions: chart.positions.map((p) => ({ body: p.body, sign: p.sign, longitude: p.longitude })),
     cusps: chart.houses?.cusps,
+    ascendantSign: chart.houses?.ascendant.sign,
+    midheavenSign: chart.houses?.midheaven.sign,
     aspects: chart.aspects.map((a) => ({ bodyA: a.bodyA, bodyB: a.bodyB, type: a.type })),
   };
 }
