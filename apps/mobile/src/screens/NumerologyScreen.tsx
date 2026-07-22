@@ -297,10 +297,10 @@ function PeriodRow({
     <AccordionRow
       name={row.label}
       tag={
-        <Text style={row.isCurrent ? styles.currentBadge : styles.ageRange}>
+        <Text style={styles.ageRange}>
           {' '}
           {row.ageRange}
-          {row.isCurrent ? ` · ${currentLabel}` : ''}
+          {row.isCurrent ? <Text style={styles.currentBadge}> · {currentLabel}</Text> : null}
         </Text>
       }
       value={row.badge ? `${row.value} · ${row.badge}` : row.value}
