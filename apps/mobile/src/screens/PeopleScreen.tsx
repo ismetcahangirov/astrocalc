@@ -175,13 +175,18 @@ export function PeopleScreen({
         const ready = chartReady(subject);
         return (
           <View key={subject.id} style={styles.row}>
+            {/* Name on its own line with the action stacked below, mirroring the
+                "Me" row above. An earlier layout put the name and action as two
+                children of a `space-between` row; on Android the flexing name
+                Text there collapsed and rendered blank (the reported bug). */}
             <Pressable
               accessibilityRole="button"
               disabled={!ready}
               onPress={() => onOpenSubjectChart(subject.id, subjectDisplayName(subject))}
-              style={styles.rowMain}
             >
-              <Text style={styles.rowName}>{subjectDisplayName(subject)}</Text>
+              <Text style={styles.rowName} numberOfLines={1}>
+                {subjectDisplayName(subject)}
+              </Text>
               {ready ? (
                 <Text style={styles.rowAction}>{t('people.viewChart')}</Text>
               ) : (
