@@ -57,12 +57,13 @@ const ASPECT_TYPES: readonly AspectType[] = [
 
 /**
  * The bodies this feature writes planet-sign/planet-house/aspect
- * interpretation text for: the ten classical planets (Sun–Pluto). The lunar
- * nodes and Chiron are deliberately out of scope for now — they are
- * optional/advanced points in {@link CelestialBody} (Chiron is opt-in in
- * {@link computePlanetaryPositions} and only approximate) — but nothing here
- * hard-codes the count of ten, so a future issue can extend
- * {@link INTERPRETED_BODIES} without changing the key scheme.
+ * interpretation text for: the ten classical planets (Sun–Pluto) plus the two
+ * lunar nodes (North/South), which the natal chart computes and shows by
+ * default (`nodeModel: 'true'`), so their placements and aspects need readings
+ * too (#106). Chiron stays out — it is opt-in and off by default in
+ * {@link computePlanetaryPositions}, so it never appears in a normal chart.
+ * Nothing here hard-codes the count, so extending this list is all it takes to
+ * bring another body into scope.
  */
 export const INTERPRETED_BODIES: readonly CelestialBody[] = [
   'sun',
@@ -75,6 +76,8 @@ export const INTERPRETED_BODIES: readonly CelestialBody[] = [
   'uranus',
   'neptune',
   'pluto',
+  'northNode',
+  'southNode',
 ];
 
 /** One row's worth of identity: which combination this interpretation text is for. */
@@ -146,10 +149,11 @@ export function aspectSubjectKey(
  * single source of truth both the seed script (writes the content) and a
  * parity test (verifies nothing is missing) are driven from:
  *
- * - astrology (#18) — the ten {@link INTERPRETED_BODIES} planets across all 12
- *   signs, all 12 houses, and all 5 major aspects across every unordered pair
- *   of those planets (465 subjects), plus the 12 generic whole-house meanings
- *   and the 24 angle-in-sign meanings (#106, categories `house` and `angle`), plus
+ * - astrology (#18) — the twelve {@link INTERPRETED_BODIES} (ten classical
+ *   planets + the two lunar nodes) across all 12 signs, all 12 houses, and all 5
+ *   major aspects across every unordered pair of those bodies (618 subjects),
+ *   plus the 12 generic whole-house meanings and the 24 angle-in-sign meanings
+ *   (#106, categories `house` and `angle`), plus
  * - numerology (#57) — the 185 subjects {@link listNumerologySubjects}
  *   enumerates, merged in for issue #82 now that their seed content exists, and
  * - Matrix of Destiny (#67) — the 682 subjects {@link listMatrixSubjects}

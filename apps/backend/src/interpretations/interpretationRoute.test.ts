@@ -306,8 +306,8 @@ describe('GET /interpretations/admin/missing', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`);
 
     expect(res.status).toBe(200);
-    // 465 astrology + 12 house + 24 angle (#106) + 185 numerology + 682 matrix
-    // subjects (folded in by #82 and #80/#81), x4 locales.
-    expect(res.body.count).toBe((10 * 12 + 10 * 12 + 45 * 5 + 12 + 24 + 185 + 682) * 4);
+    // 618 astrology (12 bodies incl. nodes) + 12 house + 24 angle (#106) + 185
+    // numerology + 682 matrix subjects (folded in by #82 and #80/#81), x4 locales.
+    expect(res.body.count).toBe((12 * 12 + 12 * 12 + 66 * 5 + 12 + 24 + 185 + 682) * 4);
   });
 });

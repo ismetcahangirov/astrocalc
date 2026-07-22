@@ -19,9 +19,9 @@ describe('generateSeedInterpretations', () => {
     expect(generatedIds).toEqual(requiredIds);
   });
 
-  it('has 5,472 rows: 1,368 subjects x 4 locales (465 astrology + 12 house + 24 angle + 185 numerology + 682 matrix)', () => {
-    expect(required.length).toBe(1368 * 4);
-    expect(rows.length).toBe(1368 * 4);
+  it('has 6,084 rows: 1,521 subjects x 4 locales (618 astrology + 12 house + 24 angle + 185 numerology + 682 matrix)', () => {
+    expect(required.length).toBe(1521 * 4);
+    expect(rows.length).toBe(1521 * 4);
   });
 
   it('covers all 185 numerology subjects, 4 locales each', () => {

@@ -152,8 +152,9 @@ describe('listNumerologySubjects', () => {
 
   it('is folded into listInterpretationSubjects as of #82, on top of the 465 astrology subjects', () => {
     const all = listInterpretationSubjects();
-    // 465 astrology + 12 house + 24 angle + 185 numerology + 682 matrix = 1368.
-    expect(all).toHaveLength(1368);
+    // 618 astrology (12 bodies incl. nodes) + 12 house + 24 angle + 185
+    // numerology + 682 matrix = 1521.
+    expect(all).toHaveLength(1521);
     expect(all.filter((s) => s.category === 'numerology')).toHaveLength(185);
     expect(all.filter((s) => s.category === 'matrix')).toHaveLength(682);
     // Every numerology subject listNumerologySubjects() enumerates is present.
