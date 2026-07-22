@@ -95,7 +95,12 @@ function patchTouchesNumerologyData(patch: SubjectUpdateInput): boolean {
 }
 
 type NameInput = Pick<SubjectUpdateInput, 'name' | 'firstName' | 'lastName' | 'patronymic'>;
-type ResolvedName = { name: string; firstName: string | null; lastName: string | null; patronymic: string | null };
+interface ResolvedName {
+  name: string;
+  firstName: string | null;
+  lastName: string | null;
+  patronymic: string | null;
+}
 
 /**
  * Resolve the stored name columns from an input that may carry either the three
