@@ -233,7 +233,10 @@ describe('POST /interpretations/for-chart', () => {
     expect(res.status).toBe(200);
     expect(res.body.angles).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ subjectKey: 'ascendant-Aries', content: 'Ascendant in Aries text.' }),
+        expect.objectContaining({
+          subjectKey: 'ascendant-Aries',
+          content: 'Ascendant in Aries text.',
+        }),
       ]),
     );
   });
