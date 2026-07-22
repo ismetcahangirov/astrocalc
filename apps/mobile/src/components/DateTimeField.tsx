@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from '../i18n/LocaleContext';
 import {
-  formatDisplayDate,
+  dayFirstToIso,
+  formatDayFirstInput,
   formatIsoDate,
   formatTime,
+  isoToDayFirst,
   parseIsoDate,
   timeToDate,
 } from './dateTimeFormat';
@@ -44,14 +46,43 @@ export function DateTimeField({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
+  // Manual-entry text for date mode, shown as DD/MM/YYYY. Kept in local state
+  // because a half-typed date isn't a valid `value` yet; `lastEmitted` lets an
+  // external `value` change (prefill, reset, the picker) resync the text without
+  // the field's own emits clobbering what the user is typing.
+  const [text, setText] = useState(() => isoToDayFirst(value));
+  const lastEmitted = useRef(value);
+  useEffect(() => {
+    if (value !== lastEmitted.current) {
+      setText(value ? isoToDayFirst(value) : '');
+      lastEmitted.current = value;
+    }
+  }, [value]);
+
+  const emitDate = (iso: string) => {
+    lastEmitted.current = iso;
+    onChange(iso);
+  };
+
+  const onType = (raw: string) => {
+    const masked = formatDayFirstInput(raw);
+    setText(masked);
+    emitDate(dayFirstToIso(masked) ?? '');
+  };
+
   const now = new Date();
   const pickerValue =
     mode === 'date' ? (parseIsoDate(value) ?? DEFAULT_DATE) : timeToDate(value, now);
   const isEmpty = value.trim() === '';
-  const display = isEmpty ? placeholder : mode === 'date' ? formatDisplayDate(value) : value;
 
   const commit = (selected: Date) => {
-    onChange(mode === 'date' ? formatIsoDate(selected) : formatTime(selected));
+    if (mode === 'date') {
+      const iso = formatIsoDate(selected);
+      setText(isoToDayFirst(iso));
+      emitDate(iso);
+    } else {
+      onChange(formatTime(selected));
+    }
   };
 
   const onAndroidChange = (event: DateTimePickerEvent, selected?: Date) => {
@@ -61,15 +92,44 @@ export function DateTimeField({
 
   return (
     <>
-      <Pressable
-        testID={testID}
-        accessibilityRole="button"
-        disabled={disabled}
-        onPress={() => setOpen(true)}
-        style={[styles.field, disabled && styles.fieldDisabled]}
-      >
-        <Text style={isEmpty ? styles.placeholder : styles.value}>{display}</Text>
-      </Pressable>
+      {mode === 'date' ? (
+        <View style={[styles.field, styles.dateRow, disabled && styles.fieldDisabled]}>
+          {/* Typed entry, masked to DD/MM/YYYY as the user types... */}
+          <TextInput
+            testID={testID}
+            style={styles.input}
+            value={text}
+            onChangeText={onType}
+            editable={!disabled}
+            placeholder={t('birthDate.format')}
+            placeholderTextColor={MUTED}
+            keyboardType="number-pad"
+            maxLength={10}
+          />
+          {/* ...and the calendar button that still opens the native picker. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('birthDate.select')}
+            disabled={disabled}
+            onPress={() => setOpen(true)}
+            hitSlop={10}
+          >
+            <Text style={styles.calendarIcon}>📅</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          testID={testID}
+          accessibilityRole="button"
+          disabled={disabled}
+          onPress={() => setOpen(true)}
+          style={[styles.field, disabled && styles.fieldDisabled]}
+        >
+          <Text style={isEmpty ? styles.placeholder : styles.value}>
+            {isEmpty ? placeholder : value}
+          </Text>
+        </Pressable>
+      )}
 
       {open && Platform.OS === 'android' ? (
         <DateTimePicker
@@ -132,6 +192,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldDisabled: { opacity: 0.4 },
+  dateRow: { flexDirection: 'row', alignItems: 'center' },
+  input: { flex: 1, color: TEXT, fontSize: 15, padding: 0 },
+  calendarIcon: { fontSize: 18, marginLeft: 10 },
   value: { color: TEXT, fontSize: 15 },
   placeholder: { color: MUTED, fontSize: 15 },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },

@@ -1,12 +1,49 @@
 import { describe, expect, it } from 'vitest';
 import {
+  dayFirstToIso,
+  formatDayFirstInput,
   formatDisplayDate,
   formatIsoDate,
   formatTime,
+  isoToDayFirst,
   parseIsoDate,
   parseTime,
   timeToDate,
 } from './dateTimeFormat';
+
+describe('formatDayFirstInput', () => {
+  it('masks digits progressively into DD/MM/YYYY', () => {
+    expect(formatDayFirstInput('1')).toBe('1');
+    expect(formatDayFirstInput('14')).toBe('14');
+    expect(formatDayFirstInput('1406')).toBe('14/06');
+    expect(formatDayFirstInput('14062002')).toBe('14/06/2002');
+  });
+
+  it('ignores non-digits and caps at 8 digits', () => {
+    expect(formatDayFirstInput('14/06/2002')).toBe('14/06/2002');
+    expect(formatDayFirstInput('140620029')).toBe('14/06/2002');
+  });
+});
+
+describe('dayFirstToIso', () => {
+  it('converts a complete valid DD/MM/YYYY to ISO', () => {
+    expect(dayFirstToIso('14/06/2002')).toBe('2002-06-14');
+  });
+
+  it('returns null for incomplete or impossible dates', () => {
+    expect(dayFirstToIso('14/06')).toBeNull();
+    expect(dayFirstToIso('31/02/2002')).toBeNull();
+    expect(dayFirstToIso('00/06/2002')).toBeNull();
+  });
+});
+
+describe('isoToDayFirst', () => {
+  it('converts ISO to DD/MM/YYYY, empty for junk', () => {
+    expect(isoToDayFirst('2002-06-14')).toBe('14/06/2002');
+    expect(isoToDayFirst('')).toBe('');
+    expect(isoToDayFirst('nope')).toBe('');
+  });
+});
 
 describe('parseIsoDate', () => {
   it('parses a valid ISO date to local Y/M/D', () => {

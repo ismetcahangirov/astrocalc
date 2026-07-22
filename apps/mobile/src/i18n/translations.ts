@@ -137,6 +137,7 @@ const en = {
   'birthPlaceSearch.pickOnMap': 'Pick on map',
 
   'birthDate.select': 'Select date',
+  'birthDate.format': 'DD/MM/YYYY',
   'birthTime.select': 'Select time',
   'common.done': 'Done',
   'common.cancel': 'Cancel',
@@ -394,6 +395,7 @@ const az: Record<keyof typeof en, string> = {
   'birthPlaceSearch.pickOnMap': 'Xəritədə seçin',
 
   'birthDate.select': 'Tarixi seçin',
+  'birthDate.format': 'GG/AA/İİİİ',
   'birthTime.select': 'Vaxtı seçin',
   'common.done': 'Hazırdır',
   'common.cancel': 'Ləğv et',

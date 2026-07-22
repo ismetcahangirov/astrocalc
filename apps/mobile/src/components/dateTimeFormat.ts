@@ -45,6 +45,39 @@ export function formatDisplayDate(value: string): string {
   return `${m[3]}.${m[2]}.${m[1]}`;
 }
 
+const DAY_FIRST_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+
+/**
+ * Progressively mask raw keyboard input into `DD/MM/YYYY` as the user types:
+ * keep only digits (max 8 = day+month+year) and insert the `/` separators at
+ * the right positions. Powers the manual birth-date entry alongside the picker.
+ */
+export function formatDayFirstInput(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  const dd = digits.slice(0, 2);
+  const mm = digits.slice(2, 4);
+  const yyyy = digits.slice(4, 8);
+  let out = dd;
+  if (digits.length > 2) out += `/${mm}`;
+  if (digits.length > 4) out += `/${yyyy}`;
+  return out;
+}
+
+/** `DD/MM/YYYY` → `YYYY-MM-DD`, or null if incomplete or not a real calendar date. */
+export function dayFirstToIso(masked: string): string | null {
+  const m = DAY_FIRST_RE.exec(masked.trim());
+  if (!m) return null;
+  const iso = `${m[3]}-${m[2]}-${m[1]}`;
+  return parseIsoDate(iso) ? iso : null;
+}
+
+/** `YYYY-MM-DD` → `DD/MM/YYYY` for seeding the manual input; `''` for anything else. */
+export function isoToDayFirst(iso: string): string {
+  const m = ISO_DATE_RE.exec(iso.trim());
+  if (!m) return '';
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
 /** Parse `HH:mm` into hours/minutes, or null if malformed / out of range. */
 export function parseTime(value: string): { hours: number; minutes: number } | null {
   const m = TIME_RE.exec(value.trim());
