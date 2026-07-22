@@ -12,7 +12,7 @@ describe('seedInterpretations', () => {
 
     const row = await repo.get({ category: 'planet-sign', subjectKey: 'sun-Aries', locale: 'en' });
     expect(row?.content).toContain('The Sun');
-    expect(row?.updatedBy).toBe('seed-script');
+    expect(row?.updatedBy).toBeNull();
   });
 
   it('never overwrites a row that already exists (admin edit or a prior seed run)', async () => {
