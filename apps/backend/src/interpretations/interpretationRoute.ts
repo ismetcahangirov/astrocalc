@@ -10,6 +10,7 @@ const categorySchema = z.enum([
   'planet-sign',
   'planet-house',
   'house',
+  'angle',
   'aspect',
   'numerology',
   'matrix',
@@ -85,6 +86,8 @@ const forChartSchema = z.object({
   chart: z.object({
     positions: z.array(positionSchema).min(1).max(20),
     cusps: z.array(cuspSchema).length(12).optional(),
+    ascendantSign: zodiacSignSchema.optional(),
+    midheavenSign: zodiacSignSchema.optional(),
     aspects: z.array(chartAspectSchema).max(200).optional(),
   }),
 });

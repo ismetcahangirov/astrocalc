@@ -19,9 +19,9 @@ describe('generateSeedInterpretations', () => {
     expect(generatedIds).toEqual(requiredIds);
   });
 
-  it('has 5,376 rows: 1,344 subjects x 4 locales (465 astrology + 12 house + 185 numerology + 682 matrix)', () => {
-    expect(required.length).toBe(1344 * 4);
-    expect(rows.length).toBe(1344 * 4);
+  it('has 5,472 rows: 1,368 subjects x 4 locales (465 astrology + 12 house + 24 angle + 185 numerology + 682 matrix)', () => {
+    expect(required.length).toBe(1368 * 4);
+    expect(rows.length).toBe(1368 * 4);
   });
 
   it('covers all 185 numerology subjects, 4 locales each', () => {
@@ -90,6 +90,22 @@ describe('generateSeedInterpretations', () => {
     expect(row?.content).toBe(
       'The fourth house governs home, family, and your emotional foundations. ' +
         'It shows the area of life where these themes play out for you.',
+    );
+  });
+
+  it('covers both angles across all 12 signs, 4 locales each', () => {
+    const angles = rows.filter((r) => r.category === 'angle');
+    expect(angles.length).toBe(24 * 4);
+    expect(new Set(angles.map((r) => r.subjectKey)).size).toBe(24);
+  });
+
+  it('produces a legible angle example', () => {
+    const row = rows.find(
+      (r) => r.category === 'angle' && r.subjectKey === 'ascendant-Virgo' && r.locale === 'en',
+    );
+    expect(row?.content).toBe(
+      'The Ascendant shapes the first impression you make and how you meet the world. ' +
+        'In Virgo, this comes across as precise, practical, and focused on improvement.',
     );
   });
 

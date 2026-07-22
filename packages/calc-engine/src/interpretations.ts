@@ -22,7 +22,13 @@ export const FALLBACK_LOCALE: InterpretationLocale = 'en';
  * were added for the numerology (#57) and Matrix of Destiny (#67) epics.
  */
 export type InterpretationCategory =
-  'planet-sign' | 'planet-house' | 'house' | 'aspect' | 'numerology' | 'matrix';
+  'planet-sign' | 'planet-house' | 'house' | 'angle' | 'aspect' | 'numerology' | 'matrix';
+
+/** The two chart angles that get their own "angle in sign" interpretation text. */
+export type AngleKind = 'ascendant' | 'midheaven';
+
+/** Both angle kinds, in enumeration order. */
+export const ANGLE_KINDS: readonly AngleKind[] = ['ascendant', 'midheaven'];
 
 const SIGNS: readonly ZodiacSign[] = [
   'Aries',
@@ -111,6 +117,15 @@ export function houseSubjectKey(house: number): string {
 }
 
 /**
+ * Build the subject key for a chart angle in a sign, e.g. `ascendant-Virgo` or
+ * `midheaven-Gemini` — the rising sign's outward style / the Midheaven sign's
+ * public role. Keyed by angle kind + sign, parallel to {@link planetSignSubjectKey}.
+ */
+export function angleSubjectKey(kind: AngleKind, sign: ZodiacSign): string {
+  return `${kind}-${sign}`;
+}
+
+/**
  * Build the subject key for an aspect between two bodies, e.g.
  * `conjunction-moon-sun`. The two bodies are ordered alphabetically
  * regardless of call order, so "Sun conjunction Moon" and "Moon conjunction
@@ -134,7 +149,7 @@ export function aspectSubjectKey(
  * - astrology (#18) — the ten {@link INTERPRETED_BODIES} planets across all 12
  *   signs, all 12 houses, and all 5 major aspects across every unordered pair
  *   of those planets (465 subjects), plus the 12 generic whole-house meanings
- *   (#106, category `house`), plus
+ *   and the 24 angle-in-sign meanings (#106, categories `house` and `angle`), plus
  * - numerology (#57) — the 185 subjects {@link listNumerologySubjects}
  *   enumerates, merged in for issue #82 now that their seed content exists, and
  * - Matrix of Destiny (#67) — the 682 subjects {@link listMatrixSubjects}
@@ -155,6 +170,12 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
 
   for (const house of HOUSES) {
     subjects.push({ category: 'house', subjectKey: houseSubjectKey(house) });
+  }
+
+  for (const kind of ANGLE_KINDS) {
+    for (const sign of SIGNS) {
+      subjects.push({ category: 'angle', subjectKey: angleSubjectKey(kind, sign) });
+    }
   }
 
   for (let i = 0; i < INTERPRETED_BODIES.length; i++) {

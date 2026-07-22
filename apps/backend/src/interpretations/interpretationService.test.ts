@@ -136,9 +136,9 @@ describe('createInterpretationService', () => {
       const { service } = buildService();
       const missing = await service.listMissing();
       // 10 planets x 12 signs + 10 planets x 12 houses + 45 pairs x 5 aspects (465)
-      // + 12 house meanings (#106) + 185 numerology + 682 matrix subjects (folded in
-      // by #82 and #80/#81), x4 locales.
-      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5 + 12 + 185 + 682) * 4);
+      // + 12 house meanings + 24 angle-in-sign meanings (#106) + 185 numerology
+      // + 682 matrix subjects (folded in by #82 and #80/#81), x4 locales.
+      expect(missing.length).toBe((10 * 12 + 10 * 12 + 45 * 5 + 12 + 24 + 185 + 682) * 4);
     });
 
     it('shrinks as rows are added and is empty once everything is seeded', async () => {
@@ -243,6 +243,39 @@ describe('createInterpretationService', () => {
         'en',
       );
       expect(result.houses).toEqual([]);
+    });
+
+    it('returns Ascendant- and Midheaven-in-sign readings when the angle signs are given', async () => {
+      await repo.upsert(
+        { category: 'angle', subjectKey: 'ascendant-Virgo', locale: 'en' },
+        { content: 'Ascendant in Virgo text', updatedBy: null },
+      );
+      await repo.upsert(
+        { category: 'angle', subjectKey: 'midheaven-Gemini', locale: 'en' },
+        { content: 'Midheaven in Gemini text', updatedBy: null },
+      );
+
+      const result = await service.getForComputedChart(
+        {
+          positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }],
+          ascendantSign: 'Virgo',
+          midheavenSign: 'Gemini',
+        },
+        'en',
+      );
+
+      expect(result.angles.map((a) => a.subjectKey)).toEqual([
+        'ascendant-Virgo',
+        'midheaven-Gemini',
+      ]);
+    });
+
+    it('returns no angle readings when the angle signs are absent', async () => {
+      const result = await service.getForComputedChart(
+        { positions: [{ body: 'sun', sign: 'Aries', longitude: 5 }], cusps },
+        'en',
+      );
+      expect(result.angles).toEqual([]);
     });
 
     it('ignores bodies outside the interpreted set (e.g. lunar nodes)', async () => {

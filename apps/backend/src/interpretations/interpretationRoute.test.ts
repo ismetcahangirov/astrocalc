@@ -218,6 +218,26 @@ describe('POST /interpretations/for-chart', () => {
     );
   });
 
+  it('returns angle readings when the angle signs are supplied', async () => {
+    const { app, repo } = makeApp();
+    await repo.upsert(
+      { category: 'angle', subjectKey: 'ascendant-Aries', locale: 'en' },
+      { content: 'Ascendant in Aries text.', updatedBy: null },
+    );
+
+    const res = await request(app)
+      .post('/interpretations/for-chart')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ locale: 'en', chart: { ...chart, ascendantSign: 'Aries' } });
+
+    expect(res.status).toBe(200);
+    expect(res.body.angles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ subjectKey: 'ascendant-Aries', content: 'Ascendant in Aries text.' }),
+      ]),
+    );
+  });
+
   it('omits planet-house readings when the chart has no house cusps (birth time unknown)', async () => {
     const { app, repo } = makeApp();
     await repo.upsert(
@@ -286,8 +306,8 @@ describe('GET /interpretations/admin/missing', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`);
 
     expect(res.status).toBe(200);
-    // 465 astrology + 12 house (#106) + 185 numerology + 682 matrix subjects
-    // (folded in by #82 and #80/#81), x4 locales.
-    expect(res.body.count).toBe((10 * 12 + 10 * 12 + 45 * 5 + 12 + 185 + 682) * 4);
+    // 465 astrology + 12 house + 24 angle (#106) + 185 numerology + 682 matrix
+    // subjects (folded in by #82 and #80/#81), x4 locales.
+    expect(res.body.count).toBe((10 * 12 + 10 * 12 + 45 * 5 + 12 + 24 + 185 + 682) * 4);
   });
 });

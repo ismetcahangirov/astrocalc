@@ -3,6 +3,7 @@ import { CalcEngineError } from './errors';
 import {
   INTERPRETED_BODIES,
   SUPPORTED_LOCALES,
+  angleSubjectKey,
   aspectSubjectKey,
   houseSubjectKey,
   listInterpretationSubjects,
@@ -46,6 +47,11 @@ describe('subject key builders', () => {
     expect(() => houseSubjectKey(1.5)).toThrowError(CalcEngineError);
   });
 
+  it('builds a stable angle key', () => {
+    expect(angleSubjectKey('ascendant', 'Virgo')).toBe('ascendant-Virgo');
+    expect(angleSubjectKey('midheaven', 'Gemini')).toBe('midheaven-Gemini');
+  });
+
   it('canonicalizes aspect body order regardless of call order', () => {
     expect(aspectSubjectKey('conjunction', 'sun', 'moon')).toBe(
       aspectSubjectKey('conjunction', 'moon', 'sun'),
@@ -84,6 +90,13 @@ describe('listInterpretationSubjects', () => {
     expect(new Set(houses.map((s) => s.subjectKey))).toEqual(
       new Set(Array.from({ length: 12 }, (_, i) => `house-${i + 1}`)),
     );
+  });
+
+  it('covers both angles across all 12 signs in the angle category', () => {
+    const angles = subjects.filter((s) => s.category === 'angle');
+    expect(angles).toHaveLength(24);
+    expect(angles.some((s) => s.subjectKey === 'ascendant-Aries')).toBe(true);
+    expect(angles.some((s) => s.subjectKey === 'midheaven-Pisces')).toBe(true);
   });
 });
 
@@ -139,8 +152,8 @@ describe('listNumerologySubjects', () => {
 
   it('is folded into listInterpretationSubjects as of #82, on top of the 465 astrology subjects', () => {
     const all = listInterpretationSubjects();
-    // 465 astrology + 12 house + 185 numerology + 682 matrix = 1344.
-    expect(all).toHaveLength(1344);
+    // 465 astrology + 12 house + 24 angle + 185 numerology + 682 matrix = 1368.
+    expect(all).toHaveLength(1368);
     expect(all.filter((s) => s.category === 'numerology')).toHaveLength(185);
     expect(all.filter((s) => s.category === 'matrix')).toHaveLength(682);
     // Every numerology subject listNumerologySubjects() enumerates is present.
