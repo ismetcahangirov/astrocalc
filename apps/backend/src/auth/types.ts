@@ -53,7 +53,11 @@ export interface User {
 export interface Profile {
   userId: string;
   displayName: string | null;
-  /** Full birth name — numerology's input. Never derived from `displayName`. */
+  /** Name parts (Ad / Soyad / Ata adı) — the source of truth the forms collect. */
+  firstName: string | null;
+  lastName: string | null;
+  patronymic: string | null;
+  /** Full birth name — numerology's input. Composed from the parts above. */
   fullName: string | null;
   avatarUrl: string | null;
   locale: string | null;
@@ -70,6 +74,14 @@ export interface Profile {
 /** Fields the onboarding flow (and later the profile-edit screen, #7) may update, one step (or all) at a time. */
 export interface ProfileUpdateInput {
   displayName?: string | null;
+  /**
+   * Name parts. When any is present, the service composes `fullName` and
+   * `displayName` from the merged parts (see `profileService.ts`); a client
+   * that sends parts need not send `fullName`/`displayName` itself.
+   */
+  firstName?: string | null;
+  lastName?: string | null;
+  patronymic?: string | null;
   fullName?: string | null;
   avatarUrl?: string | null;
   locale?: string | null;

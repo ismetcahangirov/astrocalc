@@ -132,6 +132,56 @@ describe('subjectsService — create', () => {
     const subject = await service.create('user-1', { name: 'No place' });
     expect(subject.birthPlaceTimezone).toBeNull();
   });
+
+  it('composes the combined name from the three parts and stores the parts', async () => {
+    const { service } = makeService();
+    const subject = await service.create('user-1', {
+      firstName: 'Aysel',
+      lastName: 'Məmmədova',
+      patronymic: 'Elçin qızı',
+    });
+    expect(subject.name).toBe('Aysel Məmmədova Elçin qızı');
+    expect(subject.firstName).toBe('Aysel');
+    expect(subject.lastName).toBe('Məmmədova');
+    expect(subject.patronymic).toBe('Elçin qızı');
+  });
+
+  it('derives the parts by splitting a legacy `name`-only create', async () => {
+    const { service } = makeService();
+    const subject = await service.create('user-1', { name: 'Aysel Məmmədova' });
+    expect(subject.firstName).toBe('Aysel');
+    expect(subject.lastName).toBe('Məmmədova');
+    expect(subject.patronymic).toBeNull();
+  });
+});
+
+describe('subjectsService — update name parts', () => {
+  it('recomposes the combined name when the parts change', async () => {
+    const { service } = makeService();
+    const subject = await service.create('user-1', { firstName: 'Aysel', lastName: 'Məmmədova' });
+
+    const updated = await service.update('user-1', subject.id, {
+      firstName: 'Aysel',
+      lastName: 'Əliyeva',
+      patronymic: null,
+    });
+
+    expect(updated.name).toBe('Aysel Əliyeva');
+    expect(updated.lastName).toBe('Əliyeva');
+  });
+
+  it('invalidates numerology (not the chart) when only a name part changes', async () => {
+    const { service, cache, numerologyCache } = makeService();
+    const subject = await service.create('user-1', {
+      firstName: 'Aysel',
+      birthDate: '1950-03-04',
+    });
+
+    await service.update('user-1', subject.id, { lastName: 'Məmmədova' });
+
+    expect(numerologyCache.invalidated).toEqual([subject.id]);
+    expect(cache.invalidated).toEqual([]);
+  });
 });
 
 describe('subjectsService — ownership isolation', () => {

@@ -6,7 +6,12 @@ export { ApiError } from './httpClient';
 /** A saved person the user can compute a chart for (mirrors the backend `Subject`). */
 export interface Subject {
   id: string;
+  /** Combined name (composed from the parts server-side) — what the list shows. */
   name: string;
+  /** Name parts (Ad / Soyad / Ata adı) — the source of truth the form collects. */
+  firstName: string | null;
+  lastName: string | null;
+  patronymic: string | null;
   birthDate: string | null;
   birthTime: string | null;
   birthTimeKnown: boolean;
@@ -18,9 +23,15 @@ export interface Subject {
   updatedAt: string;
 }
 
-/** Create/update input. `birthPlaceTimezone` is intentionally absent — the server derives it. */
+/**
+ * Create/update input. Carries the three name parts — the server composes the
+ * combined `name` from them. `birthPlaceTimezone` is intentionally absent — the
+ * server derives it.
+ */
 export interface SubjectInput {
-  name: string;
+  firstName: string;
+  lastName?: string | null;
+  patronymic?: string | null;
   birthDate?: string | null;
   birthTime?: string | null;
   birthTimeKnown?: boolean;

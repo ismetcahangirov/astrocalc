@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ApiError, getProfile, updateProfile, type ProfileUpdateInput } from '../api/profileApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
+import { partsFromRecord } from '../common/personName';
 import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 import { isSupportedLocale, SUPPORTED_LOCALES, type Locale } from '../i18n/translations';
@@ -24,7 +25,9 @@ import {
 } from '../onboarding/validation';
 
 interface FormState {
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  patronymic: string;
   birthDate: string;
   birthTime: string;
   birthTimeKnown: boolean;
@@ -36,7 +39,9 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = {
-  displayName: '',
+  firstName: '',
+  lastName: '',
+  patronymic: '',
   birthDate: '',
   birthTime: '',
   birthTimeKnown: false,
@@ -49,7 +54,9 @@ const EMPTY_FORM: FormState = {
 
 function toOnboardingData(form: FormState): OnboardingData {
   return {
-    displayName: form.displayName,
+    firstName: form.firstName,
+    lastName: form.lastName,
+    patronymic: form.patronymic,
     birthDate: form.birthDate,
     birthTime: form.birthTime,
     birthTimeKnown: form.birthTimeKnown,
@@ -59,8 +66,11 @@ function toOnboardingData(form: FormState): OnboardingData {
 }
 
 function toPatch(form: FormState): ProfileUpdateInput {
+  const orNull = (s: string) => (s.trim() === '' ? null : s.trim());
   return {
-    displayName: form.displayName.trim() === '' ? null : form.displayName.trim(),
+    firstName: orNull(form.firstName),
+    lastName: orNull(form.lastName),
+    patronymic: orNull(form.patronymic),
     locale: form.locale,
     birthDate: form.birthDate.trim() === '' ? null : form.birthDate.trim(),
     birthTime: form.birthTimeKnown && form.birthTime.trim() !== '' ? form.birthTime.trim() : null,
@@ -105,7 +115,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       try {
         const profile = await getProfile();
         setForm({
-          displayName: profile.displayName ?? '',
+          ...partsFromRecord(profile),
           birthDate: profile.birthDate ?? '',
           birthTime: profile.birthTime?.slice(0, 5) ?? '',
           birthTimeKnown: profile.birthTimeKnown,
@@ -212,13 +222,30 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         {step === 'name' ? (
           <>
             <Text style={styles.title}>{t('onboarding.step.name.title')}</Text>
+            <Text style={styles.fieldLabel}>{t('name.first.label')}</Text>
             <TextInput
               style={styles.input}
-              value={form.displayName}
-              onChangeText={(v) => update('displayName', v)}
-              placeholder={t('profile.name.placeholder')}
+              value={form.firstName}
+              onChangeText={(v) => update('firstName', v)}
+              placeholder={t('name.first.placeholder')}
               placeholderTextColor={MUTED}
               autoFocus
+            />
+            <Text style={styles.fieldLabel}>{t('name.last.label')}</Text>
+            <TextInput
+              style={styles.input}
+              value={form.lastName}
+              onChangeText={(v) => update('lastName', v)}
+              placeholder={t('name.last.placeholder')}
+              placeholderTextColor={MUTED}
+            />
+            <Text style={styles.fieldLabel}>{t('name.patronymic.label')}</Text>
+            <TextInput
+              style={styles.input}
+              value={form.patronymic}
+              onChangeText={(v) => update('patronymic', v)}
+              placeholder={t('name.patronymic.placeholder')}
+              placeholderTextColor={MUTED}
             />
           </>
         ) : null}
@@ -380,6 +407,15 @@ const styles = StyleSheet.create({
   },
   content: { marginTop: 28, flexGrow: 1 },
   title: { color: GOLD, fontSize: 24, fontWeight: '700', marginBottom: 20 },
+  fieldLabel: {
+    color: '#B9B4C7',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   input: {
     backgroundColor: '#181329',
     borderRadius: 12,

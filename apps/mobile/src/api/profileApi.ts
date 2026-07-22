@@ -6,10 +6,17 @@ export interface Profile {
   userId: string;
   displayName: string | null;
   /**
-   * The full name on the birth certificate — distinct from `displayName`, and
-   * the sole letter input to the numerology Expression/Soul Urge/Personality
-   * numbers. Never seeded from the Google display name (see the backend's
-   * `Profile.fullName`), so it is null until the user types it.
+   * The name held as three parts (Ad / Soyad / Ata adı) — the source of truth
+   * the profile form collects (#name-split). The backend composes `fullName`
+   * and `displayName` from them.
+   */
+  firstName: string | null;
+  lastName: string | null;
+  patronymic: string | null;
+  /**
+   * The full name on the birth certificate — the sole letter input to the
+   * numerology Expression/Soul Urge/Personality numbers. Composed server-side
+   * from the three parts above.
    */
   fullName: string | null;
   avatarUrl: string | null;
@@ -30,6 +37,13 @@ export interface Profile {
  */
 export interface ProfileUpdateInput {
   displayName?: string | null;
+  /**
+   * Name parts the form sends; the backend composes `fullName`/`displayName`
+   * from them, so those need not be sent alongside.
+   */
+  firstName?: string | null;
+  lastName?: string | null;
+  patronymic?: string | null;
   fullName?: string | null;
   avatarUrl?: string | null;
   locale?: string | null;

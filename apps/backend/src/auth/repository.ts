@@ -146,6 +146,9 @@ export class InMemoryUserRepository implements UserRepository {
 }
 
 const BLANK_ONBOARDING_FIELDS = {
+  firstName: null,
+  lastName: null,
+  patronymic: null,
   birthDate: null,
   birthTime: null,
   birthTimeKnown: false,

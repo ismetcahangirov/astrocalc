@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from '../i18n/LocaleContext';
 import {
-  formatDisplayDate,
+  dayFirstToIso,
+  formatDayFirstInput,
   formatIsoDate,
   formatTime,
+  isoToDayFirst,
   parseIsoDate,
   timeToDate,
 } from './dateTimeFormat';
@@ -44,14 +46,43 @@ export function DateTimeField({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
+  // Manual-entry text for date mode, shown as DD/MM/YYYY. Kept in local state
+  // because a half-typed date isn't a valid `value` yet; `lastEmitted` lets an
+  // external `value` change (prefill, reset, the picker) resync the text without
+  // the field's own emits clobbering what the user is typing.
+  const [text, setText] = useState(() => isoToDayFirst(value));
+  const lastEmitted = useRef(value);
+  useEffect(() => {
+    if (value !== lastEmitted.current) {
+      setText(value ? isoToDayFirst(value) : '');
+      lastEmitted.current = value;
+    }
+  }, [value]);
+
+  const emitDate = (iso: string) => {
+    lastEmitted.current = iso;
+    onChange(iso);
+  };
+
+  const onType = (raw: string) => {
+    const masked = formatDayFirstInput(raw);
+    setText(masked);
+    emitDate(dayFirstToIso(masked) ?? '');
+  };
+
   const now = new Date();
   const pickerValue =
     mode === 'date' ? (parseIsoDate(value) ?? DEFAULT_DATE) : timeToDate(value, now);
   const isEmpty = value.trim() === '';
-  const display = isEmpty ? placeholder : mode === 'date' ? formatDisplayDate(value) : value;
 
   const commit = (selected: Date) => {
-    onChange(mode === 'date' ? formatIsoDate(selected) : formatTime(selected));
+    if (mode === 'date') {
+      const iso = formatIsoDate(selected);
+      setText(isoToDayFirst(iso));
+      emitDate(iso);
+    } else {
+      onChange(formatTime(selected));
+    }
   };
 
   const onAndroidChange = (event: DateTimePickerEvent, selected?: Date) => {
@@ -61,15 +92,45 @@ export function DateTimeField({
 
   return (
     <>
-      <Pressable
-        testID={testID}
-        accessibilityRole="button"
-        disabled={disabled}
-        onPress={() => setOpen(true)}
-        style={[styles.field, disabled && styles.fieldDisabled]}
-      >
-        <Text style={isEmpty ? styles.placeholder : styles.value}>{display}</Text>
-      </Pressable>
+      {mode === 'date' ? (
+        <View style={[styles.field, styles.dateRow, disabled && styles.fieldDisabled]}>
+          {/* Typed entry, masked to DD/MM/YYYY as the user types... */}
+          <TextInput
+            testID={testID}
+            style={styles.input}
+            value={text}
+            onChangeText={onType}
+            editable={!disabled}
+            placeholder={t('birthDate.format')}
+            placeholderTextColor={MUTED}
+            keyboardType="number-pad"
+            maxLength={10}
+          />
+          {/* ...and the calendar button that still opens the native picker. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('birthDate.select')}
+            disabled={disabled}
+            onPress={() => setOpen(true)}
+            hitSlop={10}
+            style={styles.calendarButton}
+          >
+            <CalendarIcon color={GOLD} />
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          testID={testID}
+          accessibilityRole="button"
+          disabled={disabled}
+          onPress={() => setOpen(true)}
+          style={[styles.field, disabled && styles.fieldDisabled]}
+        >
+          <Text style={isEmpty ? styles.placeholder : styles.value}>
+            {isEmpty ? placeholder : value}
+          </Text>
+        </Pressable>
+      )}
 
       {open && Platform.OS === 'android' ? (
         <DateTimePicker
@@ -117,9 +178,32 @@ export function DateTimeField({
   );
 }
 
+/**
+ * A small calendar glyph drawn from plain Views (no icon dependency): a bordered
+ * body with a coloured header strip and two binder rings poking up above it.
+ */
+function CalendarIcon({ color }: { color: string }) {
+  return (
+    <View style={icon.wrap}>
+      <View style={[icon.ring, { backgroundColor: color, left: 4 }]} />
+      <View style={[icon.ring, { backgroundColor: color, right: 4 }]} />
+      <View style={[icon.body, { borderColor: color }]}>
+        <View style={[icon.header, { backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+}
+
 const GOLD = '#E4B95B';
 const TEXT = '#F4F1FA';
 const MUTED = '#6E6A80';
+
+const icon = StyleSheet.create({
+  wrap: { width: 22, height: 22, justifyContent: 'flex-end' },
+  ring: { position: 'absolute', top: 0, width: 2.5, height: 5, borderRadius: 1 },
+  body: { width: 22, height: 18, borderWidth: 1.6, borderRadius: 4, overflow: 'hidden' },
+  header: { height: 5, width: '100%' },
+});
 
 const styles = StyleSheet.create({
   field: {
@@ -132,6 +216,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldDisabled: { opacity: 0.4 },
+  dateRow: { flexDirection: 'row', alignItems: 'center' },
+  input: { flex: 1, color: TEXT, fontSize: 15, padding: 0 },
+  calendarButton: { marginLeft: 10, padding: 2 },
   value: { color: TEXT, fontSize: 15 },
   placeholder: { color: MUTED, fontSize: 15 },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },

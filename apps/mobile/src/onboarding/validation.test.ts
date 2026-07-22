@@ -12,7 +12,9 @@ import {
 const t = (key: TranslationKey) => key;
 
 const VALID: OnboardingData = {
-  displayName: 'Aysel',
+  firstName: 'Aysel',
+  lastName: 'Məmmədova',
+  patronymic: '',
   birthDate: '1995-04-12',
   birthTime: '14:30',
   birthTimeKnown: true,
@@ -21,10 +23,9 @@ const VALID: OnboardingData = {
 };
 
 describe('validateStep', () => {
-  it('requires a non-blank name', () => {
-    expect(validateStep('name', { ...VALID, displayName: '  ' }, t)).toBe(
-      'onboarding.name.required',
-    );
+  it('requires a non-blank first name (surname/patronymic optional)', () => {
+    expect(validateStep('name', { ...VALID, firstName: '  ' }, t)).toBe('name.first.required');
+    expect(validateStep('name', { ...VALID, lastName: '', patronymic: '' }, t)).toBeNull();
     expect(validateStep('name', VALID, t)).toBeNull();
   });
 

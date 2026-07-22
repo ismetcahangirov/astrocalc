@@ -5,8 +5,16 @@ import { InvalidRequestError } from '../auth/errors';
 import type { TokenService } from '../auth/tokens';
 import type { SubjectsService } from './subjectsService';
 
-const createSchema = z.object({
-  name: z.string().trim().min(1).max(120),
+const nameFields = {
+  // `name` (the combined string) is still accepted for older callers; the
+  // three parts are what the app now sends, and `name` is composed from them.
+  name: z.string().trim().min(1).max(120).optional(),
+  firstName: z.string().trim().max(120).nullable().optional(),
+  lastName: z.string().trim().max(120).nullable().optional(),
+  patronymic: z.string().trim().max(120).nullable().optional(),
+};
+
+const birthFields = {
   birthDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -21,9 +29,18 @@ const createSchema = z.object({
   birthPlaceName: z.string().max(200).nullable().optional(),
   birthPlaceLat: z.number().min(-90).max(90).nullable().optional(),
   birthPlaceLng: z.number().min(-180).max(180).nullable().optional(),
-});
+};
 
-const updateSchema = createSchema.partial();
+// A create must carry a name one way or the other: either a non-empty first
+// name (the app) or the legacy combined `name` (older callers/tests).
+const createSchema = z
+  .object({ ...nameFields, ...birthFields })
+  .refine((v) => (v.firstName?.trim() ?? '') !== '' || (v.name?.trim() ?? '') !== '', {
+    message: 'A first name is required',
+    path: ['firstName'],
+  });
+
+const updateSchema = z.object({ ...nameFields, ...birthFields }).partial();
 
 const querySchema = z.object({
   referenceDate: z

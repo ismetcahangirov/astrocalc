@@ -9,6 +9,9 @@ function toSubject(row: SubjectRow): Subject {
     id: row.id,
     userId: row.userId,
     name: row.name,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    patronymic: row.patronymic,
     birthDate: row.birthDate,
     birthTime: row.birthTime,
     birthTimeKnown: row.birthTimeKnown,
@@ -49,6 +52,9 @@ export class DrizzleSubjectRepository implements SubjectRepository {
       .values({
         userId,
         name: data.name,
+        firstName: data.firstName ?? null,
+        lastName: data.lastName ?? null,
+        patronymic: data.patronymic ?? null,
         birthDate: data.birthDate ?? null,
         birthTime: data.birthTime ?? null,
         birthTimeKnown: data.birthTimeKnown ?? false,
@@ -68,6 +74,9 @@ export class DrizzleSubjectRepository implements SubjectRepository {
       updatedAt: new Date(),
     };
     if ('name' in patch) values.name = patch.name;
+    if ('firstName' in patch) values.firstName = patch.firstName ?? null;
+    if ('lastName' in patch) values.lastName = patch.lastName ?? null;
+    if ('patronymic' in patch) values.patronymic = patch.patronymic ?? null;
     if ('birthDate' in patch) values.birthDate = patch.birthDate ?? null;
     if ('birthTime' in patch) values.birthTime = patch.birthTime ?? null;
     if ('birthTimeKnown' in patch) values.birthTimeKnown = patch.birthTimeKnown ?? false;

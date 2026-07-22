@@ -39,10 +39,17 @@ export const profiles = pgTable('profiles', {
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
   displayName: text('display_name'),
+  // The name held as three separate parts — the shape the mobile forms collect
+  // (#name-split). These are the source of truth; `fullName` and `displayName`
+  // below are composed from them server-side (see `common/personName.ts`).
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  patronymic: text('patronymic'),
   // The full birth name, as numerology needs it. Deliberately separate from
   // `displayName`, which is seeded from the Google account and is usually a
   // first name or a nickname — computing Expression/Soul Urge/Personality from
-  // that would produce numbers that are wrong but look right.
+  // that would produce numbers that are wrong but look right. Now composed from
+  // the three parts above whenever they are supplied.
   fullName: text('full_name'),
   avatarUrl: text('avatar_url'),
   locale: text('locale'),
@@ -74,7 +81,16 @@ export const subjects = pgTable('subjects', {
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
+  // The combined name numerology scores and the People list shows, kept
+  // NOT NULL as before and composed from the three parts below when they are
+  // supplied (see `common/personName.ts`).
   name: text('name').notNull(),
+  // The name held as three separate parts — the shape the mobile "add person"
+  // form now collects (#name-split). The source of truth; `name` is composed
+  // from them.
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  patronymic: text('patronymic'),
   birthDate: date('birth_date', { mode: 'string' }),
   birthTime: time('birth_time'),
   birthTimeKnown: boolean('birth_time_known').notNull().default(false),

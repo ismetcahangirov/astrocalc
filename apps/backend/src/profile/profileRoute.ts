@@ -7,6 +7,11 @@ import type { TokenService } from '../auth/tokens';
 
 const patchSchema = z.object({
   displayName: z.string().min(1).max(200).nullable().optional(),
+  // The three name parts (Ad / Soyad / Ata adı) the app now sends. When any is
+  // present the service composes `fullName` and `displayName` from them.
+  firstName: z.string().trim().max(120).nullable().optional(),
+  lastName: z.string().trim().max(120).nullable().optional(),
+  patronymic: z.string().trim().max(120).nullable().optional(),
   // Same 200-char ceiling as displayName: multi-part patronymic and compound
   // family names run long, and a rejected name is a worse failure here than a
   // long one. Trimmed because leading whitespace would otherwise ride along

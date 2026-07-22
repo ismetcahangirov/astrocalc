@@ -17,11 +17,14 @@ import {
   type SubjectInput,
 } from '../api/subjectsApi';
 import { BirthPlaceSearchField, type BirthPlaceValue } from '../components/BirthPlaceSearchField';
+import { partsFromRecord } from '../common/personName';
 import { DateTimeField } from '../components/DateTimeField';
 import { useTranslation } from '../i18n/LocaleContext';
 
 interface FormState {
-  name: string;
+  firstName: string;
+  lastName: string;
+  patronymic: string;
   birthDate: string;
   birthTime: string;
   birthTimeKnown: boolean;
@@ -31,7 +34,9 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
-  name: '',
+  firstName: '',
+  lastName: '',
+  patronymic: '',
   birthDate: '',
   birthTime: '',
   birthTimeKnown: false,
@@ -40,9 +45,13 @@ const EMPTY: FormState = {
   birthPlaceLng: null,
 };
 
+const orNull = (value: string) => (value.trim() === '' ? null : value.trim());
+
 function toInput(form: FormState): SubjectInput {
   return {
-    name: form.name.trim(),
+    firstName: form.firstName.trim(),
+    lastName: orNull(form.lastName),
+    patronymic: orNull(form.patronymic),
     birthDate: form.birthDate.trim() === '' ? null : form.birthDate.trim(),
     birthTime: form.birthTimeKnown && form.birthTime.trim() !== '' ? form.birthTime.trim() : null,
     birthTimeKnown: form.birthTimeKnown,
@@ -80,7 +89,7 @@ export function SubjectFormScreen({ subjectId, onDone, onCancel }: SubjectFormSc
       try {
         const s = await getSubject(subjectId);
         setForm({
-          name: s.name,
+          ...partsFromRecord(s),
           birthDate: s.birthDate ?? '',
           birthTime: s.birthTime?.slice(0, 5) ?? '',
           birthTimeKnown: s.birthTimeKnown,
@@ -101,8 +110,8 @@ export function SubjectFormScreen({ subjectId, onDone, onCancel }: SubjectFormSc
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const onSave = async () => {
-    if (form.name.trim() === '') {
-      setError(t('subject.name.required'));
+    if (form.firstName.trim() === '') {
+      setError(t('name.first.required'));
       return;
     }
     setSaving(true);
@@ -138,12 +147,32 @@ export function SubjectFormScreen({ subjectId, onDone, onCancel }: SubjectFormSc
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{t(editing ? 'subject.titleEdit' : 'subject.titleCreate')}</Text>
 
-      <Field label={t('subject.name.label')}>
+      <Field label={t('name.first.label')}>
         <TextInput
           style={styles.input}
-          value={form.name}
-          onChangeText={(v) => update('name', v)}
-          placeholder={t('subject.name.placeholder')}
+          value={form.firstName}
+          onChangeText={(v) => update('firstName', v)}
+          placeholder={t('name.first.placeholder')}
+          placeholderTextColor={MUTED}
+        />
+      </Field>
+
+      <Field label={t('name.last.label')}>
+        <TextInput
+          style={styles.input}
+          value={form.lastName}
+          onChangeText={(v) => update('lastName', v)}
+          placeholder={t('name.last.placeholder')}
+          placeholderTextColor={MUTED}
+        />
+      </Field>
+
+      <Field label={t('name.patronymic.label')}>
+        <TextInput
+          style={styles.input}
+          value={form.patronymic}
+          onChangeText={(v) => update('patronymic', v)}
+          placeholder={t('name.patronymic.placeholder')}
           placeholderTextColor={MUTED}
         />
       </Field>

@@ -25,6 +25,9 @@ function toProfile(row: ProfileRow): Profile {
   return {
     userId: row.userId,
     displayName: row.displayName,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    patronymic: row.patronymic,
     fullName: row.fullName,
     avatarUrl: row.avatarUrl,
     locale: row.locale,
