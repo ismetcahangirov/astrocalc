@@ -11,7 +11,7 @@ export type { ChakraReading } from '../matrix/chakraReading';
 
 /** One resolved interpretation row, as `/interpretations/for-chart` returns it. */
 export interface InterpretationResult {
-  category: 'planet-sign' | 'planet-house' | 'aspect';
+  category: 'planet-sign' | 'planet-house' | 'house' | 'aspect';
   subjectKey: string;
   content: string;
   locale: InterpretationLocale;
@@ -24,6 +24,8 @@ export interface ChartInterpretation {
   planetSign: InterpretationResult[];
   /** Empty when the chart has no houses (birth time unknown) — nothing to compose. */
   planetHouse: InterpretationResult[];
+  /** The 12 generic house meanings — empty when the chart has no houses. */
+  houses: InterpretationResult[];
   aspects: InterpretationResult[];
 }
 
