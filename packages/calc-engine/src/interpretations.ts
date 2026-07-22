@@ -22,7 +22,7 @@ export const FALLBACK_LOCALE: InterpretationLocale = 'en';
  * were added for the numerology (#57) and Matrix of Destiny (#67) epics.
  */
 export type InterpretationCategory =
-  'planet-sign' | 'planet-house' | 'aspect' | 'numerology' | 'matrix';
+  'planet-sign' | 'planet-house' | 'house' | 'aspect' | 'numerology' | 'matrix';
 
 const SIGNS: readonly ZodiacSign[] = [
   'Aries',
@@ -95,6 +95,22 @@ export function planetHouseSubjectKey(body: CelestialBody, house: number): strin
 }
 
 /**
+ * Build the subject key for a whole-house meaning, e.g. `house-4` — the generic
+ * meaning of the fourth house itself, independent of any planet in it or the
+ * sign on its cusp. Distinct from {@link planetHouseSubjectKey} (`sun-4`), which
+ * is a planet read *through* a house.
+ */
+export function houseSubjectKey(house: number): string {
+  if (!Number.isInteger(house) || house < 1 || house > 12) {
+    throw new CalcEngineError(
+      'invalid_input',
+      `house must be an integer within [1, 12], got ${house}`,
+    );
+  }
+  return `house-${house}`;
+}
+
+/**
  * Build the subject key for an aspect between two bodies, e.g.
  * `conjunction-moon-sun`. The two bodies are ordered alphabetically
  * regardless of call order, so "Sun conjunction Moon" and "Moon conjunction
@@ -117,7 +133,8 @@ export function aspectSubjectKey(
  *
  * - astrology (#18) — the ten {@link INTERPRETED_BODIES} planets across all 12
  *   signs, all 12 houses, and all 5 major aspects across every unordered pair
- *   of those planets (465 subjects), plus
+ *   of those planets (465 subjects), plus the 12 generic whole-house meanings
+ *   (#106, category `house`), plus
  * - numerology (#57) — the 185 subjects {@link listNumerologySubjects}
  *   enumerates, merged in for issue #82 now that their seed content exists, and
  * - Matrix of Destiny (#67) — the 682 subjects {@link listMatrixSubjects}
@@ -134,6 +151,10 @@ export function listInterpretationSubjects(): InterpretationSubject[] {
     for (const house of HOUSES) {
       subjects.push({ category: 'planet-house', subjectKey: planetHouseSubjectKey(body, house) });
     }
+  }
+
+  for (const house of HOUSES) {
+    subjects.push({ category: 'house', subjectKey: houseSubjectKey(house) });
   }
 
   for (let i = 0; i < INTERPRETED_BODIES.length; i++) {

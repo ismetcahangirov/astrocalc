@@ -46,6 +46,7 @@ export {
   INTERPRETED_BODIES,
   planetSignSubjectKey,
   planetHouseSubjectKey,
+  houseSubjectKey,
   aspectSubjectKey,
   listInterpretationSubjects,
   numerologySubjectKey,
