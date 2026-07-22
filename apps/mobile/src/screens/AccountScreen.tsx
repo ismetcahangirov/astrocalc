@@ -17,6 +17,7 @@ import {
 } from '../api/accountApi';
 import { clearTokens } from '../auth/tokenStorage';
 import { describeExportStatus, isExportTerminal } from '../account/exportStatus';
+import { HomeButton } from '../common/HomeButton';
 import { useTranslation } from '../i18n/LocaleContext';
 
 interface AccountScreenProps {
@@ -104,7 +105,10 @@ export function AccountScreen({ onDeleted }: AccountScreenProps) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t('account.title')}</Text>
+      <View style={styles.titleRow}>
+        <HomeButton />
+        <Text style={styles.title}>{t('account.title')}</Text>
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('account.export.title')}</Text>
@@ -188,7 +192,8 @@ const MUTED = '#6E6A80';
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   content: { padding: 24, paddingBottom: 48 },
-  title: { color: GOLD, fontSize: 28, fontWeight: '700', letterSpacing: 0.5, marginBottom: 24 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
+  title: { color: GOLD, fontSize: 28, fontWeight: '700', letterSpacing: 0.5 },
   section: {
     backgroundColor: '#181329',
     borderRadius: 14,

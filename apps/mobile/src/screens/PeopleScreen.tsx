@@ -12,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 import { ApiError, getProfile, type Profile } from '../api/profileApi';
 import { deleteSubject, listSubjects, type Subject } from '../api/subjectsApi';
 import { composeFullName } from '../common/personName';
+import { HomeButton } from '../common/HomeButton';
 import { useTranslation } from '../i18n/LocaleContext';
 
 /**
@@ -154,7 +155,10 @@ export function PeopleScreen({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>{t('people.title')}</Text>
+      <View style={styles.titleRow}>
+        <HomeButton />
+        <Text style={styles.title}>{t('people.title')}</Text>
+      </View>
       <Text style={styles.subtitle}>{t('people.subtitle')}</Text>
 
       {/* Me — pinned */}
@@ -275,6 +279,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { color: GOLD, fontSize: 28, fontWeight: '700', letterSpacing: 0.5 },
   subtitle: { color: '#B9B4C7', fontSize: 14, marginTop: 6, marginBottom: 24 },
   row: {
