@@ -25,7 +25,12 @@ and the related issue/PR numbers.
   Asc/MC signs; route `categorySchema` accepts `house` and `angle`; mobile
   `formatChartDetails` attaches each row's interpretation `subjectKey`, and
   `NatalChartScreen` renders rows via a new single-open `AccordionRow`.
-  calc-engine + backend (377) + mobile (213) tests green; tsc clean.
+  Also: the natal chart computes and shows the **lunar nodes** (North/South) by
+  default, so their placement and aspect rows were appearing with no reading —
+  both nodes were added to `INTERPRETED_BODIES`, generating their sign/house/
+  aspect text from the existing `PLANET_NAME`/`BODY_THEME` banks (astrology
+  465 → 618 subjects; grand total 1,368 → 1,521; Chiron stays out — off by
+  default). calc-engine + backend (377) + mobile (213) tests green; tsc clean.
   **Seed:** the interpretation content was (re)seeded to the Neon DB via
   `db:seed:interpretations` (idempotent). A latent seed bug was fixed on the
   way — the script passed the string `'seed-script'` into the nullable UUID
